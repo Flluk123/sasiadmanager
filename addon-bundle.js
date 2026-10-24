@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Heroes on Discord + Notyfikator Legend + Przedziały Online + Łupy Tytanów
 // @namespace    http://tampermonkey.net/
-// @version      4.60.3
+// @version      4.60.5
 // @description  Heroes and titans alerts, online player level ranges, and legendary titan loot calls
 // @author       Kris Aphalon
 // @match        https://margonem.com/*
@@ -72,11 +72,17 @@
     discordIcon.style.setProperty('background', 'linear-gradient(180deg,#26324a,#182033)', 'important')
     discordIcon.style.setProperty('box-shadow', 'inset 0 0 0 1px rgba(0,0,0,.55), 0 2px 5px rgba(0,0,0,.55)', 'important')
     discordIcon.addEventListener('click', function (event) {
-        if (typeof window.__mkHubToggle === 'function') window.__mkHubToggle()
-        else if (typeof window.__heroesDiscordTogglePanel === 'function') window.__heroesDiscordTogglePanel()
-        // The Discord icon only opens/closes the add-on panel. Never open the
-        // full webhook form from a click that happens before panel initialization.
-    })
+        event.preventDefault()
+        event.stopImmediatePropagation()
+        try {
+            if (typeof window.__mkHubShow === 'function') window.__mkHubShow()
+            else window.dispatchEvent(new Event('mk-hub-toggle'))
+        } catch (error) {
+            console.error('[Heroes on Discord] Nie udało się otworzyć menu dodatków:', error)
+            const hub = document.getElementById('mk-hub')
+            if (hub) { hub.classList.add('open'); hub.style.setProperty('display', 'flex', 'important') }
+        }
+    }, true)
     if (document.body) document.body.appendChild(discordIcon)
     else document.addEventListener('DOMContentLoaded', function () { document.body.appendChild(discordIcon) }, { once: true })
     const additionalRoleNames = [
@@ -3753,7 +3759,6 @@
 ;(function () {
   'use strict'
   if (window.__mkHubInstalled) return
-  window.__mkHubInstalled = true
 
   const lsGet = key => { try { return localStorage.getItem(key) } catch (error) { return null } }
   const lsSet = (key, value) => { try { localStorage.setItem(key, value) } catch (error) {} }
@@ -3992,7 +3997,7 @@
 
     document.body.appendChild(root)
     root.style.setProperty('--mkhd-addon-theme', getComputedStyle(document.documentElement).getPropertyValue('--mkhd-addon-theme').trim() || '#6366f1')
-    window.__mkApplyAddonAppearance?.()
+    try { window.__mkApplyAddonAppearance?.() } catch (error) { console.warn("[Heroes on Discord] Nie udało się zastosować wyglądu menu:", error) }
   }
 
   /* ---------- widoki ---------- */
@@ -4254,22 +4259,32 @@
   })
 
   function show() {
-    if (!root) build()
+    try { if (!root) build() } catch (error) { console.error('[Heroes on Discord] Błąd tworzenia menu dodatków:', error) }
+    if (!root) return
     if (view === 'discord') closeDiscordForm()
     stopLookObserver()
     view = 'addons'
-    search.value = ''
-    render()
+    if (search) search.value = ''
+    try { render() } catch (error) {
+      console.error('[Heroes on Discord] Błąd widoku menu dodatków:', error)
+      if (content) {
+        content.innerHTML = '<div class="info"><h3>Menu dodatków</h3><p>Panel jest otwarty, ale nie udało się odświeżyć jego zawartości. Odśwież grę klawiszem F5.</p></div>'
+        content.style.display = 'block'
+        if (grid) grid.style.display = 'none'
+        if (searchRow) searchRow.style.display = 'none'
+      }
+    }
     restoreHubPosition()
     root.classList.add('open')
+    root.style.setProperty('display', 'flex', 'important')
     requestAnimationFrame(clampHubToViewport)
-  }
-  function hide() {
+  }  function hide() {
     if (!root) return
     if (view === 'discord') closeDiscordForm()
     if (view === 'ranges') closeRangesConfig()
     stopLookObserver()
     root.classList.remove('open')
+    root.style.setProperty('display', 'none', 'important')
   }
   function toggle() { if (root && root.classList.contains('open')) hide(); else show() }
 
@@ -4282,8 +4297,11 @@
     render()
     restoreHubPosition()
     root.classList.add('open')
+    root.style.setProperty('display', 'flex', 'important')
     requestAnimationFrame(clampHubToViewport)
   }
   window.__mkHubToggle = toggle
   window.__mkHubShow = show
+  window.__mkHubInstalled = true
+  window.addEventListener('mk-hub-toggle', toggle)
 })();
