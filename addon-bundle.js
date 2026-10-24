@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Heroes on Discord + Notyfikator Legend + Przedziały Online + Łupy Tytanów
 // @namespace    http://tampermonkey.net/
-// @version      4.58.7
+// @version      4.60.0
 // @description  Heroes and titans alerts, online player level ranges, and legendary titan loot calls
 // @author       Kris Aphalon
 // @match        https://margonem.com/*
@@ -12,9 +12,40 @@
 // @run-at       document-idle
 // ==/UserScript==
 
-(function (addinnnnnnnnnnnnnnntionalNpcNamesToSearch)
+// Kopia ustawień dodatków przywracana przed inicjalizacją modułów.
+;(function () {
+  const backupKey = 'mkAddonSettingsBackup_v1'
+  const isAddonKey = key => /^(?:mk(?:Colossus|Hub|Online|TitanLoot|Addon|_clan_|_ranges_)|chciamkColossus|heroes-discord|moj_notyfikator_fx)/.test(key) && key !== backupKey
+  try {
+    const snapshot = JSON.parse(localStorage.getItem(backupKey) || '{}')
+    if (snapshot && typeof snapshot === 'object' && !Array.isArray(snapshot)) {
+      for (const [key, value] of Object.entries(snapshot)) {
+        if (isAddonKey(key) && typeof value === 'string' && localStorage.getItem(key) === null) localStorage.setItem(key, value)
+      }
+    }
+  } catch (error) {}
+  window.__mkPersistAddonSettings = () => {
+    try {
+      const snapshot = {}
+      for (let index = 0; index < localStorage.length; index++) {
+        const key = localStorage.key(index)
+        if (key && isAddonKey(key)) snapshot[key] = localStorage.getItem(key)
+      }
+      localStorage.setItem(backupKey, JSON.stringify(snapshot))
+      try { window.postMessage({ channel: 'sasiadmanager-settings-v1', type: 'save', snapshot }, location.origin) } catch (error) {}
+      return true
+    } catch (error) { return false }
+  }
+  // Also refresh the recovery copy when an existing module's own Save button is used.
+  document.addEventListener('click', event => {
+    const button = event.target?.closest?.('button')
+    if (button && /zapisz|save/i.test(button.textContent || '')) setTimeout(() => window.__mkPersistAddonSettings?.(), 0)
+  }, true)
+})()
+
+;(function (addinnnnnnnnnnnnnnntionalNpcNamesToSearch)
 {
-    const isColossusPromptEnabled = () => { try { return localStorage.getItem('chciamkColossusGroupPromptEnabled') !== '0' } catch (error) { return true } }
+    const isColossusPromptEnabled = () => { try { return localStorage.getItem('mkColossusGroupPromptEnabled') !== '0' && localStorage.getItem('chciamkColossusGroupPromptEnabled') !== '0' } catch (error) { return true } }
     const EVENT_ROLE_ID = '1318862751334010960'
     const EVENT_HERO_NAMES = new Set(['nosferatu', 'lorelei', 'drude', 'doppelganger'])
     let settings = {
@@ -27,64 +58,22 @@
 
     // Create the launcher immediately so game initialization cannot hide it.
     const discordIcon = document.createElement('img')
-    const iconPositionKey = 'heroes-discord-icon-position'
-    let suppressIconClick = false
     let launcherEnabled = false
     let startupAttempts = 0
     discordIcon.src = 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="14" fill="#5865F2"/><path fill="#fff" d="M45 20a38 38 0 0 0-9-3l-1 3a33 33 0 0 0-9 0l-1-3a38 38 0 0 0-9 3C9 28 7 37 8 46a38 38 0 0 0 12 6l2-4-4-2 1-1a26 26 0 0 0 26 0l1 1-4 2 2 4a38 38 0 0 0 12-6c1-10-2-18-10-26ZM24 40a4 4 0 1 1 0-8 4 4 0 0 1 0 8Zm16 0a4 4 0 1 1 0-8 4 4 0 0 1 0 8Z"/></svg>')
     discordIcon.alt = 'Heroes on Discord'
     discordIcon.className = 'heroes-discord__discord-icon'
-    discordIcon.title = 'Przeciągnij, aby przenieść; kliknij, aby otworzyć lub zamknąć ustawienia'
+    discordIcon.title = 'Menu dodatków'
     discordIcon.style.cssText = 'position:fixed!important;left:230px!important;bottom:6px!important;top:auto!important;right:auto!important;width:38px!important;height:38px!important;display:block!important;z-index:2147483000!important;box-sizing:border-box!important;padding:4px!important;border:1px solid rgba(255,255,255,.2)!important;border-radius:8px!important;background:#202a3a!important;object-fit:contain!important;cursor:pointer!important'
-    try {
-        const savedIconPosition = JSON.parse(localStorage.getItem(iconPositionKey) || 'null')
-        if (savedIconPosition && Number.isFinite(savedIconPosition.left) && Number.isFinite(savedIconPosition.top)) {
-            discordIcon.style.setProperty('left', Math.max(0, Math.min(innerWidth - 44, savedIconPosition.left)) + 'px', 'important')
-            discordIcon.style.setProperty('top', Math.max(0, Math.min(innerHeight - 44, savedIconPosition.top)) + 'px', 'important')
-            discordIcon.style.setProperty('bottom', 'auto', 'important')
-        }
-    } catch (error) {}
-    discordIcon.addEventListener('pointerdown', function (event) {
-        if (event.button !== 0) return
-        event.preventDefault()
-        event.stopPropagation()
-        const rect = discordIcon.getBoundingClientRect()
-        const offsetX = event.clientX - rect.left
-        const offsetY = event.clientY - rect.top
-        const startX = event.clientX
-        const startY = event.clientY
-        let moved = false
-        function move(moveEvent) {
-            if (Math.abs(moveEvent.clientX - startX) + Math.abs(moveEvent.clientY - startY) > 3) moved = true
-            if (!moved) return
-            discordIcon.style.setProperty('left', Math.max(0, Math.min(innerWidth - discordIcon.offsetWidth, moveEvent.clientX - offsetX)) + 'px', 'important')
-            discordIcon.style.setProperty('top', Math.max(0, Math.min(innerHeight - discordIcon.offsetHeight, moveEvent.clientY - offsetY)) + 'px', 'important')
-            discordIcon.style.setProperty('bottom', 'auto', 'important')
-        }
-        function stop() {
-            document.removeEventListener('pointermove', move)
-            document.removeEventListener('pointerup', stop)
-            document.removeEventListener('pointercancel', stop)
-            if (moved) {
-                try { localStorage.setItem(iconPositionKey, JSON.stringify({ left: parseFloat(discordIcon.style.left), top: parseFloat(discordIcon.style.top) })) } catch (error) {}
-                suppressIconClick = true
-                setTimeout(() => { suppressIconClick = false }, 0)
-            }
-        }
-        document.addEventListener('pointermove', move)
-        document.addEventListener('pointerup', stop)
-        document.addEventListener('pointercancel', stop)
-    })
+    ;['width','height'].forEach(prop => discordIcon.style.setProperty(prop, '46px', 'important'))
+    discordIcon.style.setProperty('padding', '5px', 'important')
+    discordIcon.style.setProperty('border', '2px solid rgba(255,255,255,.22)', 'important')
+    discordIcon.style.setProperty('border-radius', '10px', 'important')
+    discordIcon.style.setProperty('background', 'linear-gradient(180deg,#26324a,#182033)', 'important')
+    discordIcon.style.setProperty('box-shadow', 'inset 0 0 0 1px rgba(0,0,0,.55), 0 2px 5px rgba(0,0,0,.55)', 'important')
     discordIcon.addEventListener('click', function (event) {
-        if (suppressIconClick) {
-            event.preventDefault()
-            event.stopPropagation()
-            suppressIconClick = false
-            return
-        }
-        if (typeof window.__heroesDiscordTogglePanel === 'function') {
-            window.__heroesDiscordTogglePanel()
-        }
+        if (typeof window.__mkHubToggle === 'function') window.__mkHubToggle()
+        else if (typeof window.__heroesDiscordTogglePanel === 'function') window.__heroesDiscordTogglePanel()
         // The Discord icon only opens/closes the add-on panel. Never open the
         // full webhook form from a click that happens before panel initialization.
     })
@@ -276,6 +265,15 @@
             }
             catch (error) { console.warn('Heroes on Discord: nie udało się odczytać ustawień.', error) }
         }
+        try {
+            const userOwnedWebhooksKey = 'heroes-discord-user-owned-webhooks-v2'
+            if (localStorage.getItem(userOwnedWebhooksKey) !== '1') {
+            settings.webhookUrl = ''
+            settings.webhookUrls = { heroes: '', colossi: '', titans: '', event: '' }
+            localStorage.setItem('heroes-discord', JSON.stringify(settings))
+            localStorage.setItem(userOwnedWebhooksKey, '1')
+            }
+        } catch (error) {}
     }
 
     const css = '.heroes-discord__popup{border-image:url(data:image/png;base64,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) 32 20 repeat;border-style:solid;border-width:10px 5px;color:#000;left:calc(50% - 150px);position:fixed;top:20px;width:300px;z-index:1000}.heroes-discord__background{background-color:#efd9a1;height:auto}.heroes-discord__img{display:flex;justify-content:center;padding-top:10px}.heroes-discord__text{margin-bottom:5px;margin-top:10px;text-align:center}.heroes-discord__buttons-container{align-content:center;border-top:2px solid #3d291c;display:flex;height:37px;justify-content:space-evenly;margin:0 -2px;padding-top:3px}.heroes-discord__button{background-color:#000;background-image:linear-gradient(to top,#12210d,#396b29);border:solid 1px #0c0d0d;border-radius:6px;box-shadow:inset 0 0 1px 1px #cecece,inset 0 0 0 3px #0c0d0d;box-sizing:border-box;color:#e6d6bf;cursor:pointer;display:inline-block;height:32px;line-height:normal;padding:0;position:relative;width:100px}.heroes-discord__button:hover{background-image:linear-gradient(to top,#101010,#434343)}.heroes-discord__button:active{background-image:linear-gradient(to top,#58310b,#b26417)}.heroes-discord__button-positive{font-size:13px}.heroes-discord__button-negative{background-image:linear-gradient(to top,#310b0b,#831f1f);box-shadow:inset 0 0 1px 1px #cecece,inset 0 0 0 3px #0c0d0d;font-size:10px}.heroes-discord__setup{left:calc(50% - 150px);top:calc(50% - 150px)}.heroes-discord__setup .heroes-discord__background{box-sizing:border-box;height:253px;padding:14px}.heroes-discord__button-close{background:url(https://i.imgur.com/sdKL0ZQ.png);border:1px solid gray;cursor:pointer;height:22px;position:absolute;right:-3px;top:-7px;width:22px}.heroes-discord__button-close:hover{background-position-x:22px}.heroes-discord__discord-icon{cursor:pointer;padding-right:4px;padding-top:5px;position:absolute;right:0;top:-2px;width:27px}.heroes-discord__label{display:block;height:60px;margin-top:16px;text-align:center}.heroes-discord__input{border:1px solid #000;height:18px;margin-top:5px;width:80%}.heroes-discord__setup .heroes-discord__buttons-container{border-top:none;margin-top:25px}.heroes-discord__setup .heroes-discord__button-negative{font-size:13px}.bottom-panel-pointer-bg .heroes-discord__discord-icon{background-color:#2c2f33;cursor:url(../img/gui/cursor/5.png),url(../img/gui/cursor/5.cur),auto;font-size:13px;left:40px;padding:0;pointer-events:auto;top:25px}'
@@ -406,6 +404,35 @@
         }
     }
 
+    window.__heroesDiscordForgetConsecutive = function (webhookUrl) {
+        try {
+            const hash = value => {
+                let result = 2166136261
+                for (let i = 0; i < value.length; i++) { result ^= value.charCodeAt(i); result = Math.imul(result, 16777619) }
+                return (result >>> 0).toString(36)
+            }
+            const channelKey = hash(String(webhookUrl).trim())
+            delete consecutiveDiscordMemory[channelKey]
+            const saved = JSON.parse(localStorage.getItem(consecutiveDiscordDedupeKey) || '{}')
+            delete saved[channelKey]
+            localStorage.setItem(consecutiveDiscordDedupeKey, JSON.stringify(saved))
+        } catch (error) {}
+    }
+    function heroesNotify(text) { try { if (typeof window.message === 'function') window.message(text) } catch (error) {} }
+    function heroesWatchRequest(request, webhookUrl, okText) {
+        request.onload = function () {
+            if (request.status >= 200 && request.status < 300) { heroesNotify(okText); return }
+            console.warn('Heroes on Discord: Discord odrzucił wiadomość, status ' + request.status, request.responseText)
+            window.__heroesDiscordForgetConsecutive(webhookUrl)
+            heroesNotify('Discord odrzucił wiadomość (status ' + request.status + '). Sprawdź webhook.')
+        }
+        request.onerror = function () {
+            console.warn('Heroes on Discord: błąd sieci przy wysyłaniu na webhook.')
+            window.__heroesDiscordForgetConsecutive(webhookUrl)
+            heroesNotify('Nie udało się wysłać na Discorda (błąd sieci).')
+        }
+    }
+
     async function sendDiscordAlert(webhookUrl, playerNick, npc, mapName, serverName, roleIdOverride)
     {
         let color = 8388608 //red
@@ -443,11 +470,17 @@
             addToThumbnail = 'https://micc.garmory-cdn.cloud/obrazki/npc/'
         }
 
-        const response = await fetch(addToThumbnail + npc.icon)
-        const fileObj = new File([await response.blob()], 'npc.gif')
+        let fileObj = null
+        try
+        {
+            const response = await fetch(addToThumbnail + npc.icon)
+            if (!response.ok) throw new Error('HTTP ' + response.status)
+            fileObj = new File([await response.blob()], 'npc.gif')
+        }
+        catch (error) { console.warn('Heroes on Discord: nie udało się pobrać miniatury, wysyłam bez niej.', error) }
 
         const data = new FormData()
-        data.append(`files[0]`, fileObj)
+        if (fileObj) data.append(`files[0]`, fileObj)
         const categoryName = type1 || 'NPC'
         const categoryEmoji = isKnownColossus(npc) ? '🟣' : (isHeros(npc) ? '🟠' : (isAdditionalNpcToSearch(npc) ? '🔔' : '🔴'))
         data.append('payload_json', JSON.stringify({
@@ -465,21 +498,27 @@
                     { name: '🧭 Pozycja', value: `\`${npc.x}, ${npc.y}\``, inline: true },
                     { name: '👤 Znalazł(a)', value: String(playerNick), inline: true }
                 ],
-                thumbnail: { url: `attachment://npc.gif` },
+                ...(fileObj ? { thumbnail: { url: `attachment://npc.gif` } } : {}),
                 footer: { text: 'Heroes on Discord • Margonem' },
                 timestamp: new Date().toISOString()
             }]
         }))
         const request = new XMLHttpRequest()
         request.open('POST', webhookUrl)
-        request.onload = function () { if (request.status < 200 || request.status >= 300) console.warn('Heroes on Discord: Discord odrzucił wiadomość, status ' + request.status, request.responseText) }
-        request.onerror = function () { console.warn('Heroes on Discord: błąd sieci przy wysyłaniu na webhook.') }
+        heroesWatchRequest(request, webhookUrl, 'Wysłano powiadomienie na Discorda.')
         request.send(data)
     }
 
 
+    const seenNpcSpawns = new Set()
     function handleNpcDetection(playerNick, npc, mapData)
     {
+        try { if (localStorage.getItem('mkHubHeroesEnabled') === '0') return } catch (error) {}
+        const mapKey = String(mapData?.id || mapData?.mapId || mapData?.mapid || mapData?.name || '')
+        const spawnKey = `${mapKey}|${npc?.id || npc?.id2 || `${npc?.nick || npc?.name || ''}:${npc?.x ?? ''}:${npc?.y ?? ''}`}`
+        if (seenNpcSpawns.has(spawnKey)) return
+        seenNpcSpawns.add(spawnKey)
+        if (seenNpcSpawns.size > 600) seenNpcSpawns.clear()
         if (isEventHero(npc) && settings.eventAlertsEnabled !== false && settings.webhookUrls.event)
         {
             const mapName = mapData?.name || mapData?.d?.name || 'Unknown map'
@@ -540,9 +579,17 @@
         return Object.keys(monsterNameAliases).some(name => normalize(name) === normalize(npc.nick))
     }
 
+    function isTitan(npc)
+    {
+        // In Margonem wt > 99 identifies titan-type NPCs. Keep alias checks as a fallback
+        // for payloads where the game omits wt or uses a different data revision.
+        const type = Number(npc?.wt)
+        return Number.isFinite(type) && type > 99
+    }
+
     function shouldTrackNpc(npc)
     {
-        return isHeros(npc) || isKnownColossus(npc) || isAdditionalNpcToSearch(npc) || hasKnownMonsterAlias(npc)
+        return isHeros(npc) || isTitan(npc) || isKnownColossus(npc) || isAdditionalNpcToSearch(npc) || hasKnownMonsterAlias(npc)
     }
 
     function isKnownColossus(npc)
@@ -551,6 +598,30 @@
         const colossusRoleNames = ['Drakolisz', 'Reuzen', 'Pająk', 'Kruk', 'Hydra', 'Ważka', 'Umibozu', 'Sopel', 'Regulus']
         return Object.entries(monsterNameAliases).some(([gameName, roleName]) =>
             colossusRoleNames.includes(roleName) && normalize(gameName) === normalize(npc.nick))
+    }
+
+    // Margonem emits NPCs in different shapes between interfaces and map transitions.
+    // Normalize single NPCs, wrapped records, and batches before applying our filters.
+    function extractNpcRecords(payload)
+    {
+        const found = []
+        const seen = new WeakSet()
+        const visit = value => {
+            if (!value || typeof value !== 'object' || seen.has(value)) return
+            seen.add(value)
+            if (Array.isArray(value)) { for (const item of value) visit(item); return }
+            if (value.d && typeof value.d === 'object') { visit(value.d); return }
+            if (value.npc && typeof value.npc === 'object') { visit(value.npc); return }
+            if (value.data && typeof value.data === 'object' && (value.data.nick || value.data.name)) { visit(value.data); return }
+            const nick = value.nick || value.name
+            if (nick) {
+                found.push(value.nick ? value : { ...value, nick: String(nick) })
+                return
+            }
+            for (const item of Object.values(value)) visit(item)
+        }
+        visit(payload)
+        return found
     }
 
     function closePopup()
@@ -816,6 +887,7 @@
                 name = settings.name
             }
             sendDiscordAlert(webhookUrl, name, npc, map.name, getServerName())
+                .catch(error => { console.warn('Heroes on Discord: błąd wysyłki.', error); heroesNotify('Błąd wysyłki na Discorda: ' + (error && error.message || error)) })
             closePopup()
         })
         buttonContainer.appendChild(yesButton)
@@ -903,7 +975,8 @@
 
     function showSetup()
     {
-        const inlineHost = document.getElementById('mk-discord-addon-slot')
+        const hubHost = typeof window.__mkHubDiscordHost === 'function' ? window.__mkHubDiscordHost() : null
+        const inlineHost = hubHost || document.getElementById('mk-discord-addon-slot')
         if (!inlineHost) return
         const existingSetup = document.querySelector('.heroes-discord__setup')
         if (existingSetup)
@@ -1066,6 +1139,31 @@
 
     window.__heroesDiscordOpenSettings = function () { showSetup() }
     window.__heroesDiscordCloseSettings = function (switchBack = true) { closeSetup(switchBack) }
+    window.__mkHubReadDiscordConfig = function () {
+        return {
+            webhookUrls: { heroes: settings.webhookUrls.heroes || '', colossi: settings.webhookUrls.colossi || '', titans: settings.webhookUrls.titans || '', event: settings.webhookUrls.event || '' },
+            name: settings.name || '', eventAlertsEnabled: settings.eventAlertsEnabled !== false,
+            roleMappings: { ...settings.roleMappings }
+        }
+    }
+    window.__mkHubSaveDiscordConfig = function (patch) {
+        if (!patch || typeof patch !== 'object') return false
+        if (patch.webhookUrls && typeof patch.webhookUrls === 'object') {
+            settings.webhookUrls = Object.fromEntries(['heroes','colossi','titans','event'].map(key => [key, String(patch.webhookUrls[key] || '').trim()]))
+            settings.webhookUrl = ''
+        }
+        if (typeof patch.name === 'string') settings.name = patch.name.trim()
+        if (typeof patch.eventAlertsEnabled === 'boolean') settings.eventAlertsEnabled = patch.eventAlertsEnabled
+        if (patch.roleMappings && typeof patch.roleMappings === 'object' && !Array.isArray(patch.roleMappings)) {
+            settings.roleMappings = Object.fromEntries(Object.entries(patch.roleMappings).map(([name,id]) => [String(name), String(id || '').replace(/\D/g, '')]))
+        }
+        try { localStorage.setItem('heroes-discord', JSON.stringify(settings)) } catch (error) { return false }
+        for (const key of ['heroes','colossi','titans','event']) if (webhookInputs[key]) webhookInputs[key].value = settings.webhookUrls[key] || ''
+        if (nameInput) nameInput.value = settings.name
+        if (roleMappingsInput) roleMappingsInput.value = JSON.stringify(settings.roleMappings, null, 2)
+        window.__heroesDiscordSetEventAlerts?.(settings.eventAlertsEnabled)
+        return true
+    }
 
     function getCookie(cookieName)
     {
@@ -1109,30 +1207,73 @@
             candidates.sort((a, b) => (a.getBoundingClientRect().width * a.getBoundingClientRect().height) - (b.getBoundingClientRect().width * b.getBoundingClientRect().height))
             return candidates[0] || null
         }
+        let cachedRow = null
+        let lastRowScan = 0
+        const scanRow = () => {
+            const items = []
+            for (const el of document.querySelectorAll('body *')) {
+                if (el === discordIcon || (el.closest && el.closest('#mk-hub'))) continue
+                const r = el.getBoundingClientRect()
+                if (r.width < 28 || r.width > 72 || r.height < 28 || r.height > 72 || Math.abs(r.width - r.height) > 8) continue
+                if (r.left < -1 || r.left > 420 || r.bottom < innerHeight - 220 || r.bottom > innerHeight + 2) continue
+                const s = getComputedStyle(el)
+                if (s.display === 'none' || s.visibility === 'hidden' || Number(s.opacity) === 0) continue
+                items.push({ el, r })
+            }
+            const outer = items.filter(a => !items.some(b => b !== a && b.el.contains(a.el) && Math.abs(b.r.width - a.r.width) < 4 && Math.abs(b.r.left - a.r.left) < 4))
+            const buckets = []
+            for (const item of outer) {
+                let bucket = buckets.find(list => Math.abs(list[0].r.top - item.r.top) <= 3 && Math.abs(list[0].r.width - item.r.width) <= 6)
+                if (!bucket) { bucket = []; buckets.push(bucket) }
+                bucket.push(item)
+            }
+            let best = null
+            for (const list of buckets) if (list.length >= 3 && (!best || list.length > best.length)) best = list
+            if (!best) return null
+            return best.sort((a, b) => a.r.left - b.r.left)
+        }
+        const applyRow = row => {
+            const last = row[row.length - 1]
+            const r = last.el.getBoundingClientRect()
+            const size = Math.round(r.width)
+            const prev = row.length > 1 ? row[row.length - 2].r : null
+            const gap = prev ? Math.max(2, Math.min(12, Math.round(last.r.left - prev.right))) : 4
+            if (r.right + gap + size > innerWidth) return false
+            const cs = getComputedStyle(last.el)
+            const put = (prop, value) => discordIcon.style.setProperty(prop, value, 'important')
+            put('width', size + 'px'); put('height', size + 'px')
+            put('left', Math.round(r.right + gap) + 'px'); put('top', Math.round(r.top) + 'px'); put('bottom', 'auto')
+            put('padding', Math.max(3, Math.round(size * 0.1)) + 'px')
+            if (cs.borderTopStyle !== 'none' && parseFloat(cs.borderTopWidth) > 0) { put('border-style', cs.borderTopStyle); put('border-width', cs.borderTopWidth); put('border-color', cs.borderTopColor) }
+            put('border-radius', cs.borderTopLeftRadius)
+            if (cs.boxShadow && cs.boxShadow !== 'none') put('box-shadow', cs.boxShadow)
+            const bg = cs.backgroundColor
+            if (bg && bg !== 'rgba(0, 0, 0, 0)' && bg !== 'transparent') put('background', bg)
+            return true
+        }
+        const placeInSlotRow = () => {
+            const now = Date.now()
+            const last = cachedRow && cachedRow[cachedRow.length - 1]
+            if (!last || !last.el.isConnected || last.el.getBoundingClientRect().width < 20 || now - lastRowScan > 8000) { cachedRow = scanRow(); lastRowScan = now }
+            else cachedRow.forEach(item => { item.r = item.el.getBoundingClientRect() })
+            return !!cachedRow && applyRow(cachedRow)
+        }
         const place = () => {
             let left = 230
             let bottom = 6
-            let savedPosition = null
-            try { savedPosition = JSON.parse(localStorage.getItem(iconPositionKey) || 'null') } catch (error) {}
-            if (savedPosition && Number.isFinite(savedPosition.left) && Number.isFinite(savedPosition.top)) {
-                const restoredLeft = Math.max(0, Math.min(innerWidth - discordIcon.offsetWidth, savedPosition.left))
-                const restoredTop = Math.max(0, Math.min(innerHeight - discordIcon.offsetHeight, savedPosition.top))
-                discordIcon.style.setProperty('left', restoredLeft + 'px', 'important')
-                discordIcon.style.setProperty('top', restoredTop + 'px', 'important')
-                discordIcon.style.setProperty('bottom', 'auto', 'important')
-                return
-            }
+            if (placeInSlotRow()) return
             const strip = findStrip()
             if (strip) {
                 const r = strip.getBoundingClientRect()
                 left = Math.round(r.right + 6)
-                bottom = Math.max(4, Math.round(innerHeight - r.bottom + 3))
+                bottom = Math.max(4, Math.round(innerHeight - r.bottom + Math.max(0, (r.height - 46) / 2)))
             }
             discordIcon.style.setProperty('left', Math.max(4, Math.min(left, innerWidth - 44)) + 'px', 'important')
             discordIcon.style.setProperty('bottom', bottom + 'px', 'important')
         }
         if (!discordIcon.isConnected) document.body.appendChild(discordIcon)
         place()
+        discordIcon.__place = place
         if (!discordIcon.dataset.positionTracking) {
             discordIcon.dataset.positionTracking = '1'
             window.addEventListener('resize', place)
@@ -1168,6 +1309,7 @@
             icon.style.setProperty('display', shouldShow ? 'block' : 'none', 'important')
         }
         if (launcherEnabled && !loginScreen && !discordIcon.isConnected) appendDiscordIcon()
+        else if (launcherEnabled && !loginScreen && typeof discordIcon.__place === 'function') discordIcon.__place()
     }
 
     let discordIconSyncTimer = null
@@ -1179,7 +1321,7 @@
         }, 150)
     })
     discordIconObserver.observe(document.documentElement, { childList: true, subtree: true })
-    setInterval(syncDiscordLauncherVisibility, 5000)
+    setInterval(syncDiscordLauncherVisibility, 1500)
     syncDiscordLauncherVisibility()
 
     const colossusCallMapKey = 'heroes-discord-colossus-map-roles'
@@ -1205,8 +1347,8 @@
     {
         try
         {
-            if (getCookie('interface') === 'ni' && typeof Engine !== 'undefined' && Engine.map && Engine.map.d) return Engine.map.d
-            if (typeof map !== 'undefined' && map) return map
+            if (typeof Engine !== 'undefined' && Engine.map) return Engine.map.d || Engine.map
+            if (typeof map !== 'undefined' && map) return map.d || map
         }
         catch (error) {}
         return null
@@ -1278,8 +1420,7 @@
         body.append('payload_json', JSON.stringify(payload))
         const request = new XMLHttpRequest()
         request.open('POST', hook)
-        request.onload = function () { if (request.status < 200 || request.status >= 300) console.warn('Heroes on Discord: Discord odrzucił wezwanie na kolosa, status ' + request.status, request.responseText) }
-        request.onerror = function () { console.warn('Heroes on Discord: błąd sieci przy wezwaniu na kolosa.') }
+        heroesWatchRequest(request, hook, 'Wysłano wezwanie na kolosa na Discorda.')
         request.send(body)
     }
 
@@ -1426,6 +1567,22 @@
         document.getElementById('heroes-colossus-call')?.remove()
     })
 
+    function scanCurrentMapNpcs()
+    {
+        const mapData = getCurrentMapData()
+        if (!mapData) return
+        const sources = []
+        try { if (typeof Engine !== 'undefined' && typeof Engine.npcs?.check === 'function') sources.push(Engine.npcs.check()) } catch (error) {}
+        try { if (typeof g !== 'undefined' && g?.npc) sources.push(g.npc) } catch (error) {}
+        for (const source of sources)
+        {
+            for (const npc of extractNpcRecords(source))
+            {
+                if (shouldTrackNpc(npc)) handleNpcDetection((typeof Engine !== 'undefined' && Engine.hero?.nick) || (typeof hero !== 'undefined' && hero?.nick) || '', npc, mapData)
+            }
+        }
+    }
+
     loadSettings()
     let hooksInstalled = false
 
@@ -1443,20 +1600,18 @@
             {
                 if (!hooksInstalled)
                 {
-                    API.addCallbackToEvent('newNpc', function (npc)
+                    API.addCallbackToEvent('newNpc', function (payload)
                     {
-                        // Detection is only an add-on side effect. Never let it
-                        // interrupt Margonem's own NPC creation/rendering flow.
+                        // Handle both wrapped and direct NPC payloads used by different game interfaces.
                         try
                         {
-                            if (npc && npc.d && shouldTrackNpc(npc.d))
-                            {
-                                handleNpcDetection(Engine.hero.nick, npc.d, Engine.map.d)
-                            }
+                            for (const npc of extractNpcRecords(payload))
+                                if (shouldTrackNpc(npc)) handleNpcDetection(Engine.hero?.nick || '', npc, Engine.map?.d || Engine.map)
                         }
                         catch (error) { console.warn('Heroes on Discord: błąd wykrywania NPC.', error) }
                     })
                     hooksInstalled = true
+                    setTimeout(scanCurrentMapNpcs, 0)
                 }
                 launcherEnabled = true
                 appendDiscordIcon()
@@ -1477,22 +1632,21 @@
                 newNpc = function (dane)
                 {
                     // Snapshot the incoming NPCs before the game can mutate the payload.
-                    const npcsToTrack = dane && typeof dane === 'object'
-                        ? Object.keys(dane).map(id => { const npc = dane[id]; return npc && typeof npc === 'object' ? { ...npc } : npc })
-                        : []
+                    const npcsToTrack = extractNpcRecords(dane).map(npc => ({ ...npc }))
                     // Always let the game create NPCs, even if add-on detection fails.
                     const result = oldNewNpc.apply(this, arguments)
                     try
                     {
                         for (const npc of npcsToTrack)
                         {
-                            if (npc && shouldTrackNpc(npc)) handleNpcDetection(hero.nick, npc, map)
+                            if (shouldTrackNpc(npc)) handleNpcDetection(hero?.nick || '', npc, map)
                         }
                     }
                     catch (error) { console.warn('Heroes on Discord: błąd wykrywania NPC.', error) }
                     return result
                 }
                 hooksInstalled = true
+                setTimeout(scanCurrentMapNpcs, 0)
             }
             launcherEnabled = true
             appendDiscordIcon()
@@ -1500,7 +1654,7 @@
         }
     }
     start()
-    setInterval(checkColossusVestibule, 1000)
+    setInterval(() => { checkColossusVestibule(); scanCurrentMapNpcs() }, 1500)
 })([
     'Giant Smoldering Light',
     'Giant Shieldbell',
@@ -1847,6 +2001,10 @@
 
         configBtn = document.createElement('button'); configBtn.className = 'mk-tool-btn'; configBtn.textContent = '⚙';
         configBtn.onclick = () => {
+            if (typeof window.__mkHubOpenRangesSettings === 'function') {
+                window.__mkHubOpenRangesSettings();
+                return;
+            }
             configMode = !configMode; configBtn.classList.toggle('active', configMode);
             bodyWrapper.style.display = configMode ? 'none' : 'block';
             configWrapper.style.display = configMode ? 'block' : 'none';
@@ -2105,16 +2263,47 @@
             activeCfg.dotRedRange = redInp.value || '0-6'; activeCfg.dotYellowRange = yellowInp.value || '7-9'; activeCfg.dotGreenRange = greenInp.value || '10-99';
             activeCfg.msgEnabled = toggleInp.checked; activeCfg.msgTemplate = templateInp.value;
             saveState();
-            configMode = false;
-            configBtn.classList.remove('active');
-            bodyWrapper.style.display = 'block';
-            configWrapper.style.display = 'none';
+            if (window.__mkHubRangesConfigIsMounted?.()) {
+                openConfig();
+                configWrapper.style.display = 'block';
+            } else {
+                configMode = false;
+                configBtn.classList.remove('active');
+                bodyWrapper.style.display = 'block';
+                configWrapper.style.display = 'none';
+            }
             renderData();
         };
         actions.append(saveBtn);
 
         configWrapper.appendChild(dotSection); configWrapper.appendChild(actions);
     }
+
+    // The manager hosts the existing configuration controls so their original handlers remain intact.
+    window.__mkHubMountRangesConfig = host => {
+        if (!panel || !host) return false;
+        if (!configMode) {
+            configMode = true;
+            configBtn.classList.add('active');
+            bodyWrapper.style.display = 'none';
+            configWrapper.style.display = 'block';
+            openConfig();
+        }
+        host.appendChild(configWrapper);
+        configWrapper.style.display = 'block';
+        return true;
+    };
+    window.__mkHubUnmountRangesConfig = () => {
+        if (!panel || !configWrapper) return;
+        if (configMode) {
+            configMode = false;
+            configBtn.classList.remove('active');
+            bodyWrapper.style.display = 'block';
+            configWrapper.style.display = 'none';
+        }
+        if (configWrapper.parentElement !== panel) panel.appendChild(configWrapper);
+    };
+    window.__mkHubRangesConfigIsMounted = () => !!configWrapper && !!configWrapper.closest('#mk-hub');
 
     function startMessage(nick) { const input = document.querySelector('.chat-tpl input'); if (input) { input.value = `@${nick.replace(/ /g, '_')} `; input.focus(); } }
 
@@ -2447,7 +2636,7 @@
     if(event.repeat||event.target?.closest?.('input,textarea,select,[contenteditable="true"]'))return;
     const parts=toggleShortcut.split('+'),key=parts.pop(),mods=new Set(parts);
     if(event.key.toLocaleLowerCase()!==key.toLocaleLowerCase()||event.ctrlKey!==mods.has('Ctrl')||event.altKey!==mods.has('Alt')||event.shiftKey!==mods.has('Shift')||event.metaKey!==mods.has('Meta'))return;
-    event.preventDefault();event.stopImmediatePropagation();window.__heroesDiscordTogglePanel?.();
+    event.preventDefault();event.stopImmediatePropagation();(window.__mkHubToggle||window.__heroesDiscordTogglePanel)?.();
   },true);
 
   const style=document.createElement('style');
@@ -2695,8 +2884,9 @@
   };
   const setLootEnabled=value=>{enabled=!!value;try{localStorage.setItem(ENABLED_KEY,enabled?'1':'0')}catch(error){}if(settingsStatus)settingsStatus.textContent=enabled?'Panel łupu przy czacie jest włączony.':'Panel łupu przy czacie jest wyłączony i ustawienie zostanie zapamiętane.';if(settingCheckbox)settingCheckbox.checked=enabled;updateChatPanel()};
 
-  const applyBackground=(preset,notify=true)=>{if(!BACKGROUND_PRESETS[preset])return;backgroundPreset=preset;const gradient=BACKGROUND_PRESETS[preset].value;for(const doc of getDocs()){for(const selector of [`#${PANEL_ID}`,`#${CHAT_PANEL_ID}`,'#heroes-colossus-call','#heroes-popup','.heroes-discord__setup'])for(const el of doc.querySelectorAll(selector))el.style.setProperty('background',gradient,'important');for(const el of doc.querySelectorAll('.heroes-discord__background'))el.style.setProperty('background','transparent','important')}try{localStorage.setItem(BACKGROUND_KEY,preset)}catch(error){}if(backgroundPicker)backgroundPicker.value=preset;if(notify&&themeStatus)themeStatus.textContent=uiLanguage==='en'?'Background saved.':'Tło dodatku zapisane.'};
-  const applyTheme=color=>{if(!/^#[0-9a-f]{6}$/i.test(color||''))return;themeColor=color;for(const doc of getDocs()){doc.documentElement?.style.setProperty('--mkhd-addon-theme',themeColor);for(const id of [PANEL_ID,CHAT_PANEL_ID])doc.getElementById(id)?.style.setProperty('--mkhd-addon-theme',themeColor)}try{localStorage.setItem(THEME_KEY,themeColor)}catch(error){}if(themePicker)themePicker.value=themeColor;if(themeStatus)themeStatus.textContent=`Kolor zestawu zapisany: ${themeColor}.`};
+  const applyBackground=(preset,notify=true)=>{if(!BACKGROUND_PRESETS[preset])return;backgroundPreset=preset;const gradient=BACKGROUND_PRESETS[preset].value;for(const doc of getDocs()){for(const selector of [`#${PANEL_ID}`,`#${CHAT_PANEL_ID}`,'#mk-hub','#heroes-colossus-call','#heroes-popup','.heroes-discord__setup'])for(const el of doc.querySelectorAll(selector))el.style.setProperty('background',gradient,'important');for(const el of doc.querySelectorAll('.heroes-discord__background'))el.style.setProperty('background','transparent','important')}try{localStorage.setItem(BACKGROUND_KEY,preset)}catch(error){}window.__mkPersistAddonSettings?.();if(backgroundPicker)backgroundPicker.value=preset;if(notify&&themeStatus)themeStatus.textContent=uiLanguage==='en'?'Background saved.':uiLanguage==='el'?'Το φόντο αποθηκεύτηκε.':'Tło dodatku zapisane.'};
+  const applyTheme=color=>{if(!/^#[0-9a-f]{6}$/i.test(color||''))return;themeColor=color;for(const doc of getDocs()){doc.documentElement?.style.setProperty('--mkhd-addon-theme',themeColor);for(const el of doc.querySelectorAll(`#${PANEL_ID},#${CHAT_PANEL_ID},#mk-hub,#heroes-colossus-call,#heroes-popup,.heroes-discord__setup,.mk-leg-settings`))el.style.setProperty('--mkhd-addon-theme',themeColor)}try{localStorage.setItem(THEME_KEY,themeColor)}catch(error){}window.__mkPersistAddonSettings?.();if(themePicker)themePicker.value=themeColor;if(themeStatus)themeStatus.textContent=`Kolor zestawu zapisany: ${themeColor}.`};
+  window.__mkApplyAddonAppearance=()=>{applyTheme(themeColor);applyBackground(backgroundPreset,false)};
   const setColossusPromptEnabled=value=>{colossusPromptEnabled=!!value;try{localStorage.setItem(COLOSSUS_PROMPT_ENABLED_KEY,colossusPromptEnabled?'1':'0')}catch(error){}if(colossusPromptCheckbox)colossusPromptCheckbox.checked=colossusPromptEnabled;window.dispatchEvent(new CustomEvent('mk-colossus-prompt-toggle',{detail:{enabled:colossusPromptEnabled}}))};
   const setOnlineRangesEnabled=value=>{onlineRangesEnabled=!!value;try{localStorage.setItem('mkOnlineRangesEnabled',onlineRangesEnabled?'1':'0')}catch(error){}if(onlineRangesCheckbox)onlineRangesCheckbox.checked=onlineRangesEnabled;window.dispatchEvent(new CustomEvent('mk-online-ranges-toggle',{detail:{enabled:onlineRangesEnabled}}))};
   const leaveSettings=()=>{
@@ -3433,6 +3623,7 @@
 
   function onData(data) {
     if (!data || !data.loot || !data.item) return;
+    try { if (localStorage.getItem('mkHubNotifierEnabled') === '0') return; } catch (e) {}
     const legs = Object.values(data.item).filter(i => /rarity=legendary/.test(i.stat || ''));
     if (!legs.length) return;
     console.log('[notyfikator] legenda:', legs.map(i => i.name));
@@ -3556,4 +3747,544 @@
   const uiObserver=new MutationObserver(records=>{if(records.some(record=>chatMutation([...record.addedNodes,...record.removedNodes])))scheduleRefresh()});
   uiObserver.observe(document.documentElement,{childList:true,subtree:true});
   tick();applyBackground(backgroundPreset,false);setInterval(tick,3000);
+})();
+
+/* ===================== MENU DODATKÓW (hub) ===================== */
+;(function () {
+  'use strict'
+  if (window.__mkHubInstalled) return
+  window.__mkHubInstalled = true
+
+  const lsGet = key => { try { return localStorage.getItem(key) } catch (error) { return null } }
+  const lsSet = (key, value) => { try { localStorage.setItem(key, value) } catch (error) {} }
+  const icon = path => '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">' + path + '</svg>'
+  const GEAR = '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="8" cy="8" r="2.2"/><path d="M8 1.5v2M8 12.5v2M1.5 8h2M12.5 8h2M3.4 3.4l1.4 1.4M11.2 11.2l1.4 1.4M12.6 3.4l-1.4 1.4M4.8 11.2l-1.4 1.4"/></svg>'
+
+  // view = widok w tym oknie, który otwiera zębatka; key = klucz localStorage z włączeniem
+  const ADDONS = [
+    { id: 'ranges', name: 'PRZEDZIAŁY ONLINE', view: 'ranges', key: 'mkOnlineRangesEnabled', checkbox: '.mk-online-ranges-toggle', event: 'mk-online-ranges-toggle',
+      desc: 'Pokazuje graczy online w przedziałach poziomów i wysyła zbiórki na Discorda.',
+      icon: icon('<path d="M2 13V9M6 13V5M10 13V7M14 13V3"/>') },
+    { id: 'heroes', name: 'HEROES ON DISCORD', view: 'discord', key: 'mkHubHeroesEnabled',
+      desc: 'Powiadomienia o herosach, tytanach i kolosach na Twoje kanały.',
+      icon: icon('<path d="M3 4h10v6H8l-3 3v-3H3z"/>') },
+    { id: 'notifier', name: 'NOTYFIKATOR LEGEND', view: 'notifier', key: 'mkHubNotifierEnabled',
+      desc: 'Efekt, dźwięk i alert po zdobyciu legendarnego przedmiotu.',
+      icon: icon('<path d="M8 2l1.8 3.8 4.2.6-3 3 .7 4.1L8 11.4 4.3 13.5 5 9.4l-3-3 4.2-.6z"/>') },
+    { id: 'loot', name: 'ŁUPY TYTANÓW', view: 'loot', key: 'mkTitanLootEnabled_v2', checkbox: '#mk-titan-loot-settings input[type="checkbox"]',
+      desc: 'Panel wezwań na łup legendarnych tytanów, osadzony przy czacie.',
+      icon: icon('<path d="M3 6h10v7H3zM2 6l1.5-3h9L14 6M8 6v7"/>') },
+    { id: 'colossus', name: 'WEZWANIE NA KOLOSA', view: 'colossus', key: 'mkColossusGroupPromptEnabled', checkbox: '.mk-colossus-prompt-toggle', event: 'mk-colossus-prompt-toggle',
+      desc: 'Okno „Zbieramy grupę na kolosa?” w przedsionkach kolosów.',
+      icon: icon('<circle cx="5.5" cy="6" r="2"/><circle cx="11" cy="6.5" r="1.6"/><path d="M2 13c.4-2 1.8-3 3.5-3s3.1 1 3.5 3M10 10.2c1.8-.3 3.5.5 4 2.8"/>') }
+  ]
+  const byId = id => ADDONS.find(addon => addon.id === id)
+  const isOn = addon => lsGet(addon.key) !== '0'
+
+  function setOn(addon, on) {
+    const box = addon.checkbox ? document.querySelector(addon.checkbox) : null
+    if (box && box.checked !== on) box.click()
+    if (lsGet(addon.key) !== (on ? '1' : '0')) {
+      lsSet(addon.key, on ? '1' : '0')
+      if (addon.event) window.dispatchEvent(new CustomEvent(addon.event, { detail: { enabled: on } }))
+    }
+  }
+
+  const panelEl = () => document.getElementById('mk-clan-ranges-panel')
+  const notify = text => { try { if (typeof window.message === 'function') window.message(text) } catch (error) {} }
+
+  /* ---------- styl ---------- */
+  const style = document.createElement('style')
+  style.id = 'mk-hub-style'
+  style.textContent = [
+    // stara pozioma lista zakładek jest zastąpiona tym menu
+    '#mk-clan-ranges-panel .mk-addon-tabs{display:none!important}',
+    '#mk-hub{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:2147482900;width:min(760px,calc(100vw - 16px));height:min(470px,calc(100vh - 16px));display:none;flex-direction:column;border:2px solid rgba(144,123,255,.32);border-radius:14px;background:linear-gradient(180deg,#221241,#0d081f);box-shadow:0 18px 48px rgba(0,0,0,.6);color:#f3f3ff;font:13px/1.4 Inter,"Segoe UI",Arial,sans-serif;overflow:hidden}',
+    '#mk-hub.open{display:flex}',
+    '#mk-hub *{box-sizing:border-box}',
+    '#mk-hub button,#mk-hub input,#mk-hub select{font-family:inherit}',
+    '#mk-hub .hd{display:flex;align-items:center;height:40px;padding:0 12px;border-bottom:1px solid rgba(255,255,255,.08);flex:none;cursor:grab;user-select:none}',
+    '#mk-hub .hd:active{cursor:grabbing}',
+    '#mk-hub .hd-t{flex:1;text-align:center;font-size:13px;font-weight:700;letter-spacing:.04em;color:#c9c1ff}',
+    '#mk-hub .x{width:26px;height:26px;border:1px solid rgba(255,255,255,.14);border-radius:7px;background:rgba(255,255,255,.06);color:#e7e3ff;font-size:16px;line-height:1;padding:0;cursor:pointer}',
+    '#mk-hub .bd{display:flex;gap:12px;padding:12px;flex:1;min-height:0}',
+    '#mk-hub .sb{display:flex;flex-direction:column;gap:8px;width:168px;flex:none}',
+    '#mk-hub .nav{display:flex;align-items:center;gap:10px;width:100%;min-height:40px;padding:0 12px;border:1px solid rgba(144,123,255,.22);border-radius:9px;background:rgba(255,255,255,.04);color:#d9d4f5;font-size:13px;font-weight:600;text-align:left;cursor:pointer}',
+    '#mk-hub .nav:hover{background:rgba(255,255,255,.09)}',
+    '#mk-hub .nav.on{background:rgba(99,102,241,.34);border-color:rgba(165,180,252,.7);color:#fff}',
+    '#mk-hub .sep{height:1px;background:rgba(255,255,255,.1);margin:4px 0}',
+    '#mk-hub .mn{display:flex;flex-direction:column;gap:10px;flex:1;min-width:0;min-height:0}',
+    '#mk-hub .sr{display:flex;gap:8px;align-items:center;flex:none}',
+    '#mk-hub .q{flex:1;height:34px;padding:0 12px;border:1px solid rgba(144,123,255,.28);border-radius:9px;background:rgba(10,7,24,.72);color:#f3f3ff;font-size:13px;text-align:center;outline:none}',
+    '#mk-hub .q:focus{border-color:#907bff;box-shadow:0 0 0 2px rgba(144,123,255,.2)}',
+    '#mk-hub .cnt{min-width:34px;height:34px;display:flex;align-items:center;justify-content:center;border:1px solid rgba(165,180,252,.5);border-radius:9px;background:rgba(99,102,241,.28);font-weight:700}',
+    '#mk-hub .gr{display:grid;grid-template-columns:1fr 1fr;gap:10px;overflow-y:auto;align-content:start;min-height:0;padding-right:2px}',
+    '#mk-hub .ct{display:none;flex:1;min-height:0;overflow-y:auto;padding-right:2px}',
+    '#mk-hub .mk-hub-ranges-config .mk-config{display:block!important;max-height:none;overflow:visible;padding:10px;border:1px solid rgba(144,123,255,.22);border-radius:10px;background:rgba(8,8,25,.42)}',
+    '#mk-hub .mk-hub-ranges-config .mk-config-row{gap:6px;margin-bottom:7px}',
+    '#mk-hub .mk-hub-ranges-config .mk-config-input{min-height:30px;padding:5px 8px;border-radius:7px;font-size:12px}',
+    '#mk-hub .mk-hub-ranges-config .mk-config-btn{min-height:30px;padding:5px 10px;border-radius:7px;font-size:12px}',
+    '#mk-hub .mk-hub-ranges-config .mk-config-adv{padding:9px;border-radius:8px}',
+    '#mk-hub .mk-hub-ranges-config .mk-config-actions{gap:8px}',
+    '#mk-hub .card{display:flex;flex-direction:column;gap:6px;padding:12px;border:1px solid rgba(144,123,255,.26);border-radius:10px;background:rgba(255,255,255,.045)}',
+    '#mk-hub .card.off{background:rgba(255,255,255,.02);border-color:rgba(144,123,255,.14)}',
+    '#mk-hub .top{display:flex;align-items:center;gap:10px}',
+    '#mk-hub .ic{display:flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:8px;background:#2b1f5c;color:#c9c1ff;flex:none}',
+    '#mk-hub .off .ic{background:#1f1a3d;color:#8f89b3}',
+    '#mk-hub .nm{flex:1;font-size:13px;font-weight:700;letter-spacing:.02em;color:#f3f3ff}',
+    '#mk-hub .ds{margin:0;font-size:11.5px;line-height:1.45;color:#b4adda}',
+    '#mk-hub .off .nm,#mk-hub .off .ds{color:#8f89b3}',
+    '#mk-hub .gear{width:28px;height:28px;border:1px solid rgba(144,123,255,.3);border-radius:7px;background:rgba(255,255,255,.05);color:#d9d4f5;display:flex;align-items:center;justify-content:center;padding:0;cursor:pointer}',
+    '#mk-hub .gear:hover{background:rgba(255,255,255,.12)}',
+    '#mk-hub .tg{position:relative;width:34px;height:20px;border:0;border-radius:10px;background:#4f46e5;padding:0;flex:none;cursor:pointer}',
+    '#mk-hub .tg:after{content:"";position:absolute;top:3px;left:17px;width:14px;height:14px;border-radius:50%;background:#fff}',
+    '#mk-hub .tg.o{background:#3a3560}#mk-hub .tg.o:after{left:3px;background:#a7a0c9}',
+    '#mk-hub .empty,#mk-hub .info{color:#b4adda;font-size:12.5px;line-height:1.55;padding:6px 2px}',
+    '#mk-hub .info h3,#mk-hub .sec h3{margin:0 0 8px;font-size:14px;color:#f3f3ff}#mk-hub .info p{margin:0 0 8px}',
+    '#mk-hub .sec{display:flex;flex-direction:column;gap:10px;padding:2px}',
+    '#mk-hub .row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 12px;border:1px solid rgba(144,123,255,.24);border-radius:10px;background:rgba(255,255,255,.045);color:#e7e3ff;font-size:13px}',
+    '#mk-hub .row select{min-width:130px;height:30px;padding:0 8px;border:1px solid rgba(144,123,255,.35);border-radius:7px;background:rgba(10,7,24,.8);color:#f3f3ff}',
+    '#mk-hub .row input[type=color]{width:46px;height:28px;padding:0;border:1px solid rgba(144,123,255,.35);border-radius:7px;background:transparent;cursor:pointer}',
+    '#mk-hub .row button.sc{min-width:130px;height:30px;padding:0 10px;border:1px solid rgba(144,123,255,.35);border-radius:7px;background:rgba(99,102,241,.25);color:#fff;cursor:pointer}',
+    '#mk-hub .field{display:flex;flex-direction:column;gap:5px;padding:9px 11px;border:1px solid rgba(144,123,255,.24);border-radius:10px;background:rgba(255,255,255,.045);color:#e7e3ff;font-size:12px}',
+    '#mk-hub .field input,#mk-hub .field textarea{width:100%;min-height:34px;padding:8px 10px;border:1px solid rgba(144,123,255,.32);border-radius:7px;background:rgba(10,7,24,.72);color:#f3f3ff;outline:none}',
+    '#mk-hub .field textarea{min-height:220px;resize:vertical;font:12px/1.45 Consolas,monospace}',
+    '#mk-hub .field input:focus,#mk-hub .field textarea:focus{border-color:#907bff;box-shadow:0 0 0 2px rgba(144,123,255,.16)}',
+    '#mk-hub .actions{display:flex;justify-content:flex-end;gap:8px}',
+    '#mk-hub .actions .sc{height:34px;padding:0 14px;border:1px solid rgba(144,123,255,.38);border-radius:8px;background:#5745d8;color:#fff;font-weight:700;cursor:pointer}',
+    '#mk-hub .save-status{min-height:18px;color:#86efac;font-size:11px}',
+    '#mk-hub .mk-settings-save-row{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:8px;padding-top:10px;border-top:1px solid rgba(255,255,255,.1)}',
+    '#mk-hub .mk-settings-save-row .sc{height:34px;flex:none;padding:0 14px;border:1px solid color-mix(in srgb,var(--mkhd-addon-theme) 70%,#fff);border-radius:8px;background:color-mix(in srgb,var(--mkhd-addon-theme) 78%,#111827);color:#fff;font-weight:700;cursor:pointer;transition:filter .15s,transform .15s}',
+    '#mk-hub .mk-settings-save-row .sc:hover{filter:brightness(1.14);transform:translateY(-1px)}',
+    '#mk-hub .mk-settings-save-row .save-status{flex:1;text-align:right}',
+    '#mk-hub .hint{margin:0;font-size:11.5px;line-height:1.45;color:#b4adda}',
+    '#mk-hub .heroes-discord__setup--inline .heroes-discord__background{max-height:none!important;overflow:visible!important}',
+    '#mk-hub .mk-leg-settings{margin:0}',
+    '@media(max-width:640px){#mk-hub .sb{width:46px}#mk-hub .nav{padding:0;justify-content:center}#mk-hub .nav span{display:none}#mk-hub .gr{grid-template-columns:1fr}}'
+  ].join('\n')
+  document.head.appendChild(style)
+  const themeStyle = document.createElement('style')
+  themeStyle.id = 'mk-hub-theme-style'
+  themeStyle.textContent = `
+    #mk-hub{--mkhd-addon-theme:#6366f1;border-color:color-mix(in srgb,var(--mkhd-addon-theme) 48%,#20243a);box-shadow:0 18px 48px rgba(0,0,0,.6),0 0 0 1px color-mix(in srgb,var(--mkhd-addon-theme) 16%,transparent)}
+    #mk-hub .hd-t{color:color-mix(in srgb,var(--mkhd-addon-theme) 55%,#fff)}
+    #mk-hub .nav,#mk-hub .q,#mk-hub .card,#mk-hub .gear,#mk-hub .row,#mk-hub .field{border-color:color-mix(in srgb,var(--mkhd-addon-theme) 26%,rgba(255,255,255,.1))}
+    #mk-hub .nav.on{background:color-mix(in srgb,var(--mkhd-addon-theme) 34%,#111827);border-color:color-mix(in srgb,var(--mkhd-addon-theme) 72%,#cbd5e1)}
+    #mk-hub .q:focus,#mk-hub .field input:focus,#mk-hub .field textarea:focus{border-color:var(--mkhd-addon-theme);box-shadow:0 0 0 2px color-mix(in srgb,var(--mkhd-addon-theme) 24%,transparent)}
+    #mk-hub .cnt{background:color-mix(in srgb,var(--mkhd-addon-theme) 28%,#111827);border-color:color-mix(in srgb,var(--mkhd-addon-theme) 58%,#cbd5e1)}
+    #mk-hub .ic{background:color-mix(in srgb,var(--mkhd-addon-theme) 34%,#111827);color:color-mix(in srgb,var(--mkhd-addon-theme) 55%,#fff)}
+    #mk-hub .gear,#mk-hub .row select,#mk-hub .row input[type=color],#mk-hub .field input,#mk-hub .field textarea{border-color:color-mix(in srgb,var(--mkhd-addon-theme) 38%,rgba(255,255,255,.12))}
+    #mk-hub .tg:not(.o){background:var(--mkhd-addon-theme)}
+    #mk-hub .actions .sc{background:color-mix(in srgb,var(--mkhd-addon-theme) 78%,#111827);border-color:color-mix(in srgb,var(--mkhd-addon-theme) 68%,#fff)}
+  `
+  document.head.appendChild(themeStyle)
+
+  /* ---------- okno ---------- */
+  let root = null, grid = null, content = null, counter = null, search = null, searchRow = null
+  let view = 'addons', roleFocus = false, navButtons = [], lookObserver = null
+
+  const HUB_POSITION_KEY = 'mkHubWindowPositionV1'
+  function restoreHubPosition() {
+    if (!root) return
+    let saved = null
+    try { saved = JSON.parse(lsGet(HUB_POSITION_KEY) || 'null') } catch (error) {}
+    if (saved && Number.isFinite(saved.left) && Number.isFinite(saved.top)) {
+      root.style.transform = 'none'
+      root.style.left = saved.left + 'px'
+      root.style.top = saved.top + 'px'
+      root.dataset.userPositioned = '1'
+    } else {
+      root.style.left = '50%'
+      root.style.top = '50%'
+      root.style.transform = 'translate(-50%,-50%)'
+      delete root.dataset.userPositioned
+    }
+  }
+  function clampHubToViewport() {
+    if (!root || !root.classList.contains('open') || root.dataset.userPositioned !== '1') return
+    const rect = root.getBoundingClientRect()
+    const margin = 8
+    root.style.left = Math.max(margin, Math.min(rect.left, innerWidth - rect.width - margin)) + 'px'
+    root.style.top = Math.max(margin, Math.min(rect.top, innerHeight - rect.height - margin)) + 'px'
+  }
+  window.addEventListener('resize', clampHubToViewport)
+
+  const NAV = [
+    { id: 'addons', label: 'Dodatki', icon: icon('<rect x="2" y="2" width="5" height="5" rx="1"/><rect x="9" y="2" width="5" height="5" rx="1"/><rect x="2" y="9" width="5" height="5" rx="1"/><rect x="9" y="9" width="5" height="5" rx="1"/>') },
+    { id: 'webhooks', label: 'Webhooki', icon: icon('<path d="M6 10l4-4M5 7L3.5 8.5a2.5 2.5 0 003.5 3.5L8.5 10.5M11 9l1.5-1.5A2.5 2.5 0 009 4L7.5 5.5"/>') },
+    { id: 'roles', label: 'Role i pingi', icon: icon('<circle cx="8" cy="5.5" r="2.5"/><path d="M3 13.5c.6-2.4 2.5-3.5 5-3.5s4.4 1.1 5 3.5"/>') },
+    { id: 'look', label: 'Wygląd i ustawienia', icon: icon('<circle cx="8" cy="8" r="2.2"/><path d="M8 1.5v2M8 12.5v2M1.5 8h2M12.5 8h2"/>') },
+    { sep: true },
+    { id: 'info', label: 'Informacje', icon: icon('<circle cx="8" cy="8" r="6"/><path d="M8 7.2V11M8 5v.1"/>') }
+  ]
+
+  function build() {
+    root = document.createElement('div')
+    root.id = 'mk-hub'
+    root.setAttribute('role', 'dialog')
+    root.setAttribute('aria-label', 'Menu dodatków')
+    root.innerHTML = '<div class="hd"><div class="hd-t">Heroes on Discord · Dodatki</div><button class="x" type="button" aria-label="Zamknij">×</button></div>' +
+      '<div class="bd"><div class="sb"></div><div class="mn"><div class="sr"><input class="q" type="text" aria-label="Szukaj dodatku" placeholder="Szukaj dodatku..."><div class="cnt" aria-label="Włączone dodatki"></div></div><div class="gr"></div><div class="ct"></div></div></div>'
+    const sidebar = root.querySelector('.sb')
+    for (const item of NAV) {
+      if (item.sep) { const sep = document.createElement('div'); sep.className = 'sep'; sidebar.appendChild(sep); continue }
+      const button = document.createElement('button')
+      button.type = 'button'
+      button.className = 'nav'
+      button.dataset.nav = item.id
+      button.title = item.label
+      button.innerHTML = item.icon + '<span>' + item.label + '</span>'
+      sidebar.appendChild(button)
+      navButtons.push(button)
+    }
+    grid = root.querySelector('.gr')
+    content = root.querySelector('.ct')
+    counter = root.querySelector('.cnt')
+    search = root.querySelector('.q')
+    searchRow = root.querySelector('.sr')
+
+    root.querySelector('.x').addEventListener('click', hide)
+    const header = root.querySelector('.hd')
+    header.addEventListener('pointerdown', event => {
+      if (event.button !== 0 || event.target.closest('button')) return
+      event.preventDefault()
+      const rect = root.getBoundingClientRect()
+      root.style.transform = 'none'
+      root.style.left = rect.left + 'px'
+      root.style.top = rect.top + 'px'
+      root.dataset.userPositioned = '1'
+      const offsetX = event.clientX - rect.left
+      const offsetY = event.clientY - rect.top
+      const move = moveEvent => {
+        const margin = 8
+        root.style.left = Math.max(margin, Math.min(innerWidth - root.offsetWidth - margin, moveEvent.clientX - offsetX)) + 'px'
+        root.style.top = Math.max(margin, Math.min(innerHeight - root.offsetHeight - margin, moveEvent.clientY - offsetY)) + 'px'
+      }
+      const stop = () => {
+        document.removeEventListener('pointermove', move)
+        document.removeEventListener('pointerup', stop)
+        document.removeEventListener('pointercancel', stop)
+        try {
+          localStorage.setItem(HUB_POSITION_KEY, JSON.stringify({ left: parseFloat(root.style.left), top: parseFloat(root.style.top) }))
+          window.__mkPersistAddonSettings?.()
+        } catch (error) {}
+      }
+      document.addEventListener('pointermove', move)
+      document.addEventListener('pointerup', stop)
+      document.addEventListener('pointercancel', stop)
+    })
+    search.addEventListener('input', renderCards)
+    sidebar.addEventListener('click', event => {
+      const button = event.target.closest('.nav')
+      if (!button) return
+      const id = button.dataset.nav
+      if (id === 'webhooks' || id === 'roles') setView('discord', id === 'roles')
+      else setView(id)
+    })
+    grid.addEventListener('click', event => {
+      const card = event.target.closest('.card')
+      const addon = card && byId(card.dataset.id)
+      if (!addon) return
+      if (event.target.closest('.gear')) { openAddon(addon); return }
+      if (event.target.closest('.tg')) { setOn(addon, !isOn(addon)); renderCards() }
+    })
+    for (const type of ['wheel', 'mousedown', 'mouseup', 'contextmenu']) root.addEventListener(type, event => event.stopPropagation(), { passive: true })
+    for (const type of ['keydown', 'keyup', 'keypress']) root.addEventListener(type, event => { if (event.target.closest('input,textarea,select')) event.stopPropagation() })
+
+    document.body.appendChild(root)
+    root.style.setProperty('--mkhd-addon-theme', getComputedStyle(document.documentElement).getPropertyValue('--mkhd-addon-theme').trim() || '#6366f1')
+    window.__mkApplyAddonAppearance?.()
+  }
+
+  /* ---------- widoki ---------- */
+  function closeDiscordForm() {
+    window.__mkHubDiscordHost = null
+    try { window.__heroesDiscordCloseSettings && window.__heroesDiscordCloseSettings(false) } catch (error) {}
+  }
+
+  function stopLookObserver() { if (lookObserver) { lookObserver.disconnect(); lookObserver = null } }
+
+  function openAddon(addon) {
+    if (addon.view === 'ranges' && !isOn(addon)) { notify('Najpierw włącz Przedziały Online.'); return }
+    setView(addon.view)
+  }
+
+  function closeRangesConfig() { try { window.__mkHubUnmountRangesConfig?.() } catch (error) {} }
+
+  function setView(next, roles) {
+    if (view === 'discord' && next !== 'discord') closeDiscordForm()
+    if (view === 'ranges' && next !== 'ranges') closeRangesConfig()
+    stopLookObserver()
+    view = next
+    roleFocus = !!roles
+    render()
+  }
+
+  function discordConfig() {
+    try { return window.__mkHubReadDiscordConfig?.() || JSON.parse(lsGet('heroes-discord') || '{}') } catch (error) { return {} }
+  }
+
+  function saveDiscordConfig(patch, status) {
+    const saved = window.__mkHubSaveDiscordConfig?.(patch)
+    if (saved) window.__mkPersistAddonSettings?.()
+    if (status) status.textContent = saved ? 'Zapisano ustawienia.' : 'Nie udało się zapisać. Spróbuj ponownie.'
+  }
+
+  function buildDiscord() {
+    const config = discordConfig()
+    const box = section(roleFocus ? 'Role i pingi' : 'Webhooki Discorda')
+    content.appendChild(box)
+    if (!window.__mkHubReadDiscordConfig) { box.appendChild(hint('Ustawienia Discorda jeszcze się wczytują. Zamknij i otwórz menu za chwilę.')); return }
+    if (roleFocus) {
+      const field = document.createElement('label')
+      field.className = 'field'
+      field.appendChild(Object.assign(document.createElement('span'), { textContent: 'Role dla potworów — nazwa: ID roli. Puste ID wyłącza ping.' }))
+      const area = document.createElement('textarea')
+      area.value = JSON.stringify(config.roleMappings || {}, null, 2)
+      field.appendChild(area)
+      box.append(field, hint('ID roli znajdziesz w Discordzie po włączeniu trybu deweloperskiego. Event używa osobnej, stałej roli @event.'))
+      const status = document.createElement('div'); status.className = 'save-status'
+      const actions = document.createElement('div'); actions.className = 'actions'
+      const save = document.createElement('button'); save.type = 'button'; save.className = 'sc'; save.textContent = 'Zapisz role i pingi'
+      save.addEventListener('click', () => {
+        try {
+          const roles = JSON.parse(area.value || '{}')
+          if (!roles || typeof roles !== 'object' || Array.isArray(roles)) throw new Error('invalid')
+          saveDiscordConfig({ roleMappings: roles }, status)
+        } catch (error) { status.style.color = '#fca5a5'; status.textContent = 'Wpisz poprawny obiekt JSON z rolami i ich ID.' }
+      })
+      actions.appendChild(save); box.append(status, actions)
+      return
+    }
+    const inputs = {}
+    const addField = (label, key, placeholder) => {
+      const field = document.createElement('label'); field.className = 'field'
+      field.appendChild(Object.assign(document.createElement('span'), { textContent: label }))
+      const input = document.createElement('input'); input.type = 'url'; input.placeholder = placeholder || 'https://discord.com/api/webhooks/...'; input.value = config.webhookUrls?.[key] || ''
+      inputs[key] = input; field.appendChild(input); box.appendChild(field)
+    }
+    addField('Webhook Discorda — Herosi', 'heroes')
+    addField('Webhook Discorda — Kolosi', 'colossi')
+    addField('Webhook Discorda — Tytani', 'titans')
+    addField('Webhook Discorda — Event (@event)', 'event')
+    box.appendChild(hint('Każdy adres jest zapisywany lokalnie na tym koncie gry. Wklej własny webhook dla każdego kanału.'))
+    const nameField = document.createElement('label'); nameField.className = 'field'
+    nameField.appendChild(Object.assign(document.createElement('span'), { textContent: 'Nick wysyłającego (opcjonalnie)' }))
+    const name = document.createElement('input'); name.type = 'text'; name.value = config.name || ''; name.placeholder = 'Domyślnie nick postaci'; nameField.appendChild(name); box.appendChild(nameField)
+    const eventRow = document.createElement('label'); eventRow.className = 'row'
+    const eventLabel = document.createElement('span'); eventLabel.textContent = 'Automatyczne alerty o herosach eventowych z pingiem @event'
+    const eventToggle = document.createElement('input'); eventToggle.type = 'checkbox'; eventToggle.checked = config.eventAlertsEnabled !== false
+    eventRow.append(eventLabel,eventToggle); box.appendChild(eventRow)
+    const status = document.createElement('div'); status.className = 'save-status'
+    const actions = document.createElement('div'); actions.className = 'actions'
+    const save = document.createElement('button'); save.type = 'button'; save.className = 'sc'; save.textContent = 'Zapisz webhooki'
+    save.addEventListener('click', () => saveDiscordConfig({ webhookUrls: Object.fromEntries(Object.entries(inputs).map(([key,input])=>[key,input.value.trim()])), name: name.value, eventAlertsEnabled: eventToggle.checked }, status))
+    actions.appendChild(save); box.append(status,actions)
+  }
+
+  function toggleRow(addon, label) {
+    const row = document.createElement('div')
+    row.className = 'row'
+    const on = isOn(addon)
+    row.innerHTML = '<span>' + label + '</span><button class="tg' + (on ? '' : ' o') + '" type="button" aria-pressed="' + on + '" aria-label="' + label + (on ? ' włączone' : ' wyłączone') + '"></button>'
+    row.querySelector('.tg').addEventListener('click', () => { setOn(addon, !isOn(addon)); render() })
+    return row
+  }
+
+  function section(title) {
+    const box = document.createElement('div')
+    box.className = 'sec'
+    box.innerHTML = '<h3></h3>'
+    box.querySelector('h3').textContent = title
+    return box
+  }
+  function hint(text) { const p = document.createElement('p'); p.className = 'hint'; p.textContent = text; return p }
+
+  function buildRanges() {
+    const box = section('Przedziały Online')
+    box.appendChild(toggleRow(byId('ranges'), 'Włącz Przedziały Online'))
+    box.appendChild(hint('Konfiguracja przedziałów, progów kolorów, komunikatów i webhooków.'))
+    const host = document.createElement('div')
+    host.className = 'mk-hub-ranges-config'
+    box.appendChild(host)
+    content.appendChild(box)
+    if (!isOn(byId('ranges'))) { host.appendChild(hint('Włącz Przedziały Online, aby edytować ich ustawienia.')); return }
+    if (typeof window.__mkHubMountRangesConfig === 'function' && window.__mkHubMountRangesConfig(host)) return
+    host.appendChild(hint('Konfiguracja przedziałów jeszcze się wczytuje. Otwórz ten widok ponownie za chwilę.'))
+  }
+
+  function buildLoot() {
+    const box = section('Ustawienia łupu')
+    box.append(toggleRow(byId('loot'), 'Włącz panel łupu przy czacie'),
+      hint('Panel z legendarnymi dropami pojawia się przy czacie na mapie tytana. Kliknięcie przedmiotu wysyła zgłoszenie na czat grupowy.'))
+    content.appendChild(box)
+  }
+
+  function buildColossus() {
+    const box = section('Wezwanie na kolosa')
+    box.append(toggleRow(byId('colossus'), 'Włącz okno zbiórki na kolosa'),
+      hint('Wyłącza wyskakujące okno zbiórki na przedsionkach kolosów.'))
+    content.appendChild(box)
+  }
+
+  function buildNotifier() {
+    const box = section('Notyfikator Legend')
+    box.appendChild(toggleRow(byId('notifier'), 'Włącz notyfikator legend'))
+    const host = document.createElement('div')
+    box.appendChild(host)
+    content.appendChild(box)
+    if (typeof window.__legNotifierAttach === 'function') window.__legNotifierAttach(host)
+    else host.appendChild(hint('Ustawienia notyfikatora jeszcze się wczytują. Zamknij i otwórz menu za chwilę.'))
+  }
+
+  // Kontrolki wyglądu są lustrzanym odbiciem tych z panelu: zmiana tutaj przekazuje wartość do oryginału.
+  function buildLook() {
+    const panel = panelEl()
+    const theme = panel && panel.querySelector('#mk-addon-theme-settings')
+    const box = section('Wygląd i ustawienia')
+    content.appendChild(box)
+    if (!theme) { box.appendChild(hint('Ustawienia wyglądu jeszcze się wczytują. Zamknij i otwórz menu za chwilę.')); return }
+    const lang = theme.querySelector('.mk-tl-language')
+    const background = theme.querySelector('.mk-tl-background')
+    const color = theme.querySelector('input[type="color"]')
+    const shortcut = theme.querySelector('.mk-tl-shortcut-button')
+    const fire = (el, types) => types.forEach(type => el.dispatchEvent(new Event(type, { bubbles: true })))
+    const selectRow = (label, source) => {
+      const row = document.createElement('label')
+      row.className = 'row'
+      row.innerHTML = '<span></span><select></select>'
+      row.querySelector('span').textContent = label
+      const select = row.querySelector('select')
+      select.innerHTML = source.innerHTML
+      select.value = source.value
+      select.addEventListener('change', () => { source.value = select.value; fire(source, ['change']) })
+      return row
+    }
+    if (lang) box.appendChild(selectRow('Język dodatku', lang))
+    if (color) {
+      const row = document.createElement('label')
+      row.className = 'row'
+      row.innerHTML = '<span>Kolor przewodni całego zestawu</span><input type="color" aria-label="Wybierz kolor dodatku">'
+      const input = row.querySelector('input')
+      input.value = color.value
+      input.addEventListener('input', () => { color.value = input.value; fire(color, ['input']) })
+      input.addEventListener('change', () => { color.value = input.value; fire(color, ['input', 'change']) })
+      box.appendChild(row)
+    }
+    if (background) box.appendChild(selectRow('Tło dodatku', background))
+    if (shortcut) {
+      const row = document.createElement('div')
+      row.className = 'row'
+      row.innerHTML = '<span>Skrót otwierania menu</span><button class="sc" type="button"></button>'
+      const button = row.querySelector('button')
+      const sync = () => { button.textContent = shortcut.textContent }
+      sync()
+      button.addEventListener('click', () => shortcut.click())
+      lookObserver = new MutationObserver(sync)
+      lookObserver.observe(shortcut, { childList: true, characterData: true, subtree: true })
+      box.append(row, hint('Kliknij przycisk i naciśnij nowy skrót. Escape anuluje zmianę.'))
+    }
+  }
+
+  function buildInfo() {
+    const box = document.createElement('div')
+    box.className = 'info'
+    box.innerHTML = '<h3>Heroes on Discord + Notyfikator Legend + Przedziały Online + Łupy Tytanów</h3>' +
+      '<p>Wersja 4.59.8. Wszystkie dodatki masz w jednym miejscu: przełącznik włącza lub wyłącza dodatek, a zębatka otwiera jego ustawienia w tym oknie.</p>' +
+      '<p>Webhooki, role i pingi ustawiasz w zakładkach Webhooki i Role i pingi. Przedziały Online działają na mapie, a ich konfigurację znajdziesz w tym nowym oknie po kliknięciu zębatki.</p>'
+    content.appendChild(box)
+  }
+
+  function renderCards() {
+    if (!root) return
+    const enabledCount = ADDONS.filter(isOn).length
+    counter.textContent = String(enabledCount)
+    counter.setAttribute('aria-label', 'Włączone dodatki: ' + enabledCount)
+    const query = search.value.trim().toLowerCase()
+    const list = ADDONS.filter(addon => !query || (addon.name + ' ' + addon.desc).toLowerCase().includes(query))
+    if (!list.length) { grid.style.display = 'block'; grid.innerHTML = '<div class="empty">Brak dodatku pasującego do wyszukiwania.</div>'; return }
+    grid.style.display = ''
+    grid.innerHTML = list.map(addon => {
+      const on = isOn(addon)
+      return '<div class="card' + (on ? '' : ' off') + '" data-id="' + addon.id + '"><div class="top"><div class="ic">' + addon.icon + '</div><div class="nm">' + addon.name + '</div>' +
+        '<button class="gear" type="button" aria-label="Ustawienia: ' + addon.name + '">' + GEAR + '</button>' +
+        '<button class="tg' + (on ? '' : ' o') + '" type="button" aria-pressed="' + on + '" aria-label="' + addon.name + (on ? ' włączony' : ' wyłączony') + '"></button></div>' +
+        '<p class="ds">' + addon.desc + '</p></div>'
+    }).join('')
+  }
+
+  function render() {
+    if (!root) return
+    const navFor = view === 'discord' ? (roleFocus ? 'roles' : 'webhooks') : (view === 'look' || view === 'info' ? view : 'addons')
+    for (const button of navButtons) button.classList.toggle('on', button.dataset.nav === navFor)
+    const cards = view === 'addons'
+    searchRow.style.display = cards ? 'flex' : 'none'
+    grid.style.display = cards ? '' : 'none'
+    content.style.display = cards ? 'none' : 'block'
+    if (cards) { renderCards(); return }
+    content.innerHTML = ''
+    if (view === 'ranges') buildRanges()
+    else if (view === 'loot') buildLoot()
+    else if (view === 'colossus') buildColossus()
+    else if (view === 'notifier') buildNotifier()
+    else if (view === 'discord') buildDiscord()
+    else if (view === 'look') buildLook()
+    else if (view === 'info') buildInfo()
+    if (['ranges', 'loot', 'colossus', 'notifier', 'discord', 'look'].includes(view)) {
+      const saveRow = document.createElement('div')
+      saveRow.className = 'mk-settings-save-row'
+      const saveStatus = document.createElement('div')
+      saveStatus.className = 'save-status'
+      const saveButton = document.createElement('button')
+      saveButton.type = 'button'
+      saveButton.className = 'sc'
+      saveButton.textContent = 'Zapisz ustawienia'
+      saveButton.addEventListener('click', () => {
+        const saved = window.__mkPersistAddonSettings?.()
+        saveStatus.textContent = saved ? 'Ustawienia zapisane i zostaną przywrócone po F5.' : 'Nie udało się zapisać ustawień w pamięci przeglądarki.'
+        saveStatus.style.color = saved ? '#86efac' : '#fca5a5'
+      })
+      saveRow.append(saveButton, saveStatus)
+      content.appendChild(saveRow)
+    }
+  }
+
+  // Zamykanie starego formularza Discorda nie steruje widokami nowego menedżera.
+  window.addEventListener('heroes-discord:settings-closed', () => {
+    if (root && root.classList.contains('open') && view === 'discord') render()
+  })
+
+  function show() {
+    if (!root) build()
+    if (view === 'discord') closeDiscordForm()
+    stopLookObserver()
+    view = 'addons'
+    search.value = ''
+    render()
+    restoreHubPosition()
+    root.classList.add('open')
+    requestAnimationFrame(clampHubToViewport)
+  }
+  function hide() {
+    if (!root) return
+    if (view === 'discord') closeDiscordForm()
+    if (view === 'ranges') closeRangesConfig()
+    stopLookObserver()
+    root.classList.remove('open')
+  }
+  function toggle() { if (root && root.classList.contains('open')) hide(); else show() }
+
+  window.__mkHubOpenRangesSettings = () => {
+    if (!root) build()
+    if (view === 'discord') closeDiscordForm()
+    stopLookObserver()
+    view = 'ranges'
+    roleFocus = false
+    render()
+    restoreHubPosition()
+    root.classList.add('open')
+    requestAnimationFrame(clampHubToViewport)
+  }
+  window.__mkHubToggle = toggle
+  window.__mkHubShow = show
 })();
