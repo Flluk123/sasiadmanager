@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Heroes on Discord + Notyfikator Legend + Przedziały Online + Łupy Tytanów
 // @namespace    http://tampermonkey.net/
-// @version      4.60.5
+// @version      4.60.6
 // @description  Heroes and titans alerts, online player level ranges, and legendary titan loot calls
 // @author       Kris Aphalon
 // @match        https://margonem.com/*
@@ -3758,7 +3758,8 @@
 /* ===================== MENU DODATKÓW (hub) ===================== */
 ;(function () {
   'use strict'
-  if (window.__mkHubInstalled) return
+  if (window.__mkHubInstalled && typeof window.__mkHubShow === 'function') return
+  window.__mkHubInstalled = false
 
   const lsGet = key => { try { return localStorage.getItem(key) } catch (error) { return null } }
   const lsSet = (key, value) => { try { localStorage.setItem(key, value) } catch (error) {} }
