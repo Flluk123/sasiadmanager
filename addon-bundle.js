@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Heroes on Discord + Notyfikator Legend + Przedziały Online + Łupy Tytanów
 // @namespace    http://tampermonkey.net/
-// @version      4.60.6
+// @version      4.60.7
 // @description  Heroes and titans alerts, online player level ranges, and legendary titan loot calls
 // @author       Kris Aphalon
 // @match        https://margonem.com/*
@@ -42,6 +42,558 @@
     if (button && /zapisz|save/i.test(button.textContent || '')) setTimeout(() => window.__mkPersistAddonSettings?.(), 0)
   }, true)
 })()
+
+/* ===================== MENU DODATKÓW (hub) ===================== */
+;(function () {
+  'use strict'
+  if (window.__mkHubInstalled && typeof window.__mkHubShow === 'function') return
+  window.__mkHubInstalled = false
+
+  const lsGet = key => { try { return localStorage.getItem(key) } catch (error) { return null } }
+  const lsSet = (key, value) => { try { localStorage.setItem(key, value) } catch (error) {} }
+  const icon = path => '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">' + path + '</svg>'
+  const GEAR = '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="8" cy="8" r="2.2"/><path d="M8 1.5v2M8 12.5v2M1.5 8h2M12.5 8h2M3.4 3.4l1.4 1.4M11.2 11.2l1.4 1.4M12.6 3.4l-1.4 1.4M4.8 11.2l-1.4 1.4"/></svg>'
+
+  // view = widok w tym oknie, który otwiera zębatka; key = klucz localStorage z włączeniem
+  const ADDONS = [
+    { id: 'ranges', name: 'PRZEDZIAŁY ONLINE', view: 'ranges', key: 'mkOnlineRangesEnabled', checkbox: '.mk-online-ranges-toggle', event: 'mk-online-ranges-toggle',
+      desc: 'Pokazuje graczy online w przedziałach poziomów i wysyła zbiórki na Discorda.',
+      icon: icon('<path d="M2 13V9M6 13V5M10 13V7M14 13V3"/>') },
+    { id: 'heroes', name: 'HEROES ON DISCORD', view: 'discord', key: 'mkHubHeroesEnabled',
+      desc: 'Powiadomienia o herosach, tytanach i kolosach na Twoje kanały.',
+      icon: icon('<path d="M3 4h10v6H8l-3 3v-3H3z"/>') },
+    { id: 'notifier', name: 'NOTYFIKATOR LEGEND', view: 'notifier', key: 'mkHubNotifierEnabled',
+      desc: 'Efekt, dźwięk i alert po zdobyciu legendarnego przedmiotu.',
+      icon: icon('<path d="M8 2l1.8 3.8 4.2.6-3 3 .7 4.1L8 11.4 4.3 13.5 5 9.4l-3-3 4.2-.6z"/>') },
+    { id: 'loot', name: 'ŁUPY TYTANÓW', view: 'loot', key: 'mkTitanLootEnabled_v2', checkbox: '#mk-titan-loot-settings input[type="checkbox"]',
+      desc: 'Panel wezwań na łup legendarnych tytanów, osadzony przy czacie.',
+      icon: icon('<path d="M3 6h10v7H3zM2 6l1.5-3h9L14 6M8 6v7"/>') },
+    { id: 'colossus', name: 'WEZWANIE NA KOLOSA', view: 'colossus', key: 'mkColossusGroupPromptEnabled', checkbox: '.mk-colossus-prompt-toggle', event: 'mk-colossus-prompt-toggle',
+      desc: 'Okno „Zbieramy grupę na kolosa?” w przedsionkach kolosów.',
+      icon: icon('<circle cx="5.5" cy="6" r="2"/><circle cx="11" cy="6.5" r="1.6"/><path d="M2 13c.4-2 1.8-3 3.5-3s3.1 1 3.5 3M10 10.2c1.8-.3 3.5.5 4 2.8"/>') }
+  ]
+  const byId = id => ADDONS.find(addon => addon.id === id)
+  const isOn = addon => lsGet(addon.key) !== '0'
+
+  function setOn(addon, on) {
+    const box = addon.checkbox ? (document.querySelector(addon.checkbox) || window.__mkLegacyRangesPanel?.querySelector(addon.checkbox)) : null
+    if (box && box.checked !== on) box.click()
+    if (lsGet(addon.key) !== (on ? '1' : '0')) {
+      lsSet(addon.key, on ? '1' : '0')
+      if (addon.event) window.dispatchEvent(new CustomEvent(addon.event, { detail: { enabled: on } }))
+    }
+  }
+
+  const panelEl = () => document.getElementById('mk-clan-ranges-panel') || window.__mkLegacyRangesPanel || null
+  const notify = text => { try { if (typeof window.message === 'function') window.message(text) } catch (error) {} }
+
+  /* ---------- styl ---------- */
+  const style = document.createElement('style')
+  style.id = 'mk-hub-style'
+  style.textContent = [
+    // The legacy ranges window is removed from the DOM during initialization.
+    '#mk-hub{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:2147482900;width:min(760px,calc(100vw - 16px));height:min(470px,calc(100vh - 16px));display:none;flex-direction:column;border:2px solid rgba(144,123,255,.32);border-radius:14px;background:linear-gradient(180deg,#221241,#0d081f);box-shadow:0 18px 48px rgba(0,0,0,.6);color:#f3f3ff;font:13px/1.4 Inter,"Segoe UI",Arial,sans-serif;overflow:hidden}',
+    '#mk-hub.open{display:flex}',
+    '#mk-hub *{box-sizing:border-box}',
+    '#mk-hub button,#mk-hub input,#mk-hub select{font-family:inherit}',
+    '#mk-hub .hd{display:flex;align-items:center;height:40px;padding:0 12px;border-bottom:1px solid rgba(255,255,255,.08);flex:none;cursor:grab;user-select:none}',
+    '#mk-hub .hd:active{cursor:grabbing}',
+    '#mk-hub .hd-t{flex:1;text-align:center;font-size:13px;font-weight:700;letter-spacing:.04em;color:#c9c1ff}',
+    '#mk-hub .x{width:26px;height:26px;border:1px solid rgba(255,255,255,.14);border-radius:7px;background:rgba(255,255,255,.06);color:#e7e3ff;font-size:16px;line-height:1;padding:0;cursor:pointer}',
+    '#mk-hub .bd{display:flex;gap:12px;padding:12px;flex:1;min-height:0}',
+    '#mk-hub .sb{display:flex;flex-direction:column;gap:8px;width:168px;flex:none}',
+    '#mk-hub .nav{display:flex;align-items:center;gap:10px;width:100%;min-height:40px;padding:0 12px;border:1px solid rgba(144,123,255,.22);border-radius:9px;background:rgba(255,255,255,.04);color:#d9d4f5;font-size:13px;font-weight:600;text-align:left;cursor:pointer}',
+    '#mk-hub .nav:hover{background:rgba(255,255,255,.09)}',
+    '#mk-hub .nav.on{background:rgba(99,102,241,.34);border-color:rgba(165,180,252,.7);color:#fff}',
+    '#mk-hub .sep{height:1px;background:rgba(255,255,255,.1);margin:4px 0}',
+    '#mk-hub .mn{display:flex;flex-direction:column;gap:10px;flex:1;min-width:0;min-height:0}',
+    '#mk-hub .sr{display:flex;gap:8px;align-items:center;flex:none}',
+    '#mk-hub .q{flex:1;height:34px;padding:0 12px;border:1px solid rgba(144,123,255,.28);border-radius:9px;background:rgba(10,7,24,.72);color:#f3f3ff;font-size:13px;text-align:center;outline:none}',
+    '#mk-hub .q:focus{border-color:#907bff;box-shadow:0 0 0 2px rgba(144,123,255,.2)}',
+    '#mk-hub .cnt{min-width:34px;height:34px;display:flex;align-items:center;justify-content:center;border:1px solid rgba(165,180,252,.5);border-radius:9px;background:rgba(99,102,241,.28);font-weight:700}',
+    '#mk-hub .gr{display:grid;grid-template-columns:1fr 1fr;gap:10px;overflow-y:auto;align-content:start;min-height:0;padding-right:2px}',
+    '#mk-hub .ct{display:none;flex:1;min-height:0;overflow-y:auto;padding-right:2px}',
+    '#mk-hub .mk-hub-ranges-config .mk-config{display:block!important;max-height:none;overflow:visible;padding:10px;border:1px solid rgba(144,123,255,.22);border-radius:10px;background:rgba(8,8,25,.42)}',
+    '#mk-hub .mk-hub-ranges-config .mk-config-row{gap:6px;margin-bottom:7px}',
+    '#mk-hub .mk-hub-ranges-config .mk-config-input{min-height:30px;padding:5px 8px;border-radius:7px;font-size:12px}',
+    '#mk-hub .mk-hub-ranges-config .mk-config-btn{min-height:30px;padding:5px 10px;border-radius:7px;font-size:12px}',
+    '#mk-hub .mk-hub-ranges-config .mk-config-adv{padding:9px;border-radius:8px}',
+    '#mk-hub .mk-hub-ranges-config .mk-config-actions{gap:8px}',
+    '#mk-hub .card{display:flex;flex-direction:column;gap:6px;padding:12px;border:1px solid rgba(144,123,255,.26);border-radius:10px;background:rgba(255,255,255,.045)}',
+    '#mk-hub .card.off{background:rgba(255,255,255,.02);border-color:rgba(144,123,255,.14)}',
+    '#mk-hub .top{display:flex;align-items:center;gap:10px}',
+    '#mk-hub .ic{display:flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:8px;background:#2b1f5c;color:#c9c1ff;flex:none}',
+    '#mk-hub .off .ic{background:#1f1a3d;color:#8f89b3}',
+    '#mk-hub .nm{flex:1;font-size:13px;font-weight:700;letter-spacing:.02em;color:#f3f3ff}',
+    '#mk-hub .ds{margin:0;font-size:11.5px;line-height:1.45;color:#b4adda}',
+    '#mk-hub .off .nm,#mk-hub .off .ds{color:#8f89b3}',
+    '#mk-hub .gear{width:28px;height:28px;border:1px solid rgba(144,123,255,.3);border-radius:7px;background:rgba(255,255,255,.05);color:#d9d4f5;display:flex;align-items:center;justify-content:center;padding:0;cursor:pointer}',
+    '#mk-hub .gear:hover{background:rgba(255,255,255,.12)}',
+    '#mk-hub .tg{position:relative;width:34px;height:20px;border:0;border-radius:10px;background:#4f46e5;padding:0;flex:none;cursor:pointer}',
+    '#mk-hub .tg:after{content:"";position:absolute;top:3px;left:17px;width:14px;height:14px;border-radius:50%;background:#fff}',
+    '#mk-hub .tg.o{background:#3a3560}#mk-hub .tg.o:after{left:3px;background:#a7a0c9}',
+    '#mk-hub .empty,#mk-hub .info{color:#b4adda;font-size:12.5px;line-height:1.55;padding:6px 2px}',
+    '#mk-hub .info h3,#mk-hub .sec h3{margin:0 0 8px;font-size:14px;color:#f3f3ff}#mk-hub .info p{margin:0 0 8px}',
+    '#mk-hub .sec{display:flex;flex-direction:column;gap:10px;padding:2px}',
+    '#mk-hub .row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 12px;border:1px solid rgba(144,123,255,.24);border-radius:10px;background:rgba(255,255,255,.045);color:#e7e3ff;font-size:13px}',
+    '#mk-hub .row select{min-width:130px;height:30px;padding:0 8px;border:1px solid rgba(144,123,255,.35);border-radius:7px;background:rgba(10,7,24,.8);color:#f3f3ff}',
+    '#mk-hub .row input[type=color]{width:46px;height:28px;padding:0;border:1px solid rgba(144,123,255,.35);border-radius:7px;background:transparent;cursor:pointer}',
+    '#mk-hub .row button.sc{min-width:130px;height:30px;padding:0 10px;border:1px solid rgba(144,123,255,.35);border-radius:7px;background:rgba(99,102,241,.25);color:#fff;cursor:pointer}',
+    '#mk-hub .field{display:flex;flex-direction:column;gap:5px;padding:9px 11px;border:1px solid rgba(144,123,255,.24);border-radius:10px;background:rgba(255,255,255,.045);color:#e7e3ff;font-size:12px}',
+    '#mk-hub .field input,#mk-hub .field textarea{width:100%;min-height:34px;padding:8px 10px;border:1px solid rgba(144,123,255,.32);border-radius:7px;background:rgba(10,7,24,.72);color:#f3f3ff;outline:none}',
+    '#mk-hub .field textarea{min-height:220px;resize:vertical;font:12px/1.45 Consolas,monospace}',
+    '#mk-hub .field input:focus,#mk-hub .field textarea:focus{border-color:#907bff;box-shadow:0 0 0 2px rgba(144,123,255,.16)}',
+    '#mk-hub .actions{display:flex;justify-content:flex-end;gap:8px}',
+    '#mk-hub .actions .sc{height:34px;padding:0 14px;border:1px solid rgba(144,123,255,.38);border-radius:8px;background:#5745d8;color:#fff;font-weight:700;cursor:pointer}',
+    '#mk-hub .save-status{min-height:18px;color:#86efac;font-size:11px}',
+    '#mk-hub .mk-settings-save-row{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:8px;padding-top:10px;border-top:1px solid rgba(255,255,255,.1)}',
+    '#mk-hub .mk-settings-save-row .sc{height:34px;flex:none;padding:0 14px;border:1px solid color-mix(in srgb,var(--mkhd-addon-theme) 70%,#fff);border-radius:8px;background:color-mix(in srgb,var(--mkhd-addon-theme) 78%,#111827);color:#fff;font-weight:700;cursor:pointer;transition:filter .15s,transform .15s}',
+    '#mk-hub .mk-settings-save-row .sc:hover{filter:brightness(1.14);transform:translateY(-1px)}',
+    '#mk-hub .mk-settings-save-row .save-status{flex:1;text-align:right}',
+    '#mk-hub .hint{margin:0;font-size:11.5px;line-height:1.45;color:#b4adda}',
+    '#mk-hub .heroes-discord__setup--inline .heroes-discord__background{max-height:none!important;overflow:visible!important}',
+    '#mk-hub .mk-leg-settings{margin:0}',
+    '@media(max-width:640px){#mk-hub .sb{width:46px}#mk-hub .nav{padding:0;justify-content:center}#mk-hub .nav span{display:none}#mk-hub .gr{grid-template-columns:1fr}}'
+  ].join('\n')
+  document.head.appendChild(style)
+  const themeStyle = document.createElement('style')
+  themeStyle.id = 'mk-hub-theme-style'
+  themeStyle.textContent = `
+    #mk-hub{--mkhd-addon-theme:#6366f1;border-color:color-mix(in srgb,var(--mkhd-addon-theme) 48%,#20243a);box-shadow:0 18px 48px rgba(0,0,0,.6),0 0 0 1px color-mix(in srgb,var(--mkhd-addon-theme) 16%,transparent)}
+    #mk-hub .hd-t{color:color-mix(in srgb,var(--mkhd-addon-theme) 55%,#fff)}
+    #mk-hub .nav,#mk-hub .q,#mk-hub .card,#mk-hub .gear,#mk-hub .row,#mk-hub .field{border-color:color-mix(in srgb,var(--mkhd-addon-theme) 26%,rgba(255,255,255,.1))}
+    #mk-hub .nav.on{background:color-mix(in srgb,var(--mkhd-addon-theme) 34%,#111827);border-color:color-mix(in srgb,var(--mkhd-addon-theme) 72%,#cbd5e1)}
+    #mk-hub .q:focus,#mk-hub .field input:focus,#mk-hub .field textarea:focus{border-color:var(--mkhd-addon-theme);box-shadow:0 0 0 2px color-mix(in srgb,var(--mkhd-addon-theme) 24%,transparent)}
+    #mk-hub .cnt{background:color-mix(in srgb,var(--mkhd-addon-theme) 28%,#111827);border-color:color-mix(in srgb,var(--mkhd-addon-theme) 58%,#cbd5e1)}
+    #mk-hub .ic{background:color-mix(in srgb,var(--mkhd-addon-theme) 34%,#111827);color:color-mix(in srgb,var(--mkhd-addon-theme) 55%,#fff)}
+    #mk-hub .gear,#mk-hub .row select,#mk-hub .row input[type=color],#mk-hub .field input,#mk-hub .field textarea{border-color:color-mix(in srgb,var(--mkhd-addon-theme) 38%,rgba(255,255,255,.12))}
+    #mk-hub .tg:not(.o){background:var(--mkhd-addon-theme)}
+    #mk-hub .actions .sc{background:color-mix(in srgb,var(--mkhd-addon-theme) 78%,#111827);border-color:color-mix(in srgb,var(--mkhd-addon-theme) 68%,#fff)}
+  `
+  document.head.appendChild(themeStyle)
+
+  /* ---------- okno ---------- */
+  let root = null, grid = null, content = null, counter = null, search = null, searchRow = null
+  let view = 'addons', roleFocus = false, navButtons = [], lookObserver = null
+
+  const HUB_POSITION_KEY = 'mkHubWindowPositionV1'
+  function restoreHubPosition() {
+    if (!root) return
+    let saved = null
+    try { saved = JSON.parse(lsGet(HUB_POSITION_KEY) || 'null') } catch (error) {}
+    if (saved && Number.isFinite(saved.left) && Number.isFinite(saved.top)) {
+      root.style.transform = 'none'
+      root.style.left = saved.left + 'px'
+      root.style.top = saved.top + 'px'
+      root.dataset.userPositioned = '1'
+    } else {
+      root.style.left = '50%'
+      root.style.top = '50%'
+      root.style.transform = 'translate(-50%,-50%)'
+      delete root.dataset.userPositioned
+    }
+  }
+  function clampHubToViewport() {
+    if (!root || !root.classList.contains('open') || root.dataset.userPositioned !== '1') return
+    const rect = root.getBoundingClientRect()
+    const margin = 8
+    root.style.left = Math.max(margin, Math.min(rect.left, innerWidth - rect.width - margin)) + 'px'
+    root.style.top = Math.max(margin, Math.min(rect.top, innerHeight - rect.height - margin)) + 'px'
+  }
+  window.addEventListener('resize', clampHubToViewport)
+
+  const NAV = [
+    { id: 'addons', label: 'Dodatki', icon: icon('<rect x="2" y="2" width="5" height="5" rx="1"/><rect x="9" y="2" width="5" height="5" rx="1"/><rect x="2" y="9" width="5" height="5" rx="1"/><rect x="9" y="9" width="5" height="5" rx="1"/>') },
+    { id: 'webhooks', label: 'Webhooki', icon: icon('<path d="M6 10l4-4M5 7L3.5 8.5a2.5 2.5 0 003.5 3.5L8.5 10.5M11 9l1.5-1.5A2.5 2.5 0 009 4L7.5 5.5"/>') },
+    { id: 'roles', label: 'Role i pingi', icon: icon('<circle cx="8" cy="5.5" r="2.5"/><path d="M3 13.5c.6-2.4 2.5-3.5 5-3.5s4.4 1.1 5 3.5"/>') },
+    { id: 'look', label: 'Wygląd i ustawienia', icon: icon('<circle cx="8" cy="8" r="2.2"/><path d="M8 1.5v2M8 12.5v2M1.5 8h2M12.5 8h2"/>') },
+    { sep: true },
+    { id: 'info', label: 'Informacje', icon: icon('<circle cx="8" cy="8" r="6"/><path d="M8 7.2V11M8 5v.1"/>') }
+  ]
+
+  function build() {
+    root = document.createElement('div')
+    root.id = 'mk-hub'
+    root.setAttribute('role', 'dialog')
+    root.setAttribute('aria-label', 'Menu dodatków')
+    root.innerHTML = '<div class="hd"><div class="hd-t">Heroes on Discord · Dodatki</div><button class="x" type="button" aria-label="Zamknij">×</button></div>' +
+      '<div class="bd"><div class="sb"></div><div class="mn"><div class="sr"><input class="q" type="text" aria-label="Szukaj dodatku" placeholder="Szukaj dodatku..."><div class="cnt" aria-label="Włączone dodatki"></div></div><div class="gr"></div><div class="ct"></div></div></div>'
+    const sidebar = root.querySelector('.sb')
+    for (const item of NAV) {
+      if (item.sep) { const sep = document.createElement('div'); sep.className = 'sep'; sidebar.appendChild(sep); continue }
+      const button = document.createElement('button')
+      button.type = 'button'
+      button.className = 'nav'
+      button.dataset.nav = item.id
+      button.title = item.label
+      button.innerHTML = item.icon + '<span>' + item.label + '</span>'
+      sidebar.appendChild(button)
+      navButtons.push(button)
+    }
+    grid = root.querySelector('.gr')
+    content = root.querySelector('.ct')
+    counter = root.querySelector('.cnt')
+    search = root.querySelector('.q')
+    searchRow = root.querySelector('.sr')
+
+    root.querySelector('.x').addEventListener('click', hide)
+    const header = root.querySelector('.hd')
+    header.addEventListener('pointerdown', event => {
+      if (event.button !== 0 || event.target.closest('button')) return
+      event.preventDefault()
+      const rect = root.getBoundingClientRect()
+      root.style.transform = 'none'
+      root.style.left = rect.left + 'px'
+      root.style.top = rect.top + 'px'
+      root.dataset.userPositioned = '1'
+      const offsetX = event.clientX - rect.left
+      const offsetY = event.clientY - rect.top
+      const move = moveEvent => {
+        const margin = 8
+        root.style.left = Math.max(margin, Math.min(innerWidth - root.offsetWidth - margin, moveEvent.clientX - offsetX)) + 'px'
+        root.style.top = Math.max(margin, Math.min(innerHeight - root.offsetHeight - margin, moveEvent.clientY - offsetY)) + 'px'
+      }
+      const stop = () => {
+        document.removeEventListener('pointermove', move)
+        document.removeEventListener('pointerup', stop)
+        document.removeEventListener('pointercancel', stop)
+        try {
+          localStorage.setItem(HUB_POSITION_KEY, JSON.stringify({ left: parseFloat(root.style.left), top: parseFloat(root.style.top) }))
+          window.__mkPersistAddonSettings?.()
+        } catch (error) {}
+      }
+      document.addEventListener('pointermove', move)
+      document.addEventListener('pointerup', stop)
+      document.addEventListener('pointercancel', stop)
+    })
+    search.addEventListener('input', renderCards)
+    sidebar.addEventListener('click', event => {
+      const button = event.target.closest('.nav')
+      if (!button) return
+      const id = button.dataset.nav
+      if (id === 'webhooks' || id === 'roles') setView('discord', id === 'roles')
+      else setView(id)
+    })
+    grid.addEventListener('click', event => {
+      const card = event.target.closest('.card')
+      const addon = card && byId(card.dataset.id)
+      if (!addon) return
+      if (event.target.closest('.gear')) { openAddon(addon); return }
+      if (event.target.closest('.tg')) { setOn(addon, !isOn(addon)); renderCards() }
+    })
+    for (const type of ['wheel', 'mousedown', 'mouseup', 'contextmenu']) root.addEventListener(type, event => event.stopPropagation(), { passive: true })
+    for (const type of ['keydown', 'keyup', 'keypress']) root.addEventListener(type, event => { if (event.target.closest('input,textarea,select')) event.stopPropagation() })
+
+    document.body.appendChild(root)
+    root.style.setProperty('--mkhd-addon-theme', getComputedStyle(document.documentElement).getPropertyValue('--mkhd-addon-theme').trim() || '#6366f1')
+    try { window.__mkApplyAddonAppearance?.() } catch (error) { console.warn("[Heroes on Discord] Nie udało się zastosować wyglądu menu:", error) }
+  }
+
+  /* ---------- widoki ---------- */
+  function closeDiscordForm() {
+    window.__mkHubDiscordHost = null
+    try { window.__heroesDiscordCloseSettings && window.__heroesDiscordCloseSettings(false) } catch (error) {}
+  }
+
+  function stopLookObserver() { if (lookObserver) { lookObserver.disconnect(); lookObserver = null } }
+
+  function openAddon(addon) {
+    if (addon.view === 'ranges' && !isOn(addon)) { notify('Najpierw włącz Przedziały Online.'); return }
+    setView(addon.view)
+  }
+
+  function closeRangesConfig() { try { window.__mkHubUnmountRangesConfig?.() } catch (error) {} }
+
+  function setView(next, roles) {
+    if (view === 'discord' && next !== 'discord') closeDiscordForm()
+    if (view === 'ranges' && next !== 'ranges') closeRangesConfig()
+    stopLookObserver()
+    view = next
+    roleFocus = !!roles
+    render()
+  }
+
+  function discordConfig() {
+    try { return window.__mkHubReadDiscordConfig?.() || JSON.parse(lsGet('heroes-discord') || '{}') } catch (error) { return {} }
+  }
+
+  function saveDiscordConfig(patch, status) {
+    const saved = window.__mkHubSaveDiscordConfig?.(patch)
+    if (saved) window.__mkPersistAddonSettings?.()
+    if (status) status.textContent = saved ? 'Zapisano ustawienia.' : 'Nie udało się zapisać. Spróbuj ponownie.'
+  }
+
+  function buildDiscord() {
+    const config = discordConfig()
+    const box = section(roleFocus ? 'Role i pingi' : 'Webhooki Discorda')
+    content.appendChild(box)
+    if (!window.__mkHubReadDiscordConfig) { box.appendChild(hint('Ustawienia Discorda jeszcze się wczytują. Zamknij i otwórz menu za chwilę.')); return }
+    if (roleFocus) {
+      const field = document.createElement('label')
+      field.className = 'field'
+      field.appendChild(Object.assign(document.createElement('span'), { textContent: 'Role dla potworów — nazwa: ID roli. Puste ID wyłącza ping.' }))
+      const area = document.createElement('textarea')
+      area.value = JSON.stringify(config.roleMappings || {}, null, 2)
+      field.appendChild(area)
+      box.append(field, hint('ID roli znajdziesz w Discordzie po włączeniu trybu deweloperskiego. Event używa osobnej, stałej roli @event.'))
+      const status = document.createElement('div'); status.className = 'save-status'
+      const actions = document.createElement('div'); actions.className = 'actions'
+      const save = document.createElement('button'); save.type = 'button'; save.className = 'sc'; save.textContent = 'Zapisz role i pingi'
+      save.addEventListener('click', () => {
+        try {
+          const roles = JSON.parse(area.value || '{}')
+          if (!roles || typeof roles !== 'object' || Array.isArray(roles)) throw new Error('invalid')
+          saveDiscordConfig({ roleMappings: roles }, status)
+        } catch (error) { status.style.color = '#fca5a5'; status.textContent = 'Wpisz poprawny obiekt JSON z rolami i ich ID.' }
+      })
+      actions.appendChild(save); box.append(status, actions)
+      return
+    }
+    const inputs = {}
+    const addField = (label, key, placeholder) => {
+      const field = document.createElement('label'); field.className = 'field'
+      field.appendChild(Object.assign(document.createElement('span'), { textContent: label }))
+      const input = document.createElement('input'); input.type = 'url'; input.placeholder = placeholder || 'https://discord.com/api/webhooks/...'; input.value = config.webhookUrls?.[key] || ''
+      inputs[key] = input; field.appendChild(input); box.appendChild(field)
+    }
+    addField('Webhook Discorda — Herosi', 'heroes')
+    addField('Webhook Discorda — Kolosi', 'colossi')
+    addField('Webhook Discorda — Tytani', 'titans')
+    addField('Webhook Discorda — Event (@event)', 'event')
+    box.appendChild(hint('Każdy adres jest zapisywany lokalnie na tym koncie gry. Wklej własny webhook dla każdego kanału.'))
+    const nameField = document.createElement('label'); nameField.className = 'field'
+    nameField.appendChild(Object.assign(document.createElement('span'), { textContent: 'Nick wysyłającego (opcjonalnie)' }))
+    const name = document.createElement('input'); name.type = 'text'; name.value = config.name || ''; name.placeholder = 'Domyślnie nick postaci'; nameField.appendChild(name); box.appendChild(nameField)
+    const eventRow = document.createElement('label'); eventRow.className = 'row'
+    const eventLabel = document.createElement('span'); eventLabel.textContent = 'Automatyczne alerty o herosach eventowych z pingiem @event'
+    const eventToggle = document.createElement('input'); eventToggle.type = 'checkbox'; eventToggle.checked = config.eventAlertsEnabled !== false
+    eventRow.append(eventLabel,eventToggle); box.appendChild(eventRow)
+    const status = document.createElement('div'); status.className = 'save-status'
+    const actions = document.createElement('div'); actions.className = 'actions'
+    const save = document.createElement('button'); save.type = 'button'; save.className = 'sc'; save.textContent = 'Zapisz webhooki'
+    save.addEventListener('click', () => saveDiscordConfig({ webhookUrls: Object.fromEntries(Object.entries(inputs).map(([key,input])=>[key,input.value.trim()])), name: name.value, eventAlertsEnabled: eventToggle.checked }, status))
+    actions.appendChild(save); box.append(status,actions)
+  }
+
+  function toggleRow(addon, label) {
+    const row = document.createElement('div')
+    row.className = 'row'
+    const on = isOn(addon)
+    row.innerHTML = '<span>' + label + '</span><button class="tg' + (on ? '' : ' o') + '" type="button" aria-pressed="' + on + '" aria-label="' + label + (on ? ' włączone' : ' wyłączone') + '"></button>'
+    row.querySelector('.tg').addEventListener('click', () => { setOn(addon, !isOn(addon)); render() })
+    return row
+  }
+
+  function section(title) {
+    const box = document.createElement('div')
+    box.className = 'sec'
+    box.innerHTML = '<h3></h3>'
+    box.querySelector('h3').textContent = title
+    return box
+  }
+  function hint(text) { const p = document.createElement('p'); p.className = 'hint'; p.textContent = text; return p }
+
+  function buildRanges() {
+    const box = section('Przedziały Online')
+    box.appendChild(toggleRow(byId('ranges'), 'Włącz Przedziały Online'))
+    box.appendChild(hint('Konfiguracja przedziałów, progów kolorów, komunikatów i webhooków.'))
+    const host = document.createElement('div')
+    host.className = 'mk-hub-ranges-config'
+    box.appendChild(host)
+    content.appendChild(box)
+    if (!isOn(byId('ranges'))) { host.appendChild(hint('Włącz Przedziały Online, aby edytować ich ustawienia.')); return }
+    if (typeof window.__mkHubMountRangesConfig === 'function' && window.__mkHubMountRangesConfig(host)) return
+    host.appendChild(hint('Konfiguracja przedziałów jeszcze się wczytuje. Otwórz ten widok ponownie za chwilę.'))
+  }
+
+  function buildLoot() {
+    const box = section('Ustawienia łupu')
+    box.append(toggleRow(byId('loot'), 'Włącz panel łupu przy czacie'),
+      hint('Panel z legendarnymi dropami pojawia się przy czacie na mapie tytana. Kliknięcie przedmiotu wysyła zgłoszenie na czat grupowy.'))
+    content.appendChild(box)
+  }
+
+  function buildColossus() {
+    const box = section('Wezwanie na kolosa')
+    box.append(toggleRow(byId('colossus'), 'Włącz okno zbiórki na kolosa'),
+      hint('Wyłącza wyskakujące okno zbiórki na przedsionkach kolosów.'))
+    content.appendChild(box)
+  }
+
+  function buildNotifier() {
+    const box = section('Notyfikator Legend')
+    box.appendChild(toggleRow(byId('notifier'), 'Włącz notyfikator legend'))
+    const host = document.createElement('div')
+    box.appendChild(host)
+    content.appendChild(box)
+    if (typeof window.__legNotifierAttach === 'function') window.__legNotifierAttach(host)
+    else host.appendChild(hint('Ustawienia notyfikatora jeszcze się wczytują. Zamknij i otwórz menu za chwilę.'))
+  }
+
+  // Kontrolki wyglądu są lustrzanym odbiciem tych z panelu: zmiana tutaj przekazuje wartość do oryginału.
+  function buildLook() {
+    const panel = panelEl()
+    const theme = panel && panel.querySelector('#mk-addon-theme-settings')
+    const box = section('Wygląd i ustawienia')
+    content.appendChild(box)
+    if (!theme) { box.appendChild(hint('Ustawienia wyglądu jeszcze się wczytują. Zamknij i otwórz menu za chwilę.')); return }
+    const lang = theme.querySelector('.mk-tl-language')
+    const background = theme.querySelector('.mk-tl-background')
+    const color = theme.querySelector('input[type="color"]')
+    const shortcut = theme.querySelector('.mk-tl-shortcut-button')
+    const fire = (el, types) => types.forEach(type => el.dispatchEvent(new Event(type, { bubbles: true })))
+    const selectRow = (label, source) => {
+      const row = document.createElement('label')
+      row.className = 'row'
+      row.innerHTML = '<span></span><select></select>'
+      row.querySelector('span').textContent = label
+      const select = row.querySelector('select')
+      select.innerHTML = source.innerHTML
+      select.value = source.value
+      select.addEventListener('change', () => { source.value = select.value; fire(source, ['change']) })
+      return row
+    }
+    if (lang) box.appendChild(selectRow('Język dodatku', lang))
+    if (color) {
+      const row = document.createElement('label')
+      row.className = 'row'
+      row.innerHTML = '<span>Kolor przewodni całego zestawu</span><input type="color" aria-label="Wybierz kolor dodatku">'
+      const input = row.querySelector('input')
+      input.value = color.value
+      input.addEventListener('input', () => { color.value = input.value; fire(color, ['input']) })
+      input.addEventListener('change', () => { color.value = input.value; fire(color, ['input', 'change']) })
+      box.appendChild(row)
+    }
+    if (background) box.appendChild(selectRow('Tło dodatku', background))
+    if (shortcut) {
+      const row = document.createElement('div')
+      row.className = 'row'
+      row.innerHTML = '<span>Skrót otwierania menu</span><button class="sc" type="button"></button>'
+      const button = row.querySelector('button')
+      const sync = () => { button.textContent = shortcut.textContent }
+      sync()
+      button.addEventListener('click', () => shortcut.click())
+      lookObserver = new MutationObserver(sync)
+      lookObserver.observe(shortcut, { childList: true, characterData: true, subtree: true })
+      box.append(row, hint('Kliknij przycisk i naciśnij nowy skrót. Escape anuluje zmianę.'))
+    }
+  }
+
+  function buildInfo() {
+    const box = document.createElement('div')
+    box.className = 'info'
+    box.innerHTML = '<h3>Heroes on Discord + Notyfikator Legend + Przedziały Online + Łupy Tytanów</h3>' +
+      '<p>Wersja 4.59.8. Wszystkie dodatki masz w jednym miejscu: przełącznik włącza lub wyłącza dodatek, a zębatka otwiera jego ustawienia w tym oknie.</p>' +
+      '<p>Webhooki, role i pingi ustawiasz w zakładkach Webhooki i Role i pingi. Przedziały Online działają na mapie, a ich konfigurację znajdziesz w tym nowym oknie po kliknięciu zębatki.</p>'
+    content.appendChild(box)
+  }
+
+  function renderCards() {
+    if (!root) return
+    const enabledCount = ADDONS.filter(isOn).length
+    counter.textContent = String(enabledCount)
+    counter.setAttribute('aria-label', 'Włączone dodatki: ' + enabledCount)
+    const query = search.value.trim().toLowerCase()
+    const list = ADDONS.filter(addon => !query || (addon.name + ' ' + addon.desc).toLowerCase().includes(query))
+    if (!list.length) { grid.style.display = 'block'; grid.innerHTML = '<div class="empty">Brak dodatku pasującego do wyszukiwania.</div>'; return }
+    grid.style.display = ''
+    grid.innerHTML = list.map(addon => {
+      const on = isOn(addon)
+      return '<div class="card' + (on ? '' : ' off') + '" data-id="' + addon.id + '"><div class="top"><div class="ic">' + addon.icon + '</div><div class="nm">' + addon.name + '</div>' +
+        '<button class="gear" type="button" aria-label="Ustawienia: ' + addon.name + '">' + GEAR + '</button>' +
+        '<button class="tg' + (on ? '' : ' o') + '" type="button" aria-pressed="' + on + '" aria-label="' + addon.name + (on ? ' włączony' : ' wyłączony') + '"></button></div>' +
+        '<p class="ds">' + addon.desc + '</p></div>'
+    }).join('')
+  }
+
+  function render() {
+    if (!root) return
+    const navFor = view === 'discord' ? (roleFocus ? 'roles' : 'webhooks') : (view === 'look' || view === 'info' ? view : 'addons')
+    for (const button of navButtons) button.classList.toggle('on', button.dataset.nav === navFor)
+    const cards = view === 'addons'
+    searchRow.style.display = cards ? 'flex' : 'none'
+    grid.style.display = cards ? '' : 'none'
+    content.style.display = cards ? 'none' : 'block'
+    if (cards) { renderCards(); return }
+    content.innerHTML = ''
+    if (view === 'ranges') buildRanges()
+    else if (view === 'loot') buildLoot()
+    else if (view === 'colossus') buildColossus()
+    else if (view === 'notifier') buildNotifier()
+    else if (view === 'discord') buildDiscord()
+    else if (view === 'look') buildLook()
+    else if (view === 'info') buildInfo()
+    if (['ranges', 'loot', 'colossus', 'notifier', 'discord', 'look'].includes(view)) {
+      const saveRow = document.createElement('div')
+      saveRow.className = 'mk-settings-save-row'
+      const saveStatus = document.createElement('div')
+      saveStatus.className = 'save-status'
+      const saveButton = document.createElement('button')
+      saveButton.type = 'button'
+      saveButton.className = 'sc'
+      saveButton.textContent = 'Zapisz ustawienia'
+      saveButton.addEventListener('click', () => {
+        const saved = window.__mkPersistAddonSettings?.()
+        saveStatus.textContent = saved ? 'Ustawienia zapisane i zostaną przywrócone po F5.' : 'Nie udało się zapisać ustawień w pamięci przeglądarki.'
+        saveStatus.style.color = saved ? '#86efac' : '#fca5a5'
+      })
+      saveRow.append(saveButton, saveStatus)
+      content.appendChild(saveRow)
+    }
+  }
+
+  // Zamykanie starego formularza Discorda nie steruje widokami nowego menedżera.
+  window.addEventListener('heroes-discord:settings-closed', () => {
+    if (root && root.classList.contains('open') && view === 'discord') render()
+  })
+
+  function show() {
+    try { if (!root) build() } catch (error) { console.error('[Heroes on Discord] Błąd tworzenia menu dodatków:', error) }
+    if (!root) return
+    if (view === 'discord') closeDiscordForm()
+    stopLookObserver()
+    view = 'addons'
+    if (search) search.value = ''
+    try { render() } catch (error) {
+      console.error('[Heroes on Discord] Błąd widoku menu dodatków:', error)
+      if (content) {
+        content.innerHTML = '<div class="info"><h3>Menu dodatków</h3><p>Panel jest otwarty, ale nie udało się odświeżyć jego zawartości. Odśwież grę klawiszem F5.</p></div>'
+        content.style.display = 'block'
+        if (grid) grid.style.display = 'none'
+        if (searchRow) searchRow.style.display = 'none'
+      }
+    }
+    restoreHubPosition()
+    root.classList.add('open')
+    root.style.setProperty('display', 'flex', 'important')
+    requestAnimationFrame(clampHubToViewport)
+  }  function hide() {
+    if (!root) return
+    if (view === 'discord') closeDiscordForm()
+    if (view === 'ranges') closeRangesConfig()
+    stopLookObserver()
+    root.classList.remove('open')
+    root.style.setProperty('display', 'none', 'important')
+  }
+  function toggle() { if (root && root.classList.contains('open')) hide(); else show() }
+
+  window.__mkHubOpenRangesSettings = () => {
+    if (!root) build()
+    if (view === 'discord') closeDiscordForm()
+    stopLookObserver()
+    view = 'ranges'
+    roleFocus = false
+    render()
+    restoreHubPosition()
+    root.classList.add('open')
+    root.style.setProperty('display', 'flex', 'important')
+    requestAnimationFrame(clampHubToViewport)
+  }
+  window.__mkHubToggle = toggle
+  window.__mkHubShow = show
+  window.__mkHubInstalled = true
+  window.addEventListener('mk-hub-toggle', toggle)
+})();
 
 ;(function (addinnnnnnnnnnnnnnntionalNpcNamesToSearch)
 {
@@ -3755,554 +4307,3 @@
   tick();applyBackground(backgroundPreset,false);setInterval(tick,3000);
 })();
 
-/* ===================== MENU DODATKÓW (hub) ===================== */
-;(function () {
-  'use strict'
-  if (window.__mkHubInstalled && typeof window.__mkHubShow === 'function') return
-  window.__mkHubInstalled = false
-
-  const lsGet = key => { try { return localStorage.getItem(key) } catch (error) { return null } }
-  const lsSet = (key, value) => { try { localStorage.setItem(key, value) } catch (error) {} }
-  const icon = path => '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">' + path + '</svg>'
-  const GEAR = '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="8" cy="8" r="2.2"/><path d="M8 1.5v2M8 12.5v2M1.5 8h2M12.5 8h2M3.4 3.4l1.4 1.4M11.2 11.2l1.4 1.4M12.6 3.4l-1.4 1.4M4.8 11.2l-1.4 1.4"/></svg>'
-
-  // view = widok w tym oknie, który otwiera zębatka; key = klucz localStorage z włączeniem
-  const ADDONS = [
-    { id: 'ranges', name: 'PRZEDZIAŁY ONLINE', view: 'ranges', key: 'mkOnlineRangesEnabled', checkbox: '.mk-online-ranges-toggle', event: 'mk-online-ranges-toggle',
-      desc: 'Pokazuje graczy online w przedziałach poziomów i wysyła zbiórki na Discorda.',
-      icon: icon('<path d="M2 13V9M6 13V5M10 13V7M14 13V3"/>') },
-    { id: 'heroes', name: 'HEROES ON DISCORD', view: 'discord', key: 'mkHubHeroesEnabled',
-      desc: 'Powiadomienia o herosach, tytanach i kolosach na Twoje kanały.',
-      icon: icon('<path d="M3 4h10v6H8l-3 3v-3H3z"/>') },
-    { id: 'notifier', name: 'NOTYFIKATOR LEGEND', view: 'notifier', key: 'mkHubNotifierEnabled',
-      desc: 'Efekt, dźwięk i alert po zdobyciu legendarnego przedmiotu.',
-      icon: icon('<path d="M8 2l1.8 3.8 4.2.6-3 3 .7 4.1L8 11.4 4.3 13.5 5 9.4l-3-3 4.2-.6z"/>') },
-    { id: 'loot', name: 'ŁUPY TYTANÓW', view: 'loot', key: 'mkTitanLootEnabled_v2', checkbox: '#mk-titan-loot-settings input[type="checkbox"]',
-      desc: 'Panel wezwań na łup legendarnych tytanów, osadzony przy czacie.',
-      icon: icon('<path d="M3 6h10v7H3zM2 6l1.5-3h9L14 6M8 6v7"/>') },
-    { id: 'colossus', name: 'WEZWANIE NA KOLOSA', view: 'colossus', key: 'mkColossusGroupPromptEnabled', checkbox: '.mk-colossus-prompt-toggle', event: 'mk-colossus-prompt-toggle',
-      desc: 'Okno „Zbieramy grupę na kolosa?” w przedsionkach kolosów.',
-      icon: icon('<circle cx="5.5" cy="6" r="2"/><circle cx="11" cy="6.5" r="1.6"/><path d="M2 13c.4-2 1.8-3 3.5-3s3.1 1 3.5 3M10 10.2c1.8-.3 3.5.5 4 2.8"/>') }
-  ]
-  const byId = id => ADDONS.find(addon => addon.id === id)
-  const isOn = addon => lsGet(addon.key) !== '0'
-
-  function setOn(addon, on) {
-    const box = addon.checkbox ? (document.querySelector(addon.checkbox) || window.__mkLegacyRangesPanel?.querySelector(addon.checkbox)) : null
-    if (box && box.checked !== on) box.click()
-    if (lsGet(addon.key) !== (on ? '1' : '0')) {
-      lsSet(addon.key, on ? '1' : '0')
-      if (addon.event) window.dispatchEvent(new CustomEvent(addon.event, { detail: { enabled: on } }))
-    }
-  }
-
-  const panelEl = () => document.getElementById('mk-clan-ranges-panel') || window.__mkLegacyRangesPanel || null
-  const notify = text => { try { if (typeof window.message === 'function') window.message(text) } catch (error) {} }
-
-  /* ---------- styl ---------- */
-  const style = document.createElement('style')
-  style.id = 'mk-hub-style'
-  style.textContent = [
-    // The legacy ranges window is removed from the DOM during initialization.
-    '#mk-hub{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:2147482900;width:min(760px,calc(100vw - 16px));height:min(470px,calc(100vh - 16px));display:none;flex-direction:column;border:2px solid rgba(144,123,255,.32);border-radius:14px;background:linear-gradient(180deg,#221241,#0d081f);box-shadow:0 18px 48px rgba(0,0,0,.6);color:#f3f3ff;font:13px/1.4 Inter,"Segoe UI",Arial,sans-serif;overflow:hidden}',
-    '#mk-hub.open{display:flex}',
-    '#mk-hub *{box-sizing:border-box}',
-    '#mk-hub button,#mk-hub input,#mk-hub select{font-family:inherit}',
-    '#mk-hub .hd{display:flex;align-items:center;height:40px;padding:0 12px;border-bottom:1px solid rgba(255,255,255,.08);flex:none;cursor:grab;user-select:none}',
-    '#mk-hub .hd:active{cursor:grabbing}',
-    '#mk-hub .hd-t{flex:1;text-align:center;font-size:13px;font-weight:700;letter-spacing:.04em;color:#c9c1ff}',
-    '#mk-hub .x{width:26px;height:26px;border:1px solid rgba(255,255,255,.14);border-radius:7px;background:rgba(255,255,255,.06);color:#e7e3ff;font-size:16px;line-height:1;padding:0;cursor:pointer}',
-    '#mk-hub .bd{display:flex;gap:12px;padding:12px;flex:1;min-height:0}',
-    '#mk-hub .sb{display:flex;flex-direction:column;gap:8px;width:168px;flex:none}',
-    '#mk-hub .nav{display:flex;align-items:center;gap:10px;width:100%;min-height:40px;padding:0 12px;border:1px solid rgba(144,123,255,.22);border-radius:9px;background:rgba(255,255,255,.04);color:#d9d4f5;font-size:13px;font-weight:600;text-align:left;cursor:pointer}',
-    '#mk-hub .nav:hover{background:rgba(255,255,255,.09)}',
-    '#mk-hub .nav.on{background:rgba(99,102,241,.34);border-color:rgba(165,180,252,.7);color:#fff}',
-    '#mk-hub .sep{height:1px;background:rgba(255,255,255,.1);margin:4px 0}',
-    '#mk-hub .mn{display:flex;flex-direction:column;gap:10px;flex:1;min-width:0;min-height:0}',
-    '#mk-hub .sr{display:flex;gap:8px;align-items:center;flex:none}',
-    '#mk-hub .q{flex:1;height:34px;padding:0 12px;border:1px solid rgba(144,123,255,.28);border-radius:9px;background:rgba(10,7,24,.72);color:#f3f3ff;font-size:13px;text-align:center;outline:none}',
-    '#mk-hub .q:focus{border-color:#907bff;box-shadow:0 0 0 2px rgba(144,123,255,.2)}',
-    '#mk-hub .cnt{min-width:34px;height:34px;display:flex;align-items:center;justify-content:center;border:1px solid rgba(165,180,252,.5);border-radius:9px;background:rgba(99,102,241,.28);font-weight:700}',
-    '#mk-hub .gr{display:grid;grid-template-columns:1fr 1fr;gap:10px;overflow-y:auto;align-content:start;min-height:0;padding-right:2px}',
-    '#mk-hub .ct{display:none;flex:1;min-height:0;overflow-y:auto;padding-right:2px}',
-    '#mk-hub .mk-hub-ranges-config .mk-config{display:block!important;max-height:none;overflow:visible;padding:10px;border:1px solid rgba(144,123,255,.22);border-radius:10px;background:rgba(8,8,25,.42)}',
-    '#mk-hub .mk-hub-ranges-config .mk-config-row{gap:6px;margin-bottom:7px}',
-    '#mk-hub .mk-hub-ranges-config .mk-config-input{min-height:30px;padding:5px 8px;border-radius:7px;font-size:12px}',
-    '#mk-hub .mk-hub-ranges-config .mk-config-btn{min-height:30px;padding:5px 10px;border-radius:7px;font-size:12px}',
-    '#mk-hub .mk-hub-ranges-config .mk-config-adv{padding:9px;border-radius:8px}',
-    '#mk-hub .mk-hub-ranges-config .mk-config-actions{gap:8px}',
-    '#mk-hub .card{display:flex;flex-direction:column;gap:6px;padding:12px;border:1px solid rgba(144,123,255,.26);border-radius:10px;background:rgba(255,255,255,.045)}',
-    '#mk-hub .card.off{background:rgba(255,255,255,.02);border-color:rgba(144,123,255,.14)}',
-    '#mk-hub .top{display:flex;align-items:center;gap:10px}',
-    '#mk-hub .ic{display:flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:8px;background:#2b1f5c;color:#c9c1ff;flex:none}',
-    '#mk-hub .off .ic{background:#1f1a3d;color:#8f89b3}',
-    '#mk-hub .nm{flex:1;font-size:13px;font-weight:700;letter-spacing:.02em;color:#f3f3ff}',
-    '#mk-hub .ds{margin:0;font-size:11.5px;line-height:1.45;color:#b4adda}',
-    '#mk-hub .off .nm,#mk-hub .off .ds{color:#8f89b3}',
-    '#mk-hub .gear{width:28px;height:28px;border:1px solid rgba(144,123,255,.3);border-radius:7px;background:rgba(255,255,255,.05);color:#d9d4f5;display:flex;align-items:center;justify-content:center;padding:0;cursor:pointer}',
-    '#mk-hub .gear:hover{background:rgba(255,255,255,.12)}',
-    '#mk-hub .tg{position:relative;width:34px;height:20px;border:0;border-radius:10px;background:#4f46e5;padding:0;flex:none;cursor:pointer}',
-    '#mk-hub .tg:after{content:"";position:absolute;top:3px;left:17px;width:14px;height:14px;border-radius:50%;background:#fff}',
-    '#mk-hub .tg.o{background:#3a3560}#mk-hub .tg.o:after{left:3px;background:#a7a0c9}',
-    '#mk-hub .empty,#mk-hub .info{color:#b4adda;font-size:12.5px;line-height:1.55;padding:6px 2px}',
-    '#mk-hub .info h3,#mk-hub .sec h3{margin:0 0 8px;font-size:14px;color:#f3f3ff}#mk-hub .info p{margin:0 0 8px}',
-    '#mk-hub .sec{display:flex;flex-direction:column;gap:10px;padding:2px}',
-    '#mk-hub .row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 12px;border:1px solid rgba(144,123,255,.24);border-radius:10px;background:rgba(255,255,255,.045);color:#e7e3ff;font-size:13px}',
-    '#mk-hub .row select{min-width:130px;height:30px;padding:0 8px;border:1px solid rgba(144,123,255,.35);border-radius:7px;background:rgba(10,7,24,.8);color:#f3f3ff}',
-    '#mk-hub .row input[type=color]{width:46px;height:28px;padding:0;border:1px solid rgba(144,123,255,.35);border-radius:7px;background:transparent;cursor:pointer}',
-    '#mk-hub .row button.sc{min-width:130px;height:30px;padding:0 10px;border:1px solid rgba(144,123,255,.35);border-radius:7px;background:rgba(99,102,241,.25);color:#fff;cursor:pointer}',
-    '#mk-hub .field{display:flex;flex-direction:column;gap:5px;padding:9px 11px;border:1px solid rgba(144,123,255,.24);border-radius:10px;background:rgba(255,255,255,.045);color:#e7e3ff;font-size:12px}',
-    '#mk-hub .field input,#mk-hub .field textarea{width:100%;min-height:34px;padding:8px 10px;border:1px solid rgba(144,123,255,.32);border-radius:7px;background:rgba(10,7,24,.72);color:#f3f3ff;outline:none}',
-    '#mk-hub .field textarea{min-height:220px;resize:vertical;font:12px/1.45 Consolas,monospace}',
-    '#mk-hub .field input:focus,#mk-hub .field textarea:focus{border-color:#907bff;box-shadow:0 0 0 2px rgba(144,123,255,.16)}',
-    '#mk-hub .actions{display:flex;justify-content:flex-end;gap:8px}',
-    '#mk-hub .actions .sc{height:34px;padding:0 14px;border:1px solid rgba(144,123,255,.38);border-radius:8px;background:#5745d8;color:#fff;font-weight:700;cursor:pointer}',
-    '#mk-hub .save-status{min-height:18px;color:#86efac;font-size:11px}',
-    '#mk-hub .mk-settings-save-row{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:8px;padding-top:10px;border-top:1px solid rgba(255,255,255,.1)}',
-    '#mk-hub .mk-settings-save-row .sc{height:34px;flex:none;padding:0 14px;border:1px solid color-mix(in srgb,var(--mkhd-addon-theme) 70%,#fff);border-radius:8px;background:color-mix(in srgb,var(--mkhd-addon-theme) 78%,#111827);color:#fff;font-weight:700;cursor:pointer;transition:filter .15s,transform .15s}',
-    '#mk-hub .mk-settings-save-row .sc:hover{filter:brightness(1.14);transform:translateY(-1px)}',
-    '#mk-hub .mk-settings-save-row .save-status{flex:1;text-align:right}',
-    '#mk-hub .hint{margin:0;font-size:11.5px;line-height:1.45;color:#b4adda}',
-    '#mk-hub .heroes-discord__setup--inline .heroes-discord__background{max-height:none!important;overflow:visible!important}',
-    '#mk-hub .mk-leg-settings{margin:0}',
-    '@media(max-width:640px){#mk-hub .sb{width:46px}#mk-hub .nav{padding:0;justify-content:center}#mk-hub .nav span{display:none}#mk-hub .gr{grid-template-columns:1fr}}'
-  ].join('\n')
-  document.head.appendChild(style)
-  const themeStyle = document.createElement('style')
-  themeStyle.id = 'mk-hub-theme-style'
-  themeStyle.textContent = `
-    #mk-hub{--mkhd-addon-theme:#6366f1;border-color:color-mix(in srgb,var(--mkhd-addon-theme) 48%,#20243a);box-shadow:0 18px 48px rgba(0,0,0,.6),0 0 0 1px color-mix(in srgb,var(--mkhd-addon-theme) 16%,transparent)}
-    #mk-hub .hd-t{color:color-mix(in srgb,var(--mkhd-addon-theme) 55%,#fff)}
-    #mk-hub .nav,#mk-hub .q,#mk-hub .card,#mk-hub .gear,#mk-hub .row,#mk-hub .field{border-color:color-mix(in srgb,var(--mkhd-addon-theme) 26%,rgba(255,255,255,.1))}
-    #mk-hub .nav.on{background:color-mix(in srgb,var(--mkhd-addon-theme) 34%,#111827);border-color:color-mix(in srgb,var(--mkhd-addon-theme) 72%,#cbd5e1)}
-    #mk-hub .q:focus,#mk-hub .field input:focus,#mk-hub .field textarea:focus{border-color:var(--mkhd-addon-theme);box-shadow:0 0 0 2px color-mix(in srgb,var(--mkhd-addon-theme) 24%,transparent)}
-    #mk-hub .cnt{background:color-mix(in srgb,var(--mkhd-addon-theme) 28%,#111827);border-color:color-mix(in srgb,var(--mkhd-addon-theme) 58%,#cbd5e1)}
-    #mk-hub .ic{background:color-mix(in srgb,var(--mkhd-addon-theme) 34%,#111827);color:color-mix(in srgb,var(--mkhd-addon-theme) 55%,#fff)}
-    #mk-hub .gear,#mk-hub .row select,#mk-hub .row input[type=color],#mk-hub .field input,#mk-hub .field textarea{border-color:color-mix(in srgb,var(--mkhd-addon-theme) 38%,rgba(255,255,255,.12))}
-    #mk-hub .tg:not(.o){background:var(--mkhd-addon-theme)}
-    #mk-hub .actions .sc{background:color-mix(in srgb,var(--mkhd-addon-theme) 78%,#111827);border-color:color-mix(in srgb,var(--mkhd-addon-theme) 68%,#fff)}
-  `
-  document.head.appendChild(themeStyle)
-
-  /* ---------- okno ---------- */
-  let root = null, grid = null, content = null, counter = null, search = null, searchRow = null
-  let view = 'addons', roleFocus = false, navButtons = [], lookObserver = null
-
-  const HUB_POSITION_KEY = 'mkHubWindowPositionV1'
-  function restoreHubPosition() {
-    if (!root) return
-    let saved = null
-    try { saved = JSON.parse(lsGet(HUB_POSITION_KEY) || 'null') } catch (error) {}
-    if (saved && Number.isFinite(saved.left) && Number.isFinite(saved.top)) {
-      root.style.transform = 'none'
-      root.style.left = saved.left + 'px'
-      root.style.top = saved.top + 'px'
-      root.dataset.userPositioned = '1'
-    } else {
-      root.style.left = '50%'
-      root.style.top = '50%'
-      root.style.transform = 'translate(-50%,-50%)'
-      delete root.dataset.userPositioned
-    }
-  }
-  function clampHubToViewport() {
-    if (!root || !root.classList.contains('open') || root.dataset.userPositioned !== '1') return
-    const rect = root.getBoundingClientRect()
-    const margin = 8
-    root.style.left = Math.max(margin, Math.min(rect.left, innerWidth - rect.width - margin)) + 'px'
-    root.style.top = Math.max(margin, Math.min(rect.top, innerHeight - rect.height - margin)) + 'px'
-  }
-  window.addEventListener('resize', clampHubToViewport)
-
-  const NAV = [
-    { id: 'addons', label: 'Dodatki', icon: icon('<rect x="2" y="2" width="5" height="5" rx="1"/><rect x="9" y="2" width="5" height="5" rx="1"/><rect x="2" y="9" width="5" height="5" rx="1"/><rect x="9" y="9" width="5" height="5" rx="1"/>') },
-    { id: 'webhooks', label: 'Webhooki', icon: icon('<path d="M6 10l4-4M5 7L3.5 8.5a2.5 2.5 0 003.5 3.5L8.5 10.5M11 9l1.5-1.5A2.5 2.5 0 009 4L7.5 5.5"/>') },
-    { id: 'roles', label: 'Role i pingi', icon: icon('<circle cx="8" cy="5.5" r="2.5"/><path d="M3 13.5c.6-2.4 2.5-3.5 5-3.5s4.4 1.1 5 3.5"/>') },
-    { id: 'look', label: 'Wygląd i ustawienia', icon: icon('<circle cx="8" cy="8" r="2.2"/><path d="M8 1.5v2M8 12.5v2M1.5 8h2M12.5 8h2"/>') },
-    { sep: true },
-    { id: 'info', label: 'Informacje', icon: icon('<circle cx="8" cy="8" r="6"/><path d="M8 7.2V11M8 5v.1"/>') }
-  ]
-
-  function build() {
-    root = document.createElement('div')
-    root.id = 'mk-hub'
-    root.setAttribute('role', 'dialog')
-    root.setAttribute('aria-label', 'Menu dodatków')
-    root.innerHTML = '<div class="hd"><div class="hd-t">Heroes on Discord · Dodatki</div><button class="x" type="button" aria-label="Zamknij">×</button></div>' +
-      '<div class="bd"><div class="sb"></div><div class="mn"><div class="sr"><input class="q" type="text" aria-label="Szukaj dodatku" placeholder="Szukaj dodatku..."><div class="cnt" aria-label="Włączone dodatki"></div></div><div class="gr"></div><div class="ct"></div></div></div>'
-    const sidebar = root.querySelector('.sb')
-    for (const item of NAV) {
-      if (item.sep) { const sep = document.createElement('div'); sep.className = 'sep'; sidebar.appendChild(sep); continue }
-      const button = document.createElement('button')
-      button.type = 'button'
-      button.className = 'nav'
-      button.dataset.nav = item.id
-      button.title = item.label
-      button.innerHTML = item.icon + '<span>' + item.label + '</span>'
-      sidebar.appendChild(button)
-      navButtons.push(button)
-    }
-    grid = root.querySelector('.gr')
-    content = root.querySelector('.ct')
-    counter = root.querySelector('.cnt')
-    search = root.querySelector('.q')
-    searchRow = root.querySelector('.sr')
-
-    root.querySelector('.x').addEventListener('click', hide)
-    const header = root.querySelector('.hd')
-    header.addEventListener('pointerdown', event => {
-      if (event.button !== 0 || event.target.closest('button')) return
-      event.preventDefault()
-      const rect = root.getBoundingClientRect()
-      root.style.transform = 'none'
-      root.style.left = rect.left + 'px'
-      root.style.top = rect.top + 'px'
-      root.dataset.userPositioned = '1'
-      const offsetX = event.clientX - rect.left
-      const offsetY = event.clientY - rect.top
-      const move = moveEvent => {
-        const margin = 8
-        root.style.left = Math.max(margin, Math.min(innerWidth - root.offsetWidth - margin, moveEvent.clientX - offsetX)) + 'px'
-        root.style.top = Math.max(margin, Math.min(innerHeight - root.offsetHeight - margin, moveEvent.clientY - offsetY)) + 'px'
-      }
-      const stop = () => {
-        document.removeEventListener('pointermove', move)
-        document.removeEventListener('pointerup', stop)
-        document.removeEventListener('pointercancel', stop)
-        try {
-          localStorage.setItem(HUB_POSITION_KEY, JSON.stringify({ left: parseFloat(root.style.left), top: parseFloat(root.style.top) }))
-          window.__mkPersistAddonSettings?.()
-        } catch (error) {}
-      }
-      document.addEventListener('pointermove', move)
-      document.addEventListener('pointerup', stop)
-      document.addEventListener('pointercancel', stop)
-    })
-    search.addEventListener('input', renderCards)
-    sidebar.addEventListener('click', event => {
-      const button = event.target.closest('.nav')
-      if (!button) return
-      const id = button.dataset.nav
-      if (id === 'webhooks' || id === 'roles') setView('discord', id === 'roles')
-      else setView(id)
-    })
-    grid.addEventListener('click', event => {
-      const card = event.target.closest('.card')
-      const addon = card && byId(card.dataset.id)
-      if (!addon) return
-      if (event.target.closest('.gear')) { openAddon(addon); return }
-      if (event.target.closest('.tg')) { setOn(addon, !isOn(addon)); renderCards() }
-    })
-    for (const type of ['wheel', 'mousedown', 'mouseup', 'contextmenu']) root.addEventListener(type, event => event.stopPropagation(), { passive: true })
-    for (const type of ['keydown', 'keyup', 'keypress']) root.addEventListener(type, event => { if (event.target.closest('input,textarea,select')) event.stopPropagation() })
-
-    document.body.appendChild(root)
-    root.style.setProperty('--mkhd-addon-theme', getComputedStyle(document.documentElement).getPropertyValue('--mkhd-addon-theme').trim() || '#6366f1')
-    try { window.__mkApplyAddonAppearance?.() } catch (error) { console.warn("[Heroes on Discord] Nie udało się zastosować wyglądu menu:", error) }
-  }
-
-  /* ---------- widoki ---------- */
-  function closeDiscordForm() {
-    window.__mkHubDiscordHost = null
-    try { window.__heroesDiscordCloseSettings && window.__heroesDiscordCloseSettings(false) } catch (error) {}
-  }
-
-  function stopLookObserver() { if (lookObserver) { lookObserver.disconnect(); lookObserver = null } }
-
-  function openAddon(addon) {
-    if (addon.view === 'ranges' && !isOn(addon)) { notify('Najpierw włącz Przedziały Online.'); return }
-    setView(addon.view)
-  }
-
-  function closeRangesConfig() { try { window.__mkHubUnmountRangesConfig?.() } catch (error) {} }
-
-  function setView(next, roles) {
-    if (view === 'discord' && next !== 'discord') closeDiscordForm()
-    if (view === 'ranges' && next !== 'ranges') closeRangesConfig()
-    stopLookObserver()
-    view = next
-    roleFocus = !!roles
-    render()
-  }
-
-  function discordConfig() {
-    try { return window.__mkHubReadDiscordConfig?.() || JSON.parse(lsGet('heroes-discord') || '{}') } catch (error) { return {} }
-  }
-
-  function saveDiscordConfig(patch, status) {
-    const saved = window.__mkHubSaveDiscordConfig?.(patch)
-    if (saved) window.__mkPersistAddonSettings?.()
-    if (status) status.textContent = saved ? 'Zapisano ustawienia.' : 'Nie udało się zapisać. Spróbuj ponownie.'
-  }
-
-  function buildDiscord() {
-    const config = discordConfig()
-    const box = section(roleFocus ? 'Role i pingi' : 'Webhooki Discorda')
-    content.appendChild(box)
-    if (!window.__mkHubReadDiscordConfig) { box.appendChild(hint('Ustawienia Discorda jeszcze się wczytują. Zamknij i otwórz menu za chwilę.')); return }
-    if (roleFocus) {
-      const field = document.createElement('label')
-      field.className = 'field'
-      field.appendChild(Object.assign(document.createElement('span'), { textContent: 'Role dla potworów — nazwa: ID roli. Puste ID wyłącza ping.' }))
-      const area = document.createElement('textarea')
-      area.value = JSON.stringify(config.roleMappings || {}, null, 2)
-      field.appendChild(area)
-      box.append(field, hint('ID roli znajdziesz w Discordzie po włączeniu trybu deweloperskiego. Event używa osobnej, stałej roli @event.'))
-      const status = document.createElement('div'); status.className = 'save-status'
-      const actions = document.createElement('div'); actions.className = 'actions'
-      const save = document.createElement('button'); save.type = 'button'; save.className = 'sc'; save.textContent = 'Zapisz role i pingi'
-      save.addEventListener('click', () => {
-        try {
-          const roles = JSON.parse(area.value || '{}')
-          if (!roles || typeof roles !== 'object' || Array.isArray(roles)) throw new Error('invalid')
-          saveDiscordConfig({ roleMappings: roles }, status)
-        } catch (error) { status.style.color = '#fca5a5'; status.textContent = 'Wpisz poprawny obiekt JSON z rolami i ich ID.' }
-      })
-      actions.appendChild(save); box.append(status, actions)
-      return
-    }
-    const inputs = {}
-    const addField = (label, key, placeholder) => {
-      const field = document.createElement('label'); field.className = 'field'
-      field.appendChild(Object.assign(document.createElement('span'), { textContent: label }))
-      const input = document.createElement('input'); input.type = 'url'; input.placeholder = placeholder || 'https://discord.com/api/webhooks/...'; input.value = config.webhookUrls?.[key] || ''
-      inputs[key] = input; field.appendChild(input); box.appendChild(field)
-    }
-    addField('Webhook Discorda — Herosi', 'heroes')
-    addField('Webhook Discorda — Kolosi', 'colossi')
-    addField('Webhook Discorda — Tytani', 'titans')
-    addField('Webhook Discorda — Event (@event)', 'event')
-    box.appendChild(hint('Każdy adres jest zapisywany lokalnie na tym koncie gry. Wklej własny webhook dla każdego kanału.'))
-    const nameField = document.createElement('label'); nameField.className = 'field'
-    nameField.appendChild(Object.assign(document.createElement('span'), { textContent: 'Nick wysyłającego (opcjonalnie)' }))
-    const name = document.createElement('input'); name.type = 'text'; name.value = config.name || ''; name.placeholder = 'Domyślnie nick postaci'; nameField.appendChild(name); box.appendChild(nameField)
-    const eventRow = document.createElement('label'); eventRow.className = 'row'
-    const eventLabel = document.createElement('span'); eventLabel.textContent = 'Automatyczne alerty o herosach eventowych z pingiem @event'
-    const eventToggle = document.createElement('input'); eventToggle.type = 'checkbox'; eventToggle.checked = config.eventAlertsEnabled !== false
-    eventRow.append(eventLabel,eventToggle); box.appendChild(eventRow)
-    const status = document.createElement('div'); status.className = 'save-status'
-    const actions = document.createElement('div'); actions.className = 'actions'
-    const save = document.createElement('button'); save.type = 'button'; save.className = 'sc'; save.textContent = 'Zapisz webhooki'
-    save.addEventListener('click', () => saveDiscordConfig({ webhookUrls: Object.fromEntries(Object.entries(inputs).map(([key,input])=>[key,input.value.trim()])), name: name.value, eventAlertsEnabled: eventToggle.checked }, status))
-    actions.appendChild(save); box.append(status,actions)
-  }
-
-  function toggleRow(addon, label) {
-    const row = document.createElement('div')
-    row.className = 'row'
-    const on = isOn(addon)
-    row.innerHTML = '<span>' + label + '</span><button class="tg' + (on ? '' : ' o') + '" type="button" aria-pressed="' + on + '" aria-label="' + label + (on ? ' włączone' : ' wyłączone') + '"></button>'
-    row.querySelector('.tg').addEventListener('click', () => { setOn(addon, !isOn(addon)); render() })
-    return row
-  }
-
-  function section(title) {
-    const box = document.createElement('div')
-    box.className = 'sec'
-    box.innerHTML = '<h3></h3>'
-    box.querySelector('h3').textContent = title
-    return box
-  }
-  function hint(text) { const p = document.createElement('p'); p.className = 'hint'; p.textContent = text; return p }
-
-  function buildRanges() {
-    const box = section('Przedziały Online')
-    box.appendChild(toggleRow(byId('ranges'), 'Włącz Przedziały Online'))
-    box.appendChild(hint('Konfiguracja przedziałów, progów kolorów, komunikatów i webhooków.'))
-    const host = document.createElement('div')
-    host.className = 'mk-hub-ranges-config'
-    box.appendChild(host)
-    content.appendChild(box)
-    if (!isOn(byId('ranges'))) { host.appendChild(hint('Włącz Przedziały Online, aby edytować ich ustawienia.')); return }
-    if (typeof window.__mkHubMountRangesConfig === 'function' && window.__mkHubMountRangesConfig(host)) return
-    host.appendChild(hint('Konfiguracja przedziałów jeszcze się wczytuje. Otwórz ten widok ponownie za chwilę.'))
-  }
-
-  function buildLoot() {
-    const box = section('Ustawienia łupu')
-    box.append(toggleRow(byId('loot'), 'Włącz panel łupu przy czacie'),
-      hint('Panel z legendarnymi dropami pojawia się przy czacie na mapie tytana. Kliknięcie przedmiotu wysyła zgłoszenie na czat grupowy.'))
-    content.appendChild(box)
-  }
-
-  function buildColossus() {
-    const box = section('Wezwanie na kolosa')
-    box.append(toggleRow(byId('colossus'), 'Włącz okno zbiórki na kolosa'),
-      hint('Wyłącza wyskakujące okno zbiórki na przedsionkach kolosów.'))
-    content.appendChild(box)
-  }
-
-  function buildNotifier() {
-    const box = section('Notyfikator Legend')
-    box.appendChild(toggleRow(byId('notifier'), 'Włącz notyfikator legend'))
-    const host = document.createElement('div')
-    box.appendChild(host)
-    content.appendChild(box)
-    if (typeof window.__legNotifierAttach === 'function') window.__legNotifierAttach(host)
-    else host.appendChild(hint('Ustawienia notyfikatora jeszcze się wczytują. Zamknij i otwórz menu za chwilę.'))
-  }
-
-  // Kontrolki wyglądu są lustrzanym odbiciem tych z panelu: zmiana tutaj przekazuje wartość do oryginału.
-  function buildLook() {
-    const panel = panelEl()
-    const theme = panel && panel.querySelector('#mk-addon-theme-settings')
-    const box = section('Wygląd i ustawienia')
-    content.appendChild(box)
-    if (!theme) { box.appendChild(hint('Ustawienia wyglądu jeszcze się wczytują. Zamknij i otwórz menu za chwilę.')); return }
-    const lang = theme.querySelector('.mk-tl-language')
-    const background = theme.querySelector('.mk-tl-background')
-    const color = theme.querySelector('input[type="color"]')
-    const shortcut = theme.querySelector('.mk-tl-shortcut-button')
-    const fire = (el, types) => types.forEach(type => el.dispatchEvent(new Event(type, { bubbles: true })))
-    const selectRow = (label, source) => {
-      const row = document.createElement('label')
-      row.className = 'row'
-      row.innerHTML = '<span></span><select></select>'
-      row.querySelector('span').textContent = label
-      const select = row.querySelector('select')
-      select.innerHTML = source.innerHTML
-      select.value = source.value
-      select.addEventListener('change', () => { source.value = select.value; fire(source, ['change']) })
-      return row
-    }
-    if (lang) box.appendChild(selectRow('Język dodatku', lang))
-    if (color) {
-      const row = document.createElement('label')
-      row.className = 'row'
-      row.innerHTML = '<span>Kolor przewodni całego zestawu</span><input type="color" aria-label="Wybierz kolor dodatku">'
-      const input = row.querySelector('input')
-      input.value = color.value
-      input.addEventListener('input', () => { color.value = input.value; fire(color, ['input']) })
-      input.addEventListener('change', () => { color.value = input.value; fire(color, ['input', 'change']) })
-      box.appendChild(row)
-    }
-    if (background) box.appendChild(selectRow('Tło dodatku', background))
-    if (shortcut) {
-      const row = document.createElement('div')
-      row.className = 'row'
-      row.innerHTML = '<span>Skrót otwierania menu</span><button class="sc" type="button"></button>'
-      const button = row.querySelector('button')
-      const sync = () => { button.textContent = shortcut.textContent }
-      sync()
-      button.addEventListener('click', () => shortcut.click())
-      lookObserver = new MutationObserver(sync)
-      lookObserver.observe(shortcut, { childList: true, characterData: true, subtree: true })
-      box.append(row, hint('Kliknij przycisk i naciśnij nowy skrót. Escape anuluje zmianę.'))
-    }
-  }
-
-  function buildInfo() {
-    const box = document.createElement('div')
-    box.className = 'info'
-    box.innerHTML = '<h3>Heroes on Discord + Notyfikator Legend + Przedziały Online + Łupy Tytanów</h3>' +
-      '<p>Wersja 4.59.8. Wszystkie dodatki masz w jednym miejscu: przełącznik włącza lub wyłącza dodatek, a zębatka otwiera jego ustawienia w tym oknie.</p>' +
-      '<p>Webhooki, role i pingi ustawiasz w zakładkach Webhooki i Role i pingi. Przedziały Online działają na mapie, a ich konfigurację znajdziesz w tym nowym oknie po kliknięciu zębatki.</p>'
-    content.appendChild(box)
-  }
-
-  function renderCards() {
-    if (!root) return
-    const enabledCount = ADDONS.filter(isOn).length
-    counter.textContent = String(enabledCount)
-    counter.setAttribute('aria-label', 'Włączone dodatki: ' + enabledCount)
-    const query = search.value.trim().toLowerCase()
-    const list = ADDONS.filter(addon => !query || (addon.name + ' ' + addon.desc).toLowerCase().includes(query))
-    if (!list.length) { grid.style.display = 'block'; grid.innerHTML = '<div class="empty">Brak dodatku pasującego do wyszukiwania.</div>'; return }
-    grid.style.display = ''
-    grid.innerHTML = list.map(addon => {
-      const on = isOn(addon)
-      return '<div class="card' + (on ? '' : ' off') + '" data-id="' + addon.id + '"><div class="top"><div class="ic">' + addon.icon + '</div><div class="nm">' + addon.name + '</div>' +
-        '<button class="gear" type="button" aria-label="Ustawienia: ' + addon.name + '">' + GEAR + '</button>' +
-        '<button class="tg' + (on ? '' : ' o') + '" type="button" aria-pressed="' + on + '" aria-label="' + addon.name + (on ? ' włączony' : ' wyłączony') + '"></button></div>' +
-        '<p class="ds">' + addon.desc + '</p></div>'
-    }).join('')
-  }
-
-  function render() {
-    if (!root) return
-    const navFor = view === 'discord' ? (roleFocus ? 'roles' : 'webhooks') : (view === 'look' || view === 'info' ? view : 'addons')
-    for (const button of navButtons) button.classList.toggle('on', button.dataset.nav === navFor)
-    const cards = view === 'addons'
-    searchRow.style.display = cards ? 'flex' : 'none'
-    grid.style.display = cards ? '' : 'none'
-    content.style.display = cards ? 'none' : 'block'
-    if (cards) { renderCards(); return }
-    content.innerHTML = ''
-    if (view === 'ranges') buildRanges()
-    else if (view === 'loot') buildLoot()
-    else if (view === 'colossus') buildColossus()
-    else if (view === 'notifier') buildNotifier()
-    else if (view === 'discord') buildDiscord()
-    else if (view === 'look') buildLook()
-    else if (view === 'info') buildInfo()
-    if (['ranges', 'loot', 'colossus', 'notifier', 'discord', 'look'].includes(view)) {
-      const saveRow = document.createElement('div')
-      saveRow.className = 'mk-settings-save-row'
-      const saveStatus = document.createElement('div')
-      saveStatus.className = 'save-status'
-      const saveButton = document.createElement('button')
-      saveButton.type = 'button'
-      saveButton.className = 'sc'
-      saveButton.textContent = 'Zapisz ustawienia'
-      saveButton.addEventListener('click', () => {
-        const saved = window.__mkPersistAddonSettings?.()
-        saveStatus.textContent = saved ? 'Ustawienia zapisane i zostaną przywrócone po F5.' : 'Nie udało się zapisać ustawień w pamięci przeglądarki.'
-        saveStatus.style.color = saved ? '#86efac' : '#fca5a5'
-      })
-      saveRow.append(saveButton, saveStatus)
-      content.appendChild(saveRow)
-    }
-  }
-
-  // Zamykanie starego formularza Discorda nie steruje widokami nowego menedżera.
-  window.addEventListener('heroes-discord:settings-closed', () => {
-    if (root && root.classList.contains('open') && view === 'discord') render()
-  })
-
-  function show() {
-    try { if (!root) build() } catch (error) { console.error('[Heroes on Discord] Błąd tworzenia menu dodatków:', error) }
-    if (!root) return
-    if (view === 'discord') closeDiscordForm()
-    stopLookObserver()
-    view = 'addons'
-    if (search) search.value = ''
-    try { render() } catch (error) {
-      console.error('[Heroes on Discord] Błąd widoku menu dodatków:', error)
-      if (content) {
-        content.innerHTML = '<div class="info"><h3>Menu dodatków</h3><p>Panel jest otwarty, ale nie udało się odświeżyć jego zawartości. Odśwież grę klawiszem F5.</p></div>'
-        content.style.display = 'block'
-        if (grid) grid.style.display = 'none'
-        if (searchRow) searchRow.style.display = 'none'
-      }
-    }
-    restoreHubPosition()
-    root.classList.add('open')
-    root.style.setProperty('display', 'flex', 'important')
-    requestAnimationFrame(clampHubToViewport)
-  }  function hide() {
-    if (!root) return
-    if (view === 'discord') closeDiscordForm()
-    if (view === 'ranges') closeRangesConfig()
-    stopLookObserver()
-    root.classList.remove('open')
-    root.style.setProperty('display', 'none', 'important')
-  }
-  function toggle() { if (root && root.classList.contains('open')) hide(); else show() }
-
-  window.__mkHubOpenRangesSettings = () => {
-    if (!root) build()
-    if (view === 'discord') closeDiscordForm()
-    stopLookObserver()
-    view = 'ranges'
-    roleFocus = false
-    render()
-    restoreHubPosition()
-    root.classList.add('open')
-    root.style.setProperty('display', 'flex', 'important')
-    requestAnimationFrame(clampHubToViewport)
-  }
-  window.__mkHubToggle = toggle
-  window.__mkHubShow = show
-  window.__mkHubInstalled = true
-  window.addEventListener('mk-hub-toggle', toggle)
-})();
