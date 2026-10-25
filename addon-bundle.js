@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Heroes on Discord + Notyfikator Legend + Przedziały Online + Łupy Tytanów + Podział Grup
 // @namespace    http://tampermonkey.net/
-// @version      4.61.1
+// @version      4.61.2
 // @description  Heroes and titans alerts, online player level ranges, and legendary titan loot calls
 // @author       Kris Aphalon
 // @match        https://margonem.com/*
@@ -451,37 +451,52 @@
     return teams
   }
   let partyWindow = null
+  const PARTY_POSITION_KEY = 'mkBalancedPartyWindowPositionV1'
+  const PARTY_OPEN_KEY = 'mkBalancedPartyWindowOpenV1'
+  function savePartyPosition() {
+    if (!partyWindow) return
+    try { const r = partyWindow.getBoundingClientRect(); lsSet(PARTY_POSITION_KEY, JSON.stringify({ left: Math.round(r.left), top: Math.round(r.top) })); window.__mkPersistAddonSettings?.() } catch (error) {}
+  }
+  function restorePartyPosition() {
+    if (!partyWindow) return
+    let p = null; try { p = JSON.parse(lsGet(PARTY_POSITION_KEY) || 'null') } catch (error) {}
+    if (p && Number.isFinite(p.left) && Number.isFinite(p.top)) {
+      partyWindow.style.left = Math.max(6, Math.min(innerWidth - partyWindow.offsetWidth - 6, p.left)) + 'px'
+      partyWindow.style.top = Math.max(6, Math.min(innerHeight - partyWindow.offsetHeight - 6, p.top)) + 'px'
+      partyWindow.style.right = 'auto'; partyWindow.style.bottom = 'auto'
+    } else { partyWindow.style.left = 'auto'; partyWindow.style.top = 'auto'; partyWindow.style.right = '18px'; partyWindow.style.bottom = '72px' }
+  }
   function openPartyWindow() {
     if (!partyWindow || !document.body.contains(partyWindow)) {
-      const style = document.createElement('style')
-      style.id = 'mk-party-floating-style'
+      const style = document.createElement('style'); style.id = 'mk-party-floating-style'
       if (!document.getElementById(style.id)) {
-        style.textContent = '#mk-party-floating{position:fixed;right:18px;bottom:72px;z-index:2147482800;width:min(480px,calc(100vw - 24px));max-height:min(76vh,680px);overflow:auto;border:1px solid rgba(144,123,255,.45);border-radius:12px;background:linear-gradient(180deg,#221241,#0d081f);box-shadow:0 18px 48px rgba(0,0,0,.65);color:#f3f3ff;font:13px/1.4 Inter,"Segoe UI",Arial,sans-serif;padding:10px}#mk-party-floating *{box-sizing:border-box}#mk-party-floating .mk-party-head{display:flex;align-items:center;gap:8px;padding:2px 2px 9px;border-bottom:1px solid rgba(255,255,255,.1);cursor:move;user-select:none}#mk-party-floating .mk-party-title{flex:1;text-align:center;color:#c9c1ff;font-weight:700;letter-spacing:.04em}#mk-party-floating .mk-party-close{width:27px;height:27px;border:1px solid rgba(255,255,255,.16);border-radius:7px;background:rgba(255,255,255,.06);color:#fff;font-size:17px;cursor:pointer}#mk-party-floating .sec{display:flex;flex-direction:column;gap:9px;padding-top:10px}#mk-party-floating .sec>h3{margin:0;color:#f3f3ff;font-size:14px}#mk-party-floating .hint{margin:0;color:#b4adda;font-size:11.5px;line-height:1.45}#mk-party-floating .actions{display:flex;gap:8px;flex-wrap:wrap}#mk-party-floating .sc{min-height:32px;padding:5px 11px;border:1px solid rgba(144,123,255,.55);border-radius:8px;background:#5745d8;color:#fff;font-weight:700;cursor:pointer}#mk-party-floating .sc:disabled{opacity:.55;cursor:wait}#mk-party-floating .card{display:flex;flex-direction:column;gap:5px;padding:8px;border:1px solid rgba(144,123,255,.26);border-radius:9px;background:rgba(255,255,255,.045)}#mk-party-floating .nm{margin-bottom:3px;color:#f3f3ff;font-size:12px;font-weight:700}#mk-party-floating .row{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:5px 7px;border:1px solid rgba(144,123,255,.18);border-radius:6px;background:rgba(255,255,255,.035);color:#e7e3ff;font-size:12px}#mk-party-floating .row small{color:#b4adda;white-space:nowrap}#mk-party-floating .mk-party-body{overflow:auto;max-height:calc(min(76vh,680px) - 48px)}'
+        style.textContent = '#mk-party-floating{position:fixed;right:18px;bottom:72px;z-index:2147482800;width:min(480px,calc(100vw - 24px));max-height:min(76vh,680px);overflow:auto;border:1px solid color-mix(in srgb,var(--mkhd-addon-theme,#6366f1) 48%,#20243a);border-radius:14px;background:linear-gradient(180deg,#221241,#0d081f);box-shadow:0 18px 48px rgba(0,0,0,.6),0 0 0 1px color-mix(in srgb,var(--mkhd-addon-theme,#6366f1) 16%,transparent);color:#f3f3ff;font:13px/1.4 Inter,"Segoe UI",Arial,sans-serif;overflow:hidden}#mk-party-floating *{box-sizing:border-box}#mk-party-floating .mk-party-head{display:flex;align-items:center;height:40px;gap:8px;padding:0 12px;border-bottom:1px solid rgba(255,255,255,.08);cursor:grab;user-select:none}#mk-party-floating .mk-party-head:active{cursor:grabbing}#mk-party-floating .mk-party-title{flex:1;text-align:center;color:color-mix(in srgb,var(--mkhd-addon-theme,#6366f1) 55%,#fff);font-size:13px;font-weight:700;letter-spacing:.04em}#mk-party-floating .mk-party-close{width:26px;height:26px;border:1px solid color-mix(in srgb,var(--mkhd-addon-theme,#6366f1) 26%,rgba(255,255,255,.1));border-radius:7px;background:rgba(255,255,255,.06);color:#e7e3ff;font-size:16px;line-height:1;padding:0;cursor:pointer}#mk-party-floating .sec{display:flex;flex-direction:column;gap:10px;padding:10px 12px 12px}#mk-party-floating .sec>h3{margin:0;color:#f3f3ff;font-size:14px}#mk-party-floating .hint{margin:0;color:#b4adda;font-size:11.5px;line-height:1.45}#mk-party-floating .actions{display:flex;gap:8px;flex-wrap:wrap}#mk-party-floating .sc{min-height:34px;padding:0 14px;border:1px solid color-mix(in srgb,var(--mkhd-addon-theme,#6366f1) 68%,#fff);border-radius:8px;background:color-mix(in srgb,var(--mkhd-addon-theme,#6366f1) 78%,#111827);color:#fff;font-weight:700;cursor:pointer}#mk-party-floating .sc:disabled{opacity:.55;cursor:wait}#mk-party-floating .card{display:flex;flex-direction:column;gap:6px;padding:10px;border:1px solid color-mix(in srgb,var(--mkhd-addon-theme,#6366f1) 26%,rgba(255,255,255,.1));border-radius:10px;background:rgba(255,255,255,.045)}#mk-party-floating .nm{margin-bottom:3px;color:#f3f3ff;font-size:12px;font-weight:700}#mk-party-floating .row{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:7px 9px;border:1px solid color-mix(in srgb,var(--mkhd-addon-theme,#6366f1) 18%,rgba(255,255,255,.1));border-radius:7px;background:rgba(255,255,255,.035);color:#e7e3ff;font-size:12px}#mk-party-floating .row small{color:#b4adda;white-space:nowrap}#mk-party-floating .mk-party-body{overflow:auto;max-height:calc(min(76vh,680px) - 40px)}'
         document.head.appendChild(style)
       }
-      partyWindow = document.createElement('div')
-      partyWindow.id = 'mk-party-floating'
+      partyWindow = document.createElement('div'); partyWindow.id = 'mk-party-floating'
       partyWindow.innerHTML = '<div class="mk-party-head"><div class="mk-party-title">PODZIAŁ GRUP</div><button type="button" class="mk-party-close" aria-label="Zamknij">×</button></div><div class="mk-party-body"></div>'
       document.body.appendChild(partyWindow)
-      const header = partyWindow.querySelector('.mk-party-head')
-      header.addEventListener('pointerdown', event => {
+      partyWindow.querySelector('.mk-party-head').addEventListener('pointerdown', event => {
         if (event.button !== 0 || event.target.closest('button')) return
         event.preventDefault()
-        const rect = partyWindow.getBoundingClientRect(), dx = event.clientX - rect.left, dy = event.clientY - rect.top
-        const move = e => {
-          partyWindow.style.left = Math.max(6, Math.min(innerWidth - partyWindow.offsetWidth - 6, e.clientX - dx)) + 'px'
-          partyWindow.style.top = Math.max(6, Math.min(innerHeight - partyWindow.offsetHeight - 6, e.clientY - dy)) + 'px'
-          partyWindow.style.right = 'auto'; partyWindow.style.bottom = 'auto'
-        }
-        const stop = () => { document.removeEventListener('pointermove', move); document.removeEventListener('pointerup', stop) }
-        document.addEventListener('pointermove', move); document.addEventListener('pointerup', stop, { once: true })
+        const r = partyWindow.getBoundingClientRect(), dx = event.clientX - r.left, dy = event.clientY - r.top
+        const move = e => { partyWindow.style.left = Math.max(6, Math.min(innerWidth-partyWindow.offsetWidth-6,e.clientX-dx))+'px'; partyWindow.style.top = Math.max(6,Math.min(innerHeight-partyWindow.offsetHeight-6,e.clientY-dy))+'px'; partyWindow.style.right='auto'; partyWindow.style.bottom='auto' }
+        const stop = () => { document.removeEventListener('pointermove',move); document.removeEventListener('pointerup',stop); document.removeEventListener('pointercancel',stop); savePartyPosition() }
+        document.addEventListener('pointermove',move); document.addEventListener('pointerup',stop); document.addEventListener('pointercancel',stop)
       })
-      partyWindow.querySelector('.mk-party-close').addEventListener('click', () => { partyWindow.style.display = 'none' })
+      partyWindow.querySelector('.mk-party-close').addEventListener('click', () => { partyWindow.style.display='none'; lsSet(PARTY_OPEN_KEY,'0'); window.__mkPersistAddonSettings?.() })
+      window.addEventListener('resize', () => { if(partyWindow?.style.display!=='none'){restorePartyPosition();savePartyPosition()} })
     }
-    partyWindow.style.display = 'block'
-    const host = partyWindow.querySelector('.mk-party-body')
-    host.replaceChildren()
-    buildParty(host, true)
+    partyWindow.style.display='block'
+    partyWindow.style.setProperty('--mkhd-addon-theme',getComputedStyle(document.documentElement).getPropertyValue('--mkhd-addon-theme').trim()||'#6366f1')
+    restorePartyPosition(); lsSet(PARTY_OPEN_KEY,'1'); window.__mkPersistAddonSettings?.()
+    try { window.__mkApplyAddonAppearance?.() } catch (error) {}
+    const host=partyWindow.querySelector('.mk-party-body'); host.replaceChildren(); buildParty(host,true)
+    if(!partyWindow._refreshTimer) partyWindow._refreshTimer=setInterval(()=>{
+      if(partyWindow?.style.display==='none')return
+      if(!isOn(byId('party'))){partyWindow.style.display='none';lsSet(PARTY_OPEN_KEY,'0');return}
+      if(!window.__mkPartyInviteBusy)window.__mkPartyRefresh?.()
+    },5000)
   }
   function buildParty(host = content, standalone = false) {
     const addon = byId('party'), box = section(standalone ? 'Gracze z mapy' : 'Podział graczy z mapy')
@@ -516,6 +531,7 @@
         status.textContent = 'Lista odświeżona. W podziale jest ' + window.__mkPartyTeams.flat().length + ' graczy.'
       } catch (error) { teamList.replaceChildren(); status.textContent = error.message || 'Nie udało się odczytać graczy.' }
     }
+    window.__mkPartyRefresh = draw
     refreshButton.addEventListener('click', draw)
     inviteButton.addEventListener('click', () => {
       if (window.__mkPartyInviteBusy) return
@@ -628,7 +644,7 @@
     const box = document.createElement('div')
     box.className = 'info'
     box.innerHTML = '<h3>Heroes on Discord + Notyfikator Legend + Przedziały Online + Łupy Tytanów + Podział Grup</h3>' +
-      '<p>Wersja 4.61.1. Wszystkie dodatki masz w jednym miejscu: przełącznik włącza lub wyłącza dodatek, a zębatka otwiera jego ustawienia w tym oknie.</p>' +
+      '<p>Wersja 4.61.2. Wszystkie dodatki masz w jednym miejscu: przełącznik włącza lub wyłącza dodatek, a zębatka otwiera jego ustawienia w tym oknie.</p>' +
       '<p>Webhooki, role i pingi ustawiasz w zakładkach Webhooki i Role i pingi. Przedziały Online działają na mapie, a ich konfigurację znajdziesz w tym nowym oknie po kliknięciu zębatki.</p>'
     content.appendChild(box)
   }
@@ -735,7 +751,14 @@
     root.style.setProperty('display', 'flex', 'important')
     requestAnimationFrame(clampHubToViewport)
   }
-  window.__mkHubToggle = toggle
+  if (lsGet(PARTY_OPEN_KEY) === '1' && isOn(byId('party'))) {
+    let restoreAttempts = 0
+    const restoreTimer = setInterval(() => {
+      if (lsGet(PARTY_OPEN_KEY) !== '1' || !isOn(byId('party'))) { clearInterval(restoreTimer); return }
+      if (window.Engine?.hero && window.Engine?.others?.getDrawableList) { clearInterval(restoreTimer); openPartyWindow(); return }
+      if (++restoreAttempts >= 120) clearInterval(restoreTimer)
+    }, 500)
+  }  window.__mkHubToggle = toggle
   window.__mkHubShow = show
   window.__mkHubInstalled = true
   window.addEventListener('mk-hub-toggle', toggle)
@@ -3588,8 +3611,8 @@
   };
   const setLootEnabled=value=>{enabled=!!value;try{localStorage.setItem(ENABLED_KEY,enabled?'1':'0')}catch(error){}if(settingsStatus)settingsStatus.textContent=enabled?'Panel łupu przy czacie jest włączony.':'Panel łupu przy czacie jest wyłączony i ustawienie zostanie zapamiętane.';if(settingCheckbox)settingCheckbox.checked=enabled;updateChatPanel()};
 
-  const applyBackground=(preset,notify=true)=>{if(!BACKGROUND_PRESETS[preset])return;backgroundPreset=preset;const gradient=BACKGROUND_PRESETS[preset].value;for(const doc of getDocs()){for(const selector of [`#${PANEL_ID}`,`#${CHAT_PANEL_ID}`,'#mk-hub','#heroes-colossus-call','#heroes-popup','.heroes-discord__setup'])for(const el of doc.querySelectorAll(selector))el.style.setProperty('background',gradient,'important');for(const el of doc.querySelectorAll('.heroes-discord__background'))el.style.setProperty('background','transparent','important')}try{localStorage.setItem(BACKGROUND_KEY,preset)}catch(error){}window.__mkPersistAddonSettings?.();if(backgroundPicker)backgroundPicker.value=preset;if(notify&&themeStatus)themeStatus.textContent=uiLanguage==='en'?'Background saved.':uiLanguage==='el'?'Το φόντο αποθηκεύτηκε.':'Tło dodatku zapisane.'};
-  const applyTheme=color=>{if(!/^#[0-9a-f]{6}$/i.test(color||''))return;themeColor=color;for(const doc of getDocs()){doc.documentElement?.style.setProperty('--mkhd-addon-theme',themeColor);for(const el of doc.querySelectorAll(`#${PANEL_ID},#${CHAT_PANEL_ID},#mk-hub,#heroes-colossus-call,#heroes-popup,.heroes-discord__setup,.mk-leg-settings`))el.style.setProperty('--mkhd-addon-theme',themeColor)}try{localStorage.setItem(THEME_KEY,themeColor)}catch(error){}window.__mkPersistAddonSettings?.();if(themePicker)themePicker.value=themeColor;if(themeStatus)themeStatus.textContent=`Kolor zestawu zapisany: ${themeColor}.`};
+  const applyBackground=(preset,notify=true)=>{if(!BACKGROUND_PRESETS[preset])return;backgroundPreset=preset;const gradient=BACKGROUND_PRESETS[preset].value;for(const doc of getDocs()){for(const selector of [`#${PANEL_ID}`,`#${CHAT_PANEL_ID}`,'#mk-hub','#mk-party-floating','#heroes-colossus-call','#heroes-popup','.heroes-discord__setup'])for(const el of doc.querySelectorAll(selector))el.style.setProperty('background',gradient,'important');for(const el of doc.querySelectorAll('.heroes-discord__background'))el.style.setProperty('background','transparent','important')}try{localStorage.setItem(BACKGROUND_KEY,preset)}catch(error){}window.__mkPersistAddonSettings?.();if(backgroundPicker)backgroundPicker.value=preset;if(notify&&themeStatus)themeStatus.textContent=uiLanguage==='en'?'Background saved.':uiLanguage==='el'?'Το φόντο αποθηκεύτηκε.':'Tło dodatku zapisane.'};
+  const applyTheme=color=>{if(!/^#[0-9a-f]{6}$/i.test(color||''))return;themeColor=color;for(const doc of getDocs()){doc.documentElement?.style.setProperty('--mkhd-addon-theme',themeColor);for(const el of doc.querySelectorAll(`#${PANEL_ID},#${CHAT_PANEL_ID},#mk-hub,#mk-party-floating,#heroes-colossus-call,#heroes-popup,.heroes-discord__setup,.mk-leg-settings`))el.style.setProperty('--mkhd-addon-theme',themeColor)}try{localStorage.setItem(THEME_KEY,themeColor)}catch(error){}window.__mkPersistAddonSettings?.();if(themePicker)themePicker.value=themeColor;if(themeStatus)themeStatus.textContent=`Kolor zestawu zapisany: ${themeColor}.`};
   window.__mkApplyAddonAppearance=()=>{applyTheme(themeColor);applyBackground(backgroundPreset,false)};
   const setColossusPromptEnabled=value=>{colossusPromptEnabled=!!value;try{localStorage.setItem(COLOSSUS_PROMPT_ENABLED_KEY,colossusPromptEnabled?'1':'0')}catch(error){}if(colossusPromptCheckbox)colossusPromptCheckbox.checked=colossusPromptEnabled;window.dispatchEvent(new CustomEvent('mk-colossus-prompt-toggle',{detail:{enabled:colossusPromptEnabled}}))};
   const setOnlineRangesEnabled=value=>{onlineRangesEnabled=!!value;try{localStorage.setItem('mkOnlineRangesEnabled',onlineRangesEnabled?'1':'0')}catch(error){}if(onlineRangesCheckbox)onlineRangesCheckbox.checked=onlineRangesEnabled;window.dispatchEvent(new CustomEvent('mk-online-ranges-toggle',{detail:{enabled:onlineRangesEnabled}}))};
