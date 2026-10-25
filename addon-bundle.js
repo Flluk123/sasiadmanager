@@ -1,7 +1,7 @@
 // ==UserScript==
-// @name         Heroes on Discord + Notyfikator Legend + Przedziały Online + Łupy Tytanów
+// @name         Heroes on Discord + Notyfikator Legend + Przedziały Online + Łupy Tytanów + Podział Grup
 // @namespace    http://tampermonkey.net/
-// @version      4.60.7
+// @version      4.61.0
 // @description  Heroes and titans alerts, online player level ranges, and legendary titan loot calls
 // @author       Kris Aphalon
 // @match        https://margonem.com/*
@@ -15,7 +15,7 @@
 // Kopia ustawień dodatków przywracana przed inicjalizacją modułów.
 ;(function () {
   const backupKey = 'mkAddonSettingsBackup_v1'
-  const isAddonKey = key => /^(?:mk(?:Colossus|Hub|Online|TitanLoot|Addon|_clan_|_ranges_)|chciamkColossus|heroes-discord|moj_notyfikator_fx)/.test(key) && key !== backupKey
+  const isAddonKey = key => /^(?:mk(?:BalancedParty|Colossus|Hub|Online|TitanLoot|Addon|_clan_|_ranges_)|chciamkColossus|heroes-discord|moj_notyfikator_fx)/.test(key) && key !== backupKey
   try {
     const snapshot = JSON.parse(localStorage.getItem(backupKey) || '{}')
     if (snapshot && typeof snapshot === 'object' && !Array.isArray(snapshot)) {
@@ -70,7 +70,10 @@
       icon: icon('<path d="M3 6h10v7H3zM2 6l1.5-3h9L14 6M8 6v7"/>') },
     { id: 'colossus', name: 'WEZWANIE NA KOLOSA', view: 'colossus', key: 'mkColossusGroupPromptEnabled', checkbox: '.mk-colossus-prompt-toggle', event: 'mk-colossus-prompt-toggle',
       desc: 'Okno „Zbieramy grupę na kolosa?” w przedsionkach kolosów.',
-      icon: icon('<circle cx="5.5" cy="6" r="2"/><circle cx="11" cy="6.5" r="1.6"/><path d="M2 13c.4-2 1.8-3 3.5-3s3.1 1 3.5 3M10 10.2c1.8-.3 3.5.5 4 2.8"/>') }
+      icon: icon('<circle cx="5.5" cy="6" r="2"/><circle cx="11" cy="6.5" r="1.6"/><path d="M2 13c.4-2 1.8-3 3.5-3s3.1 1 3.5 3M10 10.2c1.8-.3 3.5.5 4 2.8"/>') },
+    { id: 'party', name: 'PODZIAŁ GRUP', view: 'party', key: 'mkBalancedPartyEnabled',
+      desc: 'Dzieli graczy z mapy według profesji i poziomu; pozwala zaprosić grupę 1.',
+      icon: icon('<circle cx="5" cy="5" r="2"/><circle cx="11" cy="5" r="2"/><path d="M1.5 13c.3-2 1.5-3 3.5-3s3.2 1 3.5 3M7.5 13c.3-2 1.5-3 3.5-3s3.2 1 3.5 3"/>') }
   ]
   const byId = id => ADDONS.find(addon => addon.id === id)
   const isOn = addon => lsGet(addon.key) !== '0'
@@ -298,7 +301,7 @@
   function stopLookObserver() { if (lookObserver) { lookObserver.disconnect(); lookObserver = null } }
 
   function openAddon(addon) {
-    if (addon.view === 'ranges' && !isOn(addon)) { notify('Najpierw włącz Przedziały Online.'); return }
+    if ((addon.view === 'ranges' || addon.view === 'party') && !isOn(addon)) { notify('Najpierw włącz ' + addon.name + '.'); return }
     setView(addon.view)
   }
 
@@ -393,6 +396,114 @@
   }
   function hint(text) { const p = document.createElement('p'); p.className = 'hint'; p.textContent = text; return p }
 
+  /* ---------- podział grup z mapy ---------- */
+  const partyProfLabel = value => ({ t:'T', w:'W', m:'M', p:'P', h:'H', b:'B', wojownik:'Wojownik', mag:'Mag', tropiciel:'Tropiciel', paladyn:'Paladyn', lowca:'Łowca', łowca:'Łowca' }[(value || '?').toLowerCase()] || value || '?')
+  function partyReadPlayers(engine) {
+    const list = engine?.others?.getDrawableList?.()
+    if (!Array.isArray(list)) throw new Error('Nie udało się odczytać graczy z mapy.')
+    const ownId = String(engine.hero?.getId?.() ?? engine.hero?.d?.id ?? '')
+    const found = new Map()
+    for (const entity of list) {
+      if (!entity?.isPlayer) continue
+      const d = entity.d || entity, id = d.id ?? entity.id
+      if (id == null || String(id) === ownId) continue
+      found.set(String(id), {
+        id: String(id), name: String(d.nick ?? d.name ?? d.nick2 ?? entity.nick ?? entity.name ?? ('Gracz ' + id)),
+        prof: String(d.prof ?? d.profession ?? entity.prof ?? '?'),
+        lvl: Number(d.lvl ?? d.level ?? entity.lvl ?? 0) || 0, self: false
+      })
+    }
+    const hero = engine.hero, d = hero?.d || hero, heroId = ownId || String(d?.id ?? '')
+    if (heroId && d) found.set(heroId, {
+      id: heroId, name: String(d.nick ?? d.name ?? d.nick2 ?? heroId),
+      prof: String(d.prof ?? d.profession ?? '?'), lvl: Number(d.lvl ?? d.level ?? 0) || 0, self: true
+    })
+    return [...found.values()]
+  }
+  const partyScore = (a, b) => {
+    const all = [...a, ...b], avg = Math.max(1, all.reduce((sum, p) => sum + p.lvl, 0) / Math.max(1, all.length))
+    let profDiff = 0
+    for (const p of new Set(all.map(x => partyProfLabel(x.prof)))) {
+      profDiff += Math.abs(a.filter(x => partyProfLabel(x.prof) === p).length - b.filter(x => partyProfLabel(x.prof) === p).length)
+    }
+    return Math.abs(a.length - b.length) * 4 +
+      Math.abs(a.reduce((sum, p) => sum + p.lvl, 0) - b.reduce((sum, p) => sum + p.lvl, 0)) / avg +
+      profDiff * 2.5
+  }
+  function partySplit(players) {
+    const teams = [[], []]
+    for (const player of [...players].sort((a, b) => b.lvl - a.lvl || a.name.localeCompare(b.name, 'pl'))) {
+      const choices = [0, 1].map(i => {
+        const trial = teams.map(team => [...team]); trial[i].push(player)
+        return { i, score: partyScore(...trial) }
+      }).sort((a, b) => a.score - b.score || teams[a.i].length - teams[b.i].length)
+      teams[choices[0].i].push(player)
+    }
+    for (let pass = 0; pass < 3; pass++) {
+      let changed = false
+      for (let i = 0; i < teams[0].length; i++) for (let j = 0; j < teams[1].length; j++) {
+        const trial = teams.map(team => [...team]); [trial[0][i], trial[1][j]] = [trial[1][j], trial[0][i]]
+        if (partyScore(...trial) + 0.001 < partyScore(...teams)) { teams[0] = trial[0]; teams[1] = trial[1]; changed = true }
+      }
+      if (!changed) break
+    }
+    return teams
+  }
+  function buildParty() {
+    const addon = byId('party'), box = section('Podział graczy z mapy')
+    box.append(toggleRow(addon, 'Włącz podział grup'),
+      hint('Podział równoważy liczebność, poziomy i profesje. Zaproszenia wysyłasz przyciskiem dla grupy 1.'))
+    content.appendChild(box)
+    if (!isOn(addon)) { box.appendChild(hint('Włącz dodatek przełącznikiem, aby wyświetlić listę graczy.')); return }
+    const actions = document.createElement('div'); actions.className = 'actions'
+    const refreshButton = document.createElement('button'); refreshButton.type = 'button'; refreshButton.className = 'sc'; refreshButton.textContent = 'Odśwież i podziel'
+    const inviteButton = document.createElement('button'); inviteButton.type = 'button'; inviteButton.className = 'sc'; inviteButton.textContent = 'Zaproś grupę 1'
+    const status = document.createElement('p'); status.className = 'hint'; status.setAttribute('aria-live', 'polite')
+    const teamList = document.createElement('div'); teamList.style.cssText = 'display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px'
+    box.append(actions, teamList, status); actions.append(refreshButton, inviteButton)
+    const draw = () => {
+      try {
+        const engine = window.Engine
+        if (!engine?.hero || !engine?.others?.getDrawableList) throw new Error('Silnik gry nie jest jeszcze gotowy. Otwórz widok ponownie za chwilę.')
+        window.__mkPartyTeams = partySplit(partyReadPlayers(engine))
+        teamList.replaceChildren()
+        window.__mkPartyTeams.forEach((team, index) => {
+          const card = document.createElement('div'); card.className = 'card'
+          const title = document.createElement('div'); title.className = 'nm'; title.textContent = 'GRUPA ' + (index + 1) + ' · ' + team.length + ' osób'
+          card.appendChild(title)
+          for (const player of team) {
+            const row = document.createElement('div'); row.className = 'row'
+            const name = document.createElement('span'); name.textContent = player.name + (player.self ? ' (Ty)' : '')
+            const data = document.createElement('small'); data.textContent = partyProfLabel(player.prof) + ' · ' + (player.lvl || '?')
+            row.append(name, data); card.appendChild(row)
+          }
+          teamList.appendChild(card)
+        })
+        status.textContent = 'Lista odświeżona. W podziale jest ' + window.__mkPartyTeams.flat().length + ' graczy.'
+      } catch (error) { teamList.replaceChildren(); status.textContent = error.message || 'Nie udało się odczytać graczy.' }
+    }
+    refreshButton.addEventListener('click', draw)
+    inviteButton.addEventListener('click', () => {
+      if (window.__mkPartyInviteBusy) return
+      const teams = window.__mkPartyTeams || [[], []]
+      const me = String(window.Engine?.hero?.getId?.() ?? window.Engine?.hero?.d?.id ?? '')
+      const targets = teams[0].filter(player => !player.self && player.id !== me)
+      if (!targets.length) { status.textContent = 'W grupie 1 nie ma innych graczy do zaproszenia.'; return }
+      if (typeof window._g !== 'function') { status.textContent = 'Nie znaleziono funkcji zaproszeń gry. Odśwież grę i spróbuj ponownie.'; return }
+      window.__mkPartyInviteBusy = true; inviteButton.disabled = true
+      status.textContent = 'Wysyłam prośby o zaproszenie: 0/' + targets.length + '.'
+      targets.forEach((player, i) => setTimeout(() => {
+        try { window._g('party&a=inv&id=' + encodeURIComponent(player.id)) }
+        catch (error) { console.warn('[Podział grup]', error) }
+        status.textContent = 'Wysłano prośbę ' + (i + 1) + '/' + targets.length + ': ' + player.name
+        if (i === targets.length - 1) {
+          window.__mkPartyInviteBusy = false; inviteButton.disabled = false
+          status.textContent = 'Zakończono wysyłanie próśb grupy 1 (' + targets.length + ').'
+        }
+      }, i * 700))
+    })
+    draw()
+  }
   function buildRanges() {
     const box = section('Przedziały Online')
     box.appendChild(toggleRow(byId('ranges'), 'Włącz Przedziały Online'))
@@ -482,8 +593,8 @@
   function buildInfo() {
     const box = document.createElement('div')
     box.className = 'info'
-    box.innerHTML = '<h3>Heroes on Discord + Notyfikator Legend + Przedziały Online + Łupy Tytanów</h3>' +
-      '<p>Wersja 4.59.8. Wszystkie dodatki masz w jednym miejscu: przełącznik włącza lub wyłącza dodatek, a zębatka otwiera jego ustawienia w tym oknie.</p>' +
+    box.innerHTML = '<h3>Heroes on Discord + Notyfikator Legend + Przedziały Online + Łupy Tytanów + Podział Grup</h3>' +
+      '<p>Wersja 4.61.0. Wszystkie dodatki masz w jednym miejscu: przełącznik włącza lub wyłącza dodatek, a zębatka otwiera jego ustawienia w tym oknie.</p>' +
       '<p>Webhooki, role i pingi ustawiasz w zakładkach Webhooki i Role i pingi. Przedziały Online działają na mapie, a ich konfigurację znajdziesz w tym nowym oknie po kliknięciu zębatki.</p>'
     content.appendChild(box)
   }
@@ -517,13 +628,14 @@
     if (cards) { renderCards(); return }
     content.innerHTML = ''
     if (view === 'ranges') buildRanges()
+    else if (view === 'party') buildParty()
     else if (view === 'loot') buildLoot()
     else if (view === 'colossus') buildColossus()
     else if (view === 'notifier') buildNotifier()
     else if (view === 'discord') buildDiscord()
     else if (view === 'look') buildLook()
     else if (view === 'info') buildInfo()
-    if (['ranges', 'loot', 'colossus', 'notifier', 'discord', 'look'].includes(view)) {
+    if (['ranges', 'party', 'loot', 'colossus', 'notifier', 'discord', 'look'].includes(view)) {
       const saveRow = document.createElement('div')
       saveRow.className = 'mk-settings-save-row'
       const saveStatus = document.createElement('div')
