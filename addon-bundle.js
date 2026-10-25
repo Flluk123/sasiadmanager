@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Heroes on Discord + Notyfikator Legend + Przedziały Online + Łupy Tytanów + Podział Grup
 // @namespace    http://tampermonkey.net/
-// @version      4.61.0
+// @version      4.61.1
 // @description  Heroes and titans alerts, online player level ranges, and legendary titan loot calls
 // @author       Kris Aphalon
 // @match        https://margonem.com/*
@@ -72,7 +72,7 @@
       desc: 'Okno „Zbieramy grupę na kolosa?” w przedsionkach kolosów.',
       icon: icon('<circle cx="5.5" cy="6" r="2"/><circle cx="11" cy="6.5" r="1.6"/><path d="M2 13c.4-2 1.8-3 3.5-3s3.1 1 3.5 3M10 10.2c1.8-.3 3.5.5 4 2.8"/>') },
     { id: 'party', name: 'PODZIAŁ GRUP', view: 'party', key: 'mkBalancedPartyEnabled',
-      desc: 'Dzieli graczy z mapy według profesji i poziomu; pozwala zaprosić grupę 1.',
+      desc: 'Otwiera osobne okno z podziałem graczy według profesji i poziomu oraz zaproszeniem grupy 1.',
       icon: icon('<circle cx="5" cy="5" r="2"/><circle cx="11" cy="5" r="2"/><path d="M1.5 13c.3-2 1.5-3 3.5-3s3.2 1 3.5 3M7.5 13c.3-2 1.5-3 3.5-3s3.2 1 3.5 3"/>') }
   ]
   const byId = id => ADDONS.find(addon => addon.id === id)
@@ -302,6 +302,7 @@
 
   function openAddon(addon) {
     if ((addon.view === 'ranges' || addon.view === 'party') && !isOn(addon)) { notify('Najpierw włącz ' + addon.name + '.'); return }
+    if (addon.view === 'party') { openPartyWindow(); hide(); return }
     setView(addon.view)
   }
 
@@ -449,11 +450,44 @@
     }
     return teams
   }
-  function buildParty() {
-    const addon = byId('party'), box = section('Podział graczy z mapy')
-    box.append(toggleRow(addon, 'Włącz podział grup'),
-      hint('Podział równoważy liczebność, poziomy i profesje. Zaproszenia wysyłasz przyciskiem dla grupy 1.'))
-    content.appendChild(box)
+  let partyWindow = null
+  function openPartyWindow() {
+    if (!partyWindow || !document.body.contains(partyWindow)) {
+      const style = document.createElement('style')
+      style.id = 'mk-party-floating-style'
+      if (!document.getElementById(style.id)) {
+        style.textContent = '#mk-party-floating{position:fixed;right:18px;bottom:72px;z-index:2147482800;width:min(480px,calc(100vw - 24px));max-height:min(76vh,680px);overflow:auto;border:1px solid rgba(144,123,255,.45);border-radius:12px;background:linear-gradient(180deg,#221241,#0d081f);box-shadow:0 18px 48px rgba(0,0,0,.65);color:#f3f3ff;font:13px/1.4 Inter,"Segoe UI",Arial,sans-serif;padding:10px}#mk-party-floating *{box-sizing:border-box}#mk-party-floating .mk-party-head{display:flex;align-items:center;gap:8px;padding:2px 2px 9px;border-bottom:1px solid rgba(255,255,255,.1);cursor:move;user-select:none}#mk-party-floating .mk-party-title{flex:1;text-align:center;color:#c9c1ff;font-weight:700;letter-spacing:.04em}#mk-party-floating .mk-party-close{width:27px;height:27px;border:1px solid rgba(255,255,255,.16);border-radius:7px;background:rgba(255,255,255,.06);color:#fff;font-size:17px;cursor:pointer}#mk-party-floating .sec{display:flex;flex-direction:column;gap:9px;padding-top:10px}#mk-party-floating .sec>h3{margin:0;color:#f3f3ff;font-size:14px}#mk-party-floating .hint{margin:0;color:#b4adda;font-size:11.5px;line-height:1.45}#mk-party-floating .actions{display:flex;gap:8px;flex-wrap:wrap}#mk-party-floating .sc{min-height:32px;padding:5px 11px;border:1px solid rgba(144,123,255,.55);border-radius:8px;background:#5745d8;color:#fff;font-weight:700;cursor:pointer}#mk-party-floating .sc:disabled{opacity:.55;cursor:wait}#mk-party-floating .card{display:flex;flex-direction:column;gap:5px;padding:8px;border:1px solid rgba(144,123,255,.26);border-radius:9px;background:rgba(255,255,255,.045)}#mk-party-floating .nm{margin-bottom:3px;color:#f3f3ff;font-size:12px;font-weight:700}#mk-party-floating .row{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:5px 7px;border:1px solid rgba(144,123,255,.18);border-radius:6px;background:rgba(255,255,255,.035);color:#e7e3ff;font-size:12px}#mk-party-floating .row small{color:#b4adda;white-space:nowrap}#mk-party-floating .mk-party-body{overflow:auto;max-height:calc(min(76vh,680px) - 48px)}'
+        document.head.appendChild(style)
+      }
+      partyWindow = document.createElement('div')
+      partyWindow.id = 'mk-party-floating'
+      partyWindow.innerHTML = '<div class="mk-party-head"><div class="mk-party-title">PODZIAŁ GRUP</div><button type="button" class="mk-party-close" aria-label="Zamknij">×</button></div><div class="mk-party-body"></div>'
+      document.body.appendChild(partyWindow)
+      const header = partyWindow.querySelector('.mk-party-head')
+      header.addEventListener('pointerdown', event => {
+        if (event.button !== 0 || event.target.closest('button')) return
+        event.preventDefault()
+        const rect = partyWindow.getBoundingClientRect(), dx = event.clientX - rect.left, dy = event.clientY - rect.top
+        const move = e => {
+          partyWindow.style.left = Math.max(6, Math.min(innerWidth - partyWindow.offsetWidth - 6, e.clientX - dx)) + 'px'
+          partyWindow.style.top = Math.max(6, Math.min(innerHeight - partyWindow.offsetHeight - 6, e.clientY - dy)) + 'px'
+          partyWindow.style.right = 'auto'; partyWindow.style.bottom = 'auto'
+        }
+        const stop = () => { document.removeEventListener('pointermove', move); document.removeEventListener('pointerup', stop) }
+        document.addEventListener('pointermove', move); document.addEventListener('pointerup', stop, { once: true })
+      })
+      partyWindow.querySelector('.mk-party-close').addEventListener('click', () => { partyWindow.style.display = 'none' })
+    }
+    partyWindow.style.display = 'block'
+    const host = partyWindow.querySelector('.mk-party-body')
+    host.replaceChildren()
+    buildParty(host, true)
+  }
+  function buildParty(host = content, standalone = false) {
+    const addon = byId('party'), box = section(standalone ? 'Gracze z mapy' : 'Podział graczy z mapy')
+    if (!standalone) box.append(toggleRow(addon, 'Włącz podział grup'))
+    box.appendChild(hint('Podział równoważy liczebność, poziomy i profesje. Zaproszenia wysyłasz przyciskiem dla grupy 1.'))
+    host.appendChild(box)
     if (!isOn(addon)) { box.appendChild(hint('Włącz dodatek przełącznikiem, aby wyświetlić listę graczy.')); return }
     const actions = document.createElement('div'); actions.className = 'actions'
     const refreshButton = document.createElement('button'); refreshButton.type = 'button'; refreshButton.className = 'sc'; refreshButton.textContent = 'Odśwież i podziel'
@@ -594,7 +628,7 @@
     const box = document.createElement('div')
     box.className = 'info'
     box.innerHTML = '<h3>Heroes on Discord + Notyfikator Legend + Przedziały Online + Łupy Tytanów + Podział Grup</h3>' +
-      '<p>Wersja 4.61.0. Wszystkie dodatki masz w jednym miejscu: przełącznik włącza lub wyłącza dodatek, a zębatka otwiera jego ustawienia w tym oknie.</p>' +
+      '<p>Wersja 4.61.1. Wszystkie dodatki masz w jednym miejscu: przełącznik włącza lub wyłącza dodatek, a zębatka otwiera jego ustawienia w tym oknie.</p>' +
       '<p>Webhooki, role i pingi ustawiasz w zakładkach Webhooki i Role i pingi. Przedziały Online działają na mapie, a ich konfigurację znajdziesz w tym nowym oknie po kliknięciu zębatki.</p>'
     content.appendChild(box)
   }
