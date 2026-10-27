@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Heroes on Discord + Notyfikator Legend + Przedziały Online + Łupy Tytanów + Podział Grup + Licznik Walk
 // @namespace    http://tampermonkey.net/
-// @version      4.63.0
+// @version      4.64.0
 // @description  Heroes and titans alerts, online player level ranges, and legendary titan loot calls
 // @author       Kris Aphalon
 // @match        https://margonem.com/*
@@ -570,7 +570,7 @@
     if (isOn(addon)) {
       const actions = document.createElement('div'); actions.className = 'actions'
       const showButton = document.createElement('button'); showButton.type = 'button'; showButton.className = 'sc'; showButton.textContent = 'Pokaż / przywróć panel'
-      showButton.addEventListener('click', () => { window.__mkBattleMeterShow?.(); setTimeout(refreshStatus, 250) })
+      showButton.addEventListener('click', () => { const shown = window.__mkBattleMeterShow?.(); hide(); status.textContent = shown ? 'Panel licznika został otwarty.' : 'Nie udało się otworzyć panelu. Sprawdź, czy dodatek jest włączony.'; setTimeout(refreshStatus, 1200) })
       actions.appendChild(showButton); box.appendChild(actions)
     }
     refreshStatus()
@@ -4505,6 +4505,7 @@
 ;(function () {
   'use strict'
   const ENABLED = 'mkMargoMeterEnabled', DATA = 'mkBattleMeterDataV1', POS = 'mkBattleMeterPositionV1', ID = 'mk-battle-meter'
+  const uiDoc = (() => { try { return window.top.document } catch (e) { return document } })()
   let timer = null, battle = null, original = null, wrapped = null, ownsHook = false, panel = null, folded = false
   let fight = { damage: Object.create(null), hits: 0, startedAt: Date.now() }
   const on = () => { try { return localStorage.getItem(ENABLED) !== '0' } catch (e) { return true } }
@@ -4545,18 +4546,21 @@
   }
   function unhook(){if(ownsHook&&battle?.updateData===wrapped){try{battle.updateData=original}catch(e){}}battle=original=wrapped=null;ownsHook=false}
   function toggle(enabled){try{localStorage.setItem(ENABLED,enabled?'1':'0')}catch(e){}if(enabled){if(!timer)timer=setInterval(hook,700);hook();mount()}else{clearInterval(timer);timer=null;unhook();panel?.remove();panel=null}window.__mkPersistAddonSettings?.();return enabled}
-  function mount(){if(!document.body||panel?.isConnected)return;let css=document.getElementById('mk-battle-meter-style');if(!css){css=document.createElement('style');css.id='mk-battle-meter-style';css.textContent='#mk-battle-meter{position:fixed;right:18px;top:110px;z-index:2147483000;width:min(330px,calc(100vw - 20px));max-height:70vh;overflow:auto;border:1px solid color-mix(in srgb,var(--mkhd-addon-theme,#6366f1) 48%,#30334a);border-radius:12px;background:linear-gradient(160deg,#20223e,#0b1020);box-shadow:0 14px 36px #0009;color:#f3f3ff;font:13px/1.4 Inter,Segoe UI,Arial,sans-serif}#mk-battle-meter *{box-sizing:border-box}#mk-battle-meter .head{display:flex;align-items:center;gap:7px;padding:8px;border-bottom:1px solid #ffffff18;cursor:grab;user-select:none}#mk-battle-meter .title{flex:1;text-align:center;font-weight:700;color:color-mix(in srgb,var(--mkhd-addon-theme,#6366f1) 55%,#fff)}#mk-battle-meter button{border:1px solid #ffffff24;border-radius:6px;background:#ffffff0c;color:#fff;cursor:pointer;padding:4px 7px}#mk-battle-meter .body{padding:10px}#mk-battle-meter .summary{color:#b4adda;font-size:11px;margin-bottom:7px}#mk-battle-meter .entry{display:grid;grid-template-columns:22px 1fr auto;gap:6px;padding:5px 4px;border-bottom:1px solid #ffffff0b}#mk-battle-meter .dmg{font-variant-numeric:tabular-nums;font-weight:700}#mk-battle-meter.folded .body{display:none}';document.head.append(css)}
-    panel=document.createElement('section');panel.id=ID;panel.innerHTML='<div class="head"><span class="title">LICZNIK WALK</span><button class="fold" type="button">−</button><button class="reset" type="button">Wyczyść</button></div><div class="body"></div>';document.body.append(panel)
+  function mount(){if(!uiDoc.body||panel?.isConnected)return;let css=uiDoc.getElementById('mk-battle-meter-style');if(!css){css=uiDoc.createElement('style');css.id='mk-battle-meter-style';css.textContent='#mk-battle-meter{position:fixed;right:18px;top:110px;z-index:2147483000;width:min(330px,calc(100vw - 20px));max-height:70vh;overflow:auto;border:1px solid color-mix(in srgb,var(--mkhd-addon-theme,#6366f1) 48%,#30334a);border-radius:12px;background:linear-gradient(160deg,#20223e,#0b1020);box-shadow:0 14px 36px #0009;color:#f3f3ff;font:13px/1.4 Inter,Segoe UI,Arial,sans-serif}#mk-battle-meter *{box-sizing:border-box}#mk-battle-meter .head{display:flex;align-items:center;gap:7px;padding:8px;border-bottom:1px solid #ffffff18;cursor:grab;user-select:none}#mk-battle-meter .title{flex:1;text-align:center;font-weight:700;color:color-mix(in srgb,var(--mkhd-addon-theme,#6366f1) 55%,#fff)}#mk-battle-meter button{border:1px solid #ffffff24;border-radius:6px;background:#ffffff0c;color:#fff;cursor:pointer;padding:4px 7px}#mk-battle-meter .body{padding:10px}#mk-battle-meter .summary{color:#b4adda;font-size:11px;margin-bottom:7px}#mk-battle-meter .entry{display:grid;grid-template-columns:22px 1fr auto;gap:6px;padding:5px 4px;border-bottom:1px solid #ffffff0b}#mk-battle-meter .dmg{font-variant-numeric:tabular-nums;font-weight:700}#mk-battle-meter.folded .body{display:none}';uiDoc.head.append(css)}
+    panel=uiDoc.createElement('section');panel.id=ID;panel.innerHTML='<div class="head"><span class="title">LICZNIK WALK</span><button class="fold" type="button">−</button><button class="reset" type="button">Wyczyść</button></div><div class="body"></div>';uiDoc.body.append(panel)
     panel.querySelector('.fold').onclick=()=>{folded=!folded;panel.classList.toggle('folded',folded);try{localStorage.setItem('mkBattleMeterFolded',folded?'1':'0')}catch(e){}}
     panel.querySelector('.reset').onclick=()=>{fight={damage:Object.create(null),hits:0,startedAt:Date.now()};try{localStorage.removeItem(DATA)}catch(e){}draw()}
-    panel.querySelector('.head').onpointerdown=e=>{if(e.target.closest('button')||e.button!==0)return;const r=panel.getBoundingClientRect(),dx=e.clientX-r.left,dy=e.clientY-r.top;const move=x=>{panel.style.left=Math.max(4,Math.min(innerWidth-panel.offsetWidth-4,x.clientX-dx))+'px';panel.style.top=Math.max(4,Math.min(innerHeight-panel.offsetHeight-4,x.clientY-dy))+'px';panel.style.right='auto'};const stop=()=>{document.removeEventListener('pointermove',move);document.removeEventListener('pointerup',stop);try{const p=panel.getBoundingClientRect();localStorage.setItem(POS,JSON.stringify({left:p.left,top:p.top}))}catch(e){}};document.addEventListener('pointermove',move);document.addEventListener('pointerup',stop)}
+    panel.querySelector('.head').onpointerdown=e=>{if(e.target.closest('button')||e.button!==0)return;const r=panel.getBoundingClientRect(),dx=e.clientX-r.left,dy=e.clientY-r.top;const move=x=>{panel.style.left=Math.max(4,Math.min(innerWidth-panel.offsetWidth-4,x.clientX-dx))+'px';panel.style.top=Math.max(4,Math.min(innerHeight-panel.offsetHeight-4,x.clientY-dy))+'px';panel.style.right='auto'};const stop=()=>{uiDoc.removeEventListener('pointermove',move);uiDoc.removeEventListener('pointerup',stop);try{const p=panel.getBoundingClientRect();localStorage.setItem(POS,JSON.stringify({left:p.left,top:p.top}))}catch(e){}};uiDoc.addEventListener('pointermove',move);uiDoc.addEventListener('pointerup',stop)}
     try{const p=JSON.parse(localStorage.getItem(POS)||'null');if(Number.isFinite(p?.left)&&Number.isFinite(p?.top)){panel.style.left=p.left+'px';panel.style.top=p.top+'px';panel.style.right='auto'}}catch(e){}panel.classList.toggle('folded',folded);draw()
   }
-  function draw(){if(!panel?.isConnected)return;const body=panel.querySelector('.body');body.replaceChildren();const rows=Object.entries(fight.damage).sort((a,b)=>b[1]-a[1]),total=rows.reduce((s,x)=>s+x[1],0);const summary=document.createElement('div');summary.className='summary';summary.textContent=`Obrażenia: ${total.toLocaleString('pl-PL')} · trafienia: ${fight.hits} · ${battle?'połączono z walką':'oczekiwanie na walkę'}`;body.append(summary);if(!rows.length){const empty=document.createElement('div');empty.className='summary';empty.textContent='Ranking pojawi się po odczytaniu komunikatów o obrażeniach.';body.append(empty)}rows.forEach(([name,n],i)=>{const row=document.createElement('div');row.className='entry';const rank=document.createElement('span');rank.textContent=(i+1)+'.';const who=document.createElement('span');who.textContent=name;const value=document.createElement('span');value.className='dmg';value.textContent=n.toLocaleString('pl-PL');row.append(rank,who,value);body.append(row)})}
+  function draw(){if(!panel?.isConnected)return;const body=panel.querySelector('.body');body.replaceChildren();const rows=Object.entries(fight.damage).sort((a,b)=>b[1]-a[1]),total=rows.reduce((s,x)=>s+x[1],0);const summary=uiDoc.createElement('div');summary.className='summary';summary.textContent=`Obrażenia: ${total.toLocaleString('pl-PL')} · trafienia: ${fight.hits} · ${battle?'połączono z walką':'oczekiwanie na walkę'}`;body.append(summary);if(!rows.length){const empty=uiDoc.createElement('div');empty.className='summary';empty.textContent='Ranking pojawi się po odczytaniu komunikatów o obrażeniach.';body.append(empty)}rows.forEach(([name,n],i)=>{const row=uiDoc.createElement('div');row.className='entry';const rank=uiDoc.createElement('span');rank.textContent=(i+1)+'.';const who=uiDoc.createElement('span');who.textContent=name;const value=uiDoc.createElement('span');value.className='dmg';value.textContent=n.toLocaleString('pl-PL');row.append(rank,who,value);body.append(row)})}
   window.__mkBattleMeterSetEnabled=toggle;window.__mkBattleMeterIsRunning=()=>!!battle;window.__mkBattleMeterShow=()=>{if(!on())return false;mount();hook();if(panel){panel.style.display='';panel.style.zIndex='2147483000';panel.scrollIntoView({block:'nearest'});draw()}return !!panel}
   window.addEventListener('mk-battle-meter-toggle',e=>toggle(e.detail?.enabled!==false))
   if(on()){mount();timer=setInterval(hook,700);hook();new MutationObserver(()=>on()&&mount()).observe(document.documentElement,{childList:true,subtree:true})}
 })();
+
+
+
 
 
 
