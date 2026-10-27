@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Heroes on Discord + Notyfikator Legend + Przedziały Online + Łupy Tytanów + Podział Grup + Licznik Walk
 // @namespace    http://tampermonkey.net/
-// @version      4.65.0
+// @version      4.67.0
 // @description  Heroes and titans alerts, online player level ranges, and legendary titan loot calls
 // @author       Kris Aphalon
 // @match        https://margonem.com/*
@@ -564,7 +564,7 @@
     const status = document.createElement('p'); status.className = 'hint'
     const refreshStatus = () => {
       const host = document.getElementById('MargoMeter-Panel')
-      status.textContent = !isOn(addon) ? 'Dodatek wyłączony.' : host ? 'Licznik Walk działa. Panel i pomocnik pojawią się nad grą.' : 'Uruchamiam dekoder walki; panel zostanie pokazany po podłączeniu silnika gry.'
+      status.textContent = !isOn(addon) ? 'Dodatek wyłączony.' : host ? 'Licznik Walk działa. Panel i pomocnik pojawią się nad grą.' : document.getElementById('mk-battle-meter-waiter')?.textContent || 'Uruchamiam okno licznika walk…'
     }
     box.appendChild(status)
     if (isOn(addon)) {
@@ -666,7 +666,7 @@
     const box = document.createElement('div')
     box.className = 'info'
     box.innerHTML = '<h3>Heroes on Discord + Notyfikator Legend + Przedziały Online + Łupy Tytanów + Podział Grup</h3>' +
-      '<p>Wersja 4.65.0. Wszystkie dodatki masz w jednym miejscu: przełącznik włącza lub wyłącza dodatek, a zębatka otwiera jego ustawienia w tym oknie.</p>' +
+      '<p>Wersja 4.67.0. Wszystkie dodatki masz w jednym miejscu: przełącznik włącza lub wyłącza dodatek, a zębatka otwiera jego ustawienia w tym oknie.</p>' +
       '<p>Webhooki, role i pingi ustawiasz w zakładkach Webhooki i Role i pingi. Przedziały Online działają na mapie, a ich konfigurację znajdziesz w tym nowym oknie po kliknięciu zębatki.</p>'
     content.appendChild(box)
   }
@@ -19739,39 +19739,85 @@ function composeRuntimeTables() {
 
 // src/userscript-boot.ts
   const METER_ENABLE_KEY = 'mkMargoMeterEnabled'
+  const WAITER_ID = 'mk-battle-meter-waiter'
   let bundledMargoMeter = null
+  let bundledMargoMeterStartedAt = 0
+  let bundledMargoMeterTimer = null
   const meterEnabled = () => { try { return localStorage.getItem(METER_ENABLE_KEY) !== '0' } catch (error) { return true } }
+  function findActiveBattle() {
+    for (const askEngine of ENGINE_ASKERS) {
+      try {
+        const engine = askEngine(window)
+        if (engine && engine.battle && typeof engine.battle.updateData === 'function') return engine.battle
+      } catch (error) {}
+    }
+    return null
+  }
+  function showMeterWaiter(text) {
+    if (!document.body || document.getElementById(HOST_NAME)) return
+    let waiter = document.getElementById(WAITER_ID)
+    if (!waiter) {
+      waiter = document.createElement('div')
+      waiter.id = WAITER_ID
+      waiter.style.cssText = 'position:fixed;right:18px;bottom:82px;z-index:2147483000;max-width:min(340px,calc(100vw - 24px));padding:12px 16px;border:1px solid rgba(129,140,248,.52);border-radius:10px;background:linear-gradient(155deg,#20223e,#0b1020);box-shadow:0 12px 32px rgba(0,0,0,.55);color:#f3f3ff;font:13px/1.45 Inter,Segoe UI,Arial,sans-serif;pointer-events:none'
+      document.body.appendChild(waiter)
+    }
+    waiter.textContent = 'LICZNIK WALK · ' + text
+  }
+  function hideMeterWaiter() { document.getElementById(WAITER_ID)?.remove() }
   function startBundledMargoMeter() {
     if (bundledMargoMeter) return true
     bundledMargoMeter = startMargoMeter(window)
-    return !!bundledMargoMeter
+    if (bundledMargoMeter) { bundledMargoMeterStartedAt = Date.now(); showMeterWaiter('Podłączono. Wczytuję statystyki walki…'); return true }
+    showMeterWaiter('Nie udało się uruchomić dekodera; ponawiam próbę…')
+    return false
+  }
+  function ensureMeterPolling() {
+    if (bundledMargoMeterTimer || !meterEnabled()) return
+    showMeterWaiter('Uruchamiam dekoder walki…')
+    startBundledMargoMeter()
+    bundledMargoMeterTimer = setInterval(() => {
+      if (!meterEnabled()) return
+      const host = document.getElementById(HOST_NAME)
+      if (host) { hideMeterWaiter(); host.style.setProperty('z-index','2147483000','important'); return }
+      if (bundledMargoMeter && Date.now() - bundledMargoMeterStartedAt < 65000) { showMeterWaiter('Podłączam się do walki…'); return }
+      if (bundledMargoMeter) {
+        try { bundledMargoMeter.deinit() } catch (error) { console.warn('[Licznik Walk] Nie udało się odświeżyć połączenia:', error) }
+        bundledMargoMeter = null
+      }
+      startBundledMargoMeter()
+    }, 1000)
   }
   function stopBundledMargoMeter() {
     if (bundledMargoMeter) { try { bundledMargoMeter.deinit() } catch (error) { console.warn('[Licznik Walk] Nie udało się zatrzymać modułu:', error) }; bundledMargoMeter = null }
-    document.getElementById(HOST_NAME)?.remove()
+    if (bundledMargoMeterTimer) { clearInterval(bundledMargoMeterTimer); bundledMargoMeterTimer = null }
+    document.getElementById(HOST_NAME)?.remove(); hideMeterWaiter()
   }
   function setBundledMargoMeterEnabled(enabled) {
     try { localStorage.setItem(METER_ENABLE_KEY, enabled ? '1' : '0') } catch (error) {}
-    if (enabled) startBundledMargoMeter(); else stopBundledMargoMeter()
+    if (enabled) ensureMeterPolling(); else stopBundledMargoMeter()
     window.__mkPersistAddonSettings?.()
     return enabled
   }
   window.__mkBattleMeterSetEnabled = setBundledMargoMeterEnabled
-  window.__mkBattleMeterIsRunning = () => !!bundledMargoMeter
+  window.__mkBattleMeterIsRunning = () => !!document.getElementById(HOST_NAME)
   window.__mkBattleMeterShow = () => {
     if (!meterEnabled()) return false
-    if (!bundledMargoMeter) startBundledMargoMeter()
+    ensureMeterPolling()
     const host = document.getElementById(HOST_NAME)
-    if (!host) return false
-    host.style.setProperty('display', 'block', 'important')
-    host.style.setProperty('z-index', '2147483000', 'important')
-    host.scrollIntoView({ block: 'nearest', inline: 'nearest' })
+    if (host) {
+      host.style.setProperty('display', 'block', 'important')
+      host.style.setProperty('z-index', '2147483000', 'important')
+      host.scrollIntoView({ block: 'nearest', inline: 'nearest' })
+    } else showMeterWaiter('Gotowy — czeka na rozpoczęcie walki.')
     return true
   }
   window.addEventListener('mk-battle-meter-toggle', event => setBundledMargoMeterEnabled(event.detail?.enabled !== false))
-  if (meterEnabled()) startBundledMargoMeter()
+  if (meterEnabled()) ensureMeterPolling()
 
 })();
+
+
 
 
 
