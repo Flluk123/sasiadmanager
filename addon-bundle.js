@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Heroes on Discord + Notyfikator Legend + Przedziały Online + Łupy Tytanów + Podział Grup
 // @namespace    http://tampermonkey.net/
-// @version      4.69.0
+// @version      4.62.2
 // @description  Heroes and titans alerts, online player level ranges, and legendary titan loot calls
 // @author       Kris Aphalon
 // @match        https://margonem.com/*
@@ -75,6 +75,17 @@
       desc: 'Otwiera osobne okno z podziałem graczy według profesji i poziomu oraz zaproszeniem grupy 1.',
       icon: icon('<circle cx="5" cy="5" r="2"/><circle cx="11" cy="5" r="2"/><path d="M1.5 13c.3-2 1.5-3 3.5-3s3.2 1 3.5 3M7.5 13c.3-2 1.5-3 3.5-3s3.2 1 3.5 3"/>') },
   ]
+  const byId = id => ADDONS.find(addon => addon.id === id)
+  const isOn = addon => lsGet(addon.key) !== '0'
+
+  function setOn(addon, on) {
+    const box = addon.checkbox ? (document.querySelector(addon.checkbox) || window.__mkLegacyRangesPanel?.querySelector(addon.checkbox)) : null
+    if (box && box.checked !== on) box.click()
+    if (lsGet(addon.key) !== (on ? '1' : '0')) {
+      lsSet(addon.key, on ? '1' : '0')
+      if (addon.event) window.dispatchEvent(new CustomEvent(addon.event, { detail: { enabled: on } }))
+    }
+  }
 
   const panelEl = () => document.getElementById('mk-clan-ranges-panel') || window.__mkLegacyRangesPanel || null
   const notify = text => { try { if (typeof window.message === 'function') window.message(text) } catch (error) {} }
@@ -633,7 +644,7 @@
     const box = document.createElement('div')
     box.className = 'info'
     box.innerHTML = '<h3>Heroes on Discord + Notyfikator Legend + Przedziały Online + Łupy Tytanów + Podział Grup</h3>' +
-      '<p>Wersja 4.69.0. Wszystkie dodatki masz w jednym miejscu: przełącznik włącza lub wyłącza dodatek, a zębatka otwiera jego ustawienia w tym oknie.</p>' +
+      '<p>Wersja 4.62.2. Wszystkie dodatki masz w jednym miejscu: przełącznik włącza lub wyłącza dodatek, a zębatka otwiera jego ustawienia w tym oknie.</p>' +
       '<p>Webhooki, role i pingi ustawiasz w zakładkach Webhooki i Role i pingi. Przedziały Online działają na mapie, a ich konfigurację znajdziesz w tym nowym oknie po kliknięciu zębatki.</p>'
     content.appendChild(box)
   }
@@ -4464,7 +4475,3 @@
   uiObserver.observe(document.documentElement,{childList:true,subtree:true});
   tick();applyBackground(backgroundPreset,false);setInterval(tick,3000);
 })();
-
-
-
-
