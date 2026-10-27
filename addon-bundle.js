@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Heroes on Discord + Notyfikator Legend + Przedziały Online + Łupy Tytanów + Podział Grup + MargoMeter
 // @namespace    http://tampermonkey.net/
-// @version      4.62.0
+// @version      4.62.1
 // @description  Heroes and titans alerts, online player level ranges, and legendary titan loot calls
 // @author       Kris Aphalon
 // @match        https://margonem.com/*
@@ -19772,6 +19772,9 @@ function composeRuntimeTables() {
   function applyMargoMeterTheme() {
     const host = document.getElementById(HOST_NAME)
     if (!host) return false
+        // Keep the meter above Margonem's high-stacking game windows.
+    host.style.setProperty('z-index', '2147483000', 'important')
+    host.style.setProperty('pointer-events', 'auto', 'important')
     const accent = getComputedStyle(document.documentElement).getPropertyValue('--mkhd-addon-theme').trim() || '#6366f1'
     host.style.setProperty('--mkhd-addon-theme', accent)
     const backgrounds = {
