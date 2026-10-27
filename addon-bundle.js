@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Heroes on Discord + Notyfikator Legend + Przedziały Online + Łupy Tytanów + Podział Grup + Licznik Walk
 // @namespace    http://tampermonkey.net/
-// @version      4.64.0
+// @version      4.65.0
 // @description  Heroes and titans alerts, online player level ranges, and legendary titan loot calls
 // @author       Kris Aphalon
 // @match        https://margonem.com/*
@@ -560,17 +560,17 @@
   function buildBattleMeter() {
     const addon = byId('battle-meter'), box = section('Licznik Walk')
     box.append(toggleRow(addon, 'Włącz Licznik Walk'),
-      hint('Zlicza obrażenia odczytane z komunikatów walki i układa ranking graczy. Panel można przesunąć, zwinąć lub wyczyścić; dane są przechowywane lokalnie.'))
+      hint('Pełny licznik walk: obrażenia, leczenie, pomocnik walki, szczegóły wojowników i zapis walk. Panel uruchamia się po wykryciu silnika gry.'))
     const status = document.createElement('p'); status.className = 'hint'
     const refreshStatus = () => {
-      const host = document.getElementById('mk-battle-meter')
-      status.textContent = !isOn(addon) ? 'Dodatek wyłączony.' : host ? 'Licznik Walk śledzi obrażenia z komunikatów walki.' : 'Panel gotowy; szukam silnika walki w oknach gry.'
+      const host = document.getElementById('MargoMeter-Panel')
+      status.textContent = !isOn(addon) ? 'Dodatek wyłączony.' : host ? 'Licznik Walk działa. Panel i pomocnik pojawią się nad grą.' : 'Uruchamiam dekoder walki; panel zostanie pokazany po podłączeniu silnika gry.'
     }
     box.appendChild(status)
     if (isOn(addon)) {
       const actions = document.createElement('div'); actions.className = 'actions'
       const showButton = document.createElement('button'); showButton.type = 'button'; showButton.className = 'sc'; showButton.textContent = 'Pokaż / przywróć panel'
-      showButton.addEventListener('click', () => { const shown = window.__mkBattleMeterShow?.(); hide(); status.textContent = shown ? 'Panel licznika został otwarty.' : 'Nie udało się otworzyć panelu. Sprawdź, czy dodatek jest włączony.'; setTimeout(refreshStatus, 1200) })
+      showButton.addEventListener('click', () => { const shown = window.__mkBattleMeterShow?.(); hide(); status.textContent = shown ? 'Panel licznika został otwarty.' : 'Dekoder szuka silnika gry; panel pojawi się po podłączeniu.'; setTimeout(refreshStatus, 1200) })
       actions.appendChild(showButton); box.appendChild(actions)
     }
     refreshStatus()
@@ -666,7 +666,7 @@
     const box = document.createElement('div')
     box.className = 'info'
     box.innerHTML = '<h3>Heroes on Discord + Notyfikator Legend + Przedziały Online + Łupy Tytanów + Podział Grup</h3>' +
-      '<p>Wersja 4.62.0. Wszystkie dodatki masz w jednym miejscu: przełącznik włącza lub wyłącza dodatek, a zębatka otwiera jego ustawienia w tym oknie.</p>' +
+      '<p>Wersja 4.65.0. Wszystkie dodatki masz w jednym miejscu: przełącznik włącza lub wyłącza dodatek, a zębatka otwiera jego ustawienia w tym oknie.</p>' +
       '<p>Webhooki, role i pingi ustawiasz w zakładkach Webhooki i Role i pingi. Przedziały Online działają na mapie, a ich konfigurację znajdziesz w tym nowym oknie po kliknięciu zębatki.</p>'
     content.appendChild(box)
   }
@@ -3634,8 +3634,8 @@
   };
   const setLootEnabled=value=>{enabled=!!value;try{localStorage.setItem(ENABLED_KEY,enabled?'1':'0')}catch(error){}if(settingsStatus)settingsStatus.textContent=enabled?'Panel łupu przy czacie jest włączony.':'Panel łupu przy czacie jest wyłączony i ustawienie zostanie zapamiętane.';if(settingCheckbox)settingCheckbox.checked=enabled;updateChatPanel()};
 
-  const applyBackground=(preset,notify=true)=>{if(!BACKGROUND_PRESETS[preset])return;backgroundPreset=preset;const gradient=BACKGROUND_PRESETS[preset].value;for(const doc of getDocs()){for(const selector of [`#${PANEL_ID}`,`#${CHAT_PANEL_ID}`,'#mk-hub','#mk-party-floating','#mk-battle-meter','#heroes-colossus-call','#heroes-popup','.heroes-discord__setup'])for(const el of doc.querySelectorAll(selector))el.style.setProperty('background',gradient,'important');for(const el of doc.querySelectorAll('.heroes-discord__background'))el.style.setProperty('background','transparent','important')}try{localStorage.setItem(BACKGROUND_KEY,preset)}catch(error){}window.__mkPersistAddonSettings?.();if(backgroundPicker)backgroundPicker.value=preset;if(notify&&themeStatus)themeStatus.textContent=uiLanguage==='en'?'Background saved.':uiLanguage==='el'?'Το φόντο αποθηκεύτηκε.':'Tło dodatku zapisane.'};
-  const applyTheme=color=>{if(!/^#[0-9a-f]{6}$/i.test(color||''))return;themeColor=color;for(const doc of getDocs()){doc.documentElement?.style.setProperty('--mkhd-addon-theme',themeColor);for(const el of doc.querySelectorAll(`#${PANEL_ID},#${CHAT_PANEL_ID},#mk-hub,#mk-party-floating,#mk-battle-meter,#heroes-colossus-call,#heroes-popup,.heroes-discord__setup,.mk-leg-settings`))el.style.setProperty('--mkhd-addon-theme',themeColor)}try{localStorage.setItem(THEME_KEY,themeColor)}catch(error){}window.__mkPersistAddonSettings?.();if(themePicker)themePicker.value=themeColor;if(themeStatus)themeStatus.textContent=`Kolor zestawu zapisany: ${themeColor}.`};
+  const applyBackground=(preset,notify=true)=>{if(!BACKGROUND_PRESETS[preset])return;backgroundPreset=preset;const gradient=BACKGROUND_PRESETS[preset].value;for(const doc of getDocs()){for(const selector of [`#${PANEL_ID}`,`#${CHAT_PANEL_ID}`,'#mk-hub','#mk-party-floating','#MargoMeter-Panel','#heroes-colossus-call','#heroes-popup','.heroes-discord__setup'])for(const el of doc.querySelectorAll(selector))el.style.setProperty('background',gradient,'important');for(const el of doc.querySelectorAll('.heroes-discord__background'))el.style.setProperty('background','transparent','important')}try{localStorage.setItem(BACKGROUND_KEY,preset)}catch(error){}window.__mkPersistAddonSettings?.();if(backgroundPicker)backgroundPicker.value=preset;if(notify&&themeStatus)themeStatus.textContent=uiLanguage==='en'?'Background saved.':uiLanguage==='el'?'Το φόντο αποθηκεύτηκε.':'Tło dodatku zapisane.'};
+  const applyTheme=color=>{if(!/^#[0-9a-f]{6}$/i.test(color||''))return;themeColor=color;for(const doc of getDocs()){doc.documentElement?.style.setProperty('--mkhd-addon-theme',themeColor);for(const el of doc.querySelectorAll(`#${PANEL_ID},#${CHAT_PANEL_ID},#mk-hub,#mk-party-floating,#MargoMeter-Panel,#heroes-colossus-call,#heroes-popup,.heroes-discord__setup,.mk-leg-settings`))el.style.setProperty('--mkhd-addon-theme',themeColor)}try{localStorage.setItem(THEME_KEY,themeColor)}catch(error){}window.__mkPersistAddonSettings?.();if(themePicker)themePicker.value=themeColor;if(themeStatus)themeStatus.textContent=`Kolor zestawu zapisany: ${themeColor}.`};
   window.__mkApplyAddonAppearance=()=>{applyTheme(themeColor);applyBackground(backgroundPreset,false)};
   const setColossusPromptEnabled=value=>{colossusPromptEnabled=!!value;try{localStorage.setItem(COLOSSUS_PROMPT_ENABLED_KEY,colossusPromptEnabled?'1':'0')}catch(error){}if(colossusPromptCheckbox)colossusPromptCheckbox.checked=colossusPromptEnabled;window.dispatchEvent(new CustomEvent('mk-colossus-prompt-toggle',{detail:{enabled:colossusPromptEnabled}}))};
   const setOnlineRangesEnabled=value=>{onlineRangesEnabled=!!value;try{localStorage.setItem('mkOnlineRangesEnabled',onlineRangesEnabled?'1':'0')}catch(error){}if(onlineRangesCheckbox)onlineRangesCheckbox.checked=onlineRangesEnabled;window.dispatchEvent(new CustomEvent('mk-online-ranges-toggle',{detail:{enabled:onlineRangesEnabled}}))};
@@ -4501,67 +4501,15277 @@
 
 
 
-/* ===================== LICZNIK WALK (własny moduł) ===================== */
+/* MargoMeter 0.24.0 — pełny dekoder i panel z pliku użytkownika */
 ;(function () {
-  'use strict'
-  const ENABLED = 'mkMargoMeterEnabled', DATA = 'mkBattleMeterDataV1', POS = 'mkBattleMeterPositionV1', ID = 'mk-battle-meter'
-  const uiDoc = (() => { try { return window.top.document } catch (e) { return document } })()
-  let timer = null, battle = null, original = null, wrapped = null, ownsHook = false, panel = null, folded = false
-  let fight = { damage: Object.create(null), hits: 0, startedAt: Date.now() }
-  const on = () => { try { return localStorage.getItem(ENABLED) !== '0' } catch (e) { return true } }
-  try { folded = localStorage.getItem('mkBattleMeterFolded') === '1'; const saved = JSON.parse(localStorage.getItem(DATA) || 'null'); if (saved?.damage) fight = saved } catch (e) {}
-  const save = () => { try { localStorage.setItem(DATA, JSON.stringify(fight)); window.__mkPersistAddonSettings?.() } catch (e) {} }
-  function parseDamage(line) {
-    if (typeof line !== 'string') return null
-    const patterns = [/^\s*(.{1,70}?)\s+(?:zadaje|zadał|zadała|zadają|zadało)\s+([\d\s.,]+)\s+(?:obrażeń|obrażenia|obrażenie|pkt\.?)/i, /^\s*(.{1,70}?)\s+(?:deals?|hits? for)\s+([\d\s.,]+)\s+(?:damage|hp)/i]
-    for (const re of patterns) { const m=line.match(re); if (!m) continue; const amount=Number(m[2].replace(/[\s.,]/g,'')); const name=m[1].replace(/<[^>]*>/g,'').trim(); if(name&&Number.isFinite(amount)&&amount>0&&amount<1e9)return {name,amount} }
-    return null
-  }
-  function consume(payload) {
-    if (!payload || typeof payload!=='object') return
-    if (payload.init || payload.isInit) { if(fight.hits) save(); fight={damage:Object.create(null),hits:0,startedAt:Date.now()} }
-    const list=payload.m??payload.messages??payload.log??[]
-    const lines=Array.isArray(list)?list:typeof list==='string'?[list]:list&&typeof list==='object'?Object.values(list):[]
-    for(const item of lines){const hit=parseDamage(typeof item==='string'?item:item?.text??item?.msg);if(hit){fight.damage[hit.name]=(fight.damage[hit.name]||0)+hit.amount;fight.hits++}}
-    if(payload.endBattle||payload.end||payload.end_battle)save()
-    draw()
-  }
-  function findBattle(){
-    const queue=[window], seen=new Set()
-    while(queue.length&&seen.size<24){
-      const candidate=queue.shift();if(!candidate||seen.has(candidate))continue;seen.add(candidate)
-      try{const engine=candidate.Engine||candidate.getEngine?.();const found=engine?.battle;if(found&&typeof found.updateData==='function')return found}catch(e){}
-      try{for(let i=0;i<candidate.frames.length&&queue.length+seen.size<24;i++)queue.push(candidate.frames[i])}catch(e){}
+  if (window.top !== window.self) return
+// frozen/aura-turns.ts
+var FROZEN_AURA_TURNS = {
+  /** When the page these were read from was fetched, not when a person read it. */
+  fetchedAt: "2026-10-02T14:46:17.688Z",
+  skills: [
+    {
+      id: 25,
+      turns: 2
+    },
+    {
+      id: 76,
+      turns: 8
+    },
+    {
+      id: 89,
+      turns: 8
+    },
+    {
+      id: 123,
+      turns: 8
+    },
+    {
+      id: 188,
+      turns: 5
+    },
+    {
+      id: 206,
+      turns: 2
+    },
+    {
+      id: 212,
+      turns: 8
+    },
+    {
+      id: 219,
+      turns: 8
+    },
+    {
+      id: 244,
+      turns: 8
+    },
+    {
+      id: 264,
+      turns: 8
+    },
+    {
+      id: 285,
+      turns: 40
+    },
+    {
+      id: 298,
+      turns: 8
     }
-    return null
+  ],
+  shouts: [
+    {
+      id: 25,
+      turns: 3,
+      coverageMinimum: 6
+    },
+    {
+      id: 188,
+      turns: 3,
+      coverageMinimum: 6
+    }
+  ]
+};
+
+// frozen/blows-granted.ts
+var FROZEN_BLOWS_GRANTED = {
+  /** When the page these were read from was fetched, not when a person read it. */
+  fetchedAt: "2026-10-02T14:46:17.688Z",
+  skills: [
+    {
+      id: 97,
+      blowsGrantedMinimum: 1
+    },
+    {
+      id: 239,
+      blowsGrantedMinimum: 1
+    },
+    {
+      id: 283,
+      blowsGrantedMinimum: 2
+    }
+  ]
+};
+
+// frozen/status-bits.ts
+var FROZEN_STATUS_BITS = {
+  gameBuild: "DHSqC3Uh",
+  bits: [
+    "deep_wound",
+    "wound",
+    "critical_deep_wound",
+    "poisoned",
+    "fire",
+    "swow_down",
+    "speed_up",
+    "frostbite",
+    "shock"
+  ]
+};
+
+// libs/errors.ts
+var Caught = class extends Error {
+  name = "Caught";
+  constructor(cause) {
+    super(void 0, {
+      cause
+    });
   }
-  function hook(){
-    if(!on()||battle)return !!battle
-    const b=findBattle();if(!b)return false
-    const current=b.updateData
-    if(current.__mkBattleMeterHook){battle=b;wrapped=current;original=current.__mkBattleMeterOriginal||current;ownsHook=false;return true}
-    const wrap=function(payload,...args){const result=Reflect.apply(current,this,[payload,...args]);try{consume(payload)}catch(e){console.warn('[Licznik Walk]',e)}return result}
-    try{Object.defineProperties(wrap,{__mkBattleMeterHook:{value:true},__mkBattleMeterOriginal:{value:current}});b.updateData=wrap}catch(e){return false}
-    if(b.updateData!==wrap)return false;battle=b;original=current;wrapped=wrap;ownsHook=true;return true
+};
+function attempt(call) {
+  try {
+    return call();
+  } catch (cause) {
+    return new Caught(cause);
   }
-  function unhook(){if(ownsHook&&battle?.updateData===wrapped){try{battle.updateData=original}catch(e){}}battle=original=wrapped=null;ownsHook=false}
-  function toggle(enabled){try{localStorage.setItem(ENABLED,enabled?'1':'0')}catch(e){}if(enabled){if(!timer)timer=setInterval(hook,700);hook();mount()}else{clearInterval(timer);timer=null;unhook();panel?.remove();panel=null}window.__mkPersistAddonSettings?.();return enabled}
-  function mount(){if(!uiDoc.body||panel?.isConnected)return;let css=uiDoc.getElementById('mk-battle-meter-style');if(!css){css=uiDoc.createElement('style');css.id='mk-battle-meter-style';css.textContent='#mk-battle-meter{position:fixed;right:18px;top:110px;z-index:2147483000;width:min(330px,calc(100vw - 20px));max-height:70vh;overflow:auto;border:1px solid color-mix(in srgb,var(--mkhd-addon-theme,#6366f1) 48%,#30334a);border-radius:12px;background:linear-gradient(160deg,#20223e,#0b1020);box-shadow:0 14px 36px #0009;color:#f3f3ff;font:13px/1.4 Inter,Segoe UI,Arial,sans-serif}#mk-battle-meter *{box-sizing:border-box}#mk-battle-meter .head{display:flex;align-items:center;gap:7px;padding:8px;border-bottom:1px solid #ffffff18;cursor:grab;user-select:none}#mk-battle-meter .title{flex:1;text-align:center;font-weight:700;color:color-mix(in srgb,var(--mkhd-addon-theme,#6366f1) 55%,#fff)}#mk-battle-meter button{border:1px solid #ffffff24;border-radius:6px;background:#ffffff0c;color:#fff;cursor:pointer;padding:4px 7px}#mk-battle-meter .body{padding:10px}#mk-battle-meter .summary{color:#b4adda;font-size:11px;margin-bottom:7px}#mk-battle-meter .entry{display:grid;grid-template-columns:22px 1fr auto;gap:6px;padding:5px 4px;border-bottom:1px solid #ffffff0b}#mk-battle-meter .dmg{font-variant-numeric:tabular-nums;font-weight:700}#mk-battle-meter.folded .body{display:none}';uiDoc.head.append(css)}
-    panel=uiDoc.createElement('section');panel.id=ID;panel.innerHTML='<div class="head"><span class="title">LICZNIK WALK</span><button class="fold" type="button">−</button><button class="reset" type="button">Wyczyść</button></div><div class="body"></div>';uiDoc.body.append(panel)
-    panel.querySelector('.fold').onclick=()=>{folded=!folded;panel.classList.toggle('folded',folded);try{localStorage.setItem('mkBattleMeterFolded',folded?'1':'0')}catch(e){}}
-    panel.querySelector('.reset').onclick=()=>{fight={damage:Object.create(null),hits:0,startedAt:Date.now()};try{localStorage.removeItem(DATA)}catch(e){}draw()}
-    panel.querySelector('.head').onpointerdown=e=>{if(e.target.closest('button')||e.button!==0)return;const r=panel.getBoundingClientRect(),dx=e.clientX-r.left,dy=e.clientY-r.top;const move=x=>{panel.style.left=Math.max(4,Math.min(innerWidth-panel.offsetWidth-4,x.clientX-dx))+'px';panel.style.top=Math.max(4,Math.min(innerHeight-panel.offsetHeight-4,x.clientY-dy))+'px';panel.style.right='auto'};const stop=()=>{uiDoc.removeEventListener('pointermove',move);uiDoc.removeEventListener('pointerup',stop);try{const p=panel.getBoundingClientRect();localStorage.setItem(POS,JSON.stringify({left:p.left,top:p.top}))}catch(e){}};uiDoc.addEventListener('pointermove',move);uiDoc.addEventListener('pointerup',stop)}
-    try{const p=JSON.parse(localStorage.getItem(POS)||'null');if(Number.isFinite(p?.left)&&Number.isFinite(p?.top)){panel.style.left=p.left+'px';panel.style.top=p.top+'px';panel.style.right='auto'}}catch(e){}panel.classList.toggle('folded',folded);draw()
+}
+
+// deno:https://jsr.io/@std/assert/1.0.19/assertion_error.ts
+var AssertionError = class extends Error {
+  /** Constructs a new instance.
+   *
+   * @param message The error message.
+   * @param options Additional options. This argument is still unstable. It may change in the future release.
+   */
+  constructor(message, options) {
+    super(message, options);
+    this.name = "AssertionError";
   }
-  function draw(){if(!panel?.isConnected)return;const body=panel.querySelector('.body');body.replaceChildren();const rows=Object.entries(fight.damage).sort((a,b)=>b[1]-a[1]),total=rows.reduce((s,x)=>s+x[1],0);const summary=uiDoc.createElement('div');summary.className='summary';summary.textContent=`Obrażenia: ${total.toLocaleString('pl-PL')} · trafienia: ${fight.hits} · ${battle?'połączono z walką':'oczekiwanie na walkę'}`;body.append(summary);if(!rows.length){const empty=uiDoc.createElement('div');empty.className='summary';empty.textContent='Ranking pojawi się po odczytaniu komunikatów o obrażeniach.';body.append(empty)}rows.forEach(([name,n],i)=>{const row=uiDoc.createElement('div');row.className='entry';const rank=uiDoc.createElement('span');rank.textContent=(i+1)+'.';const who=uiDoc.createElement('span');who.textContent=name;const value=uiDoc.createElement('span');value.className='dmg';value.textContent=n.toLocaleString('pl-PL');row.append(rank,who,value);body.append(row)})}
-  window.__mkBattleMeterSetEnabled=toggle;window.__mkBattleMeterIsRunning=()=>!!battle;window.__mkBattleMeterShow=()=>{if(!on())return false;mount();hook();if(panel){panel.style.display='';panel.style.zIndex='2147483000';panel.scrollIntoView({block:'nearest'});draw()}return !!panel}
-  window.addEventListener('mk-battle-meter-toggle',e=>toggle(e.detail?.enabled!==false))
-  if(on()){mount();timer=setInterval(hook,700);hook();new MutationObserver(()=>on()&&mount()).observe(document.documentElement,{childList:true,subtree:true})}
+};
+
+// deno:https://jsr.io/@std/assert/1.0.19/assert.ts
+function assert(expr, msg = "") {
+  if (!expr) {
+    throw new AssertionError(msg);
+  }
+}
+
+// libs/unknown-value.ts
+var FIELD_TYPE = {
+  number: "number",
+  text: "text",
+  statedText: "stated-text",
+  record: "record",
+  list: "list"
+};
+var FieldWrongType = class extends Error {
+  name = "FieldWrongType";
+  field;
+  expected;
+  constructor(field, expected) {
+    super();
+    this.field = field;
+    this.expected = expected;
+  }
+};
+var FieldTooLong = class extends Error {
+  name = "FieldTooLong";
+  field;
+  count;
+  maximum;
+  constructor(field, count, maximum) {
+    super();
+    this.field = field;
+    this.count = count;
+    this.maximum = maximum;
+  }
+};
+function isRecord(candidate) {
+  if (typeof candidate !== "object") return false;
+  if (candidate === null) return false;
+  return !Array.isArray(candidate);
+}
+function getNumberField(record, keys, field) {
+  const fieldValue = getFieldValue(record, keys, field);
+  if (fieldValue === void 0) return null;
+  if (typeof fieldValue !== "number") {
+    return new FieldWrongType(field, FIELD_TYPE.number);
+  }
+  if (!Number.isFinite(fieldValue)) {
+    return new FieldWrongType(field, FIELD_TYPE.number);
+  }
+  return fieldValue;
+}
+function getFieldValue(record, keys, field) {
+  assert(Object.hasOwn(keys, field), "every field read is given a key");
+  const key = keys[field];
+  assert(typeof key === "string", "and the key is text");
+  return getOwnValue(record, key);
+}
+function getOwnValue(record, key) {
+  assert(key.length > 0, "a key read is a key somebody spelled");
+  if (!Object.hasOwn(record, key)) return void 0;
+  return record[key];
+}
+function getTextField(record, keys, field) {
+  const fieldValue = getFieldValue(record, keys, field);
+  if (fieldValue === void 0) return null;
+  if (typeof fieldValue !== "string") {
+    return new FieldWrongType(field, FIELD_TYPE.text);
+  }
+  return fieldValue;
+}
+function getStatedTextField(record, keys, field) {
+  const text = getTextField(record, keys, field);
+  if (text instanceof Error) return text;
+  if (text === null) return text;
+  if (text.length === 0) {
+    return new FieldWrongType(field, FIELD_TYPE.statedText);
+  }
+  return text;
+}
+function getRecordField(record, keys, field) {
+  const fieldValue = getFieldValue(record, keys, field);
+  if (fieldValue === void 0) return null;
+  if (!isRecord(fieldValue)) {
+    return new FieldWrongType(field, FIELD_TYPE.record);
+  }
+  return fieldValue;
+}
+function getListField(record, keys, field, maximum) {
+  assert(Number.isSafeInteger(maximum), "a list is bounded by a whole count");
+  assert(maximum >= 0, "of none or more");
+  const fieldValue = getFieldValue(record, keys, field);
+  if (fieldValue === void 0) return null;
+  if (!Array.isArray(fieldValue)) {
+    return new FieldWrongType(field, FIELD_TYPE.list);
+  }
+  if (fieldValue.length > maximum) {
+    return new FieldTooLong(field, fieldValue.length, maximum);
+  }
+  return fieldValue;
+}
+
+// src/core/battle-event.ts
+var BATTLE_EVENT = {
+  attack: "attack",
+  damageToNamedCombatant: "damage-to-named-combatant",
+  declaration: "declaration",
+  fightOutcome: "fight-outcome",
+  healingToNamedCombatant: "healing-to-named-combatant",
+  healthChange: "health-change",
+  skillUsed: "skill-used",
+  turnLost: "turn-lost",
+  unaccountedHealth: "unaccounted-health",
+  unknownMessage: "unknown-message"
+};
+var OUTCOME_RESULT = {
+  won: "won",
+  lost: "lost",
+  drawn: "drawn",
+  fled: "fled"
+};
+var UNREAD_CAUSE = {
+  unknownKey: "unknown-key",
+  noParameter: "no-parameter",
+  grammarRefused: "grammar-refused"
+};
+
+// src/core/combatant-roster.ts
+var COMBATANTS_MAXIMUM = 20;
+var AMBIGUOUS = null;
+var NOBODY = null;
+function indexCombatantRoster(combatants) {
+  assert(combatants.length <= COMBATANTS_MAXIMUM, "a cast stays inside its stated bound");
+  const byId = /* @__PURE__ */ new Map();
+  const idByName = /* @__PURE__ */ new Map();
+  for (const combatant of combatants) {
+    assert(!byId.has(combatant.id), "a cast names each combatant once");
+    assert(combatant.name.length > 0, "a combatant in a cast is named");
+    byId.set(combatant.id, combatant);
+    if (idByName.has(combatant.name)) idByName.set(combatant.name, AMBIGUOUS);
+    else idByName.set(combatant.name, combatant.id);
+  }
+  assert(byId.size === combatants.length, "a roster holds everybody it was handed");
+  return {
+    byId,
+    idByName
+  };
+}
+function lookupCombatantIdByName(roster, name) {
+  assert(name.length > 0, "a name to resolve is never empty");
+  const combatantId = roster.idByName.get(name);
+  if (combatantId === void 0) return NOBODY;
+  if (combatantId === AMBIGUOUS) return AMBIGUOUS;
+  assert(roster.byId.get(combatantId)?.name === name, "a name resolves to somebody who holds it");
+  return combatantId;
+}
+
+// libs/text-walk.ts
+var RUN_CHARACTERS_MAXIMUM = 65536;
+function isDigitAt(text, index) {
+  assert(Number.isSafeInteger(index), "a character is looked for at a whole position");
+  assert(index >= 0, "never before the text");
+  const character = text.charAt(index);
+  if (character < "0") return false;
+  return character <= "9";
+}
+function lookupEndOfRun(text, from, maximum, isMember) {
+  assert(Number.isSafeInteger(from), "a run starts at a whole position");
+  assert(from >= 0, "never before the text");
+  assert(from <= text.length, "nor past its end");
+  assert(Number.isSafeInteger(maximum), "a run is bounded by a whole count of characters");
+  assert(maximum > 0, "of at least one");
+  let runEnd = from;
+  for (let look = 0; look < maximum; look += 1) {
+    if (runEnd >= text.length) break;
+    if (!isMember(text, runEnd)) break;
+    runEnd += 1;
+  }
+  assert(runEnd <= text.length, "a run never ends past the text it walked");
+  if (runEnd - from < maximum) return runEnd;
+  return null;
+}
+function isDigitRun(text) {
+  if (text.length === 0) return false;
+  if (text.length >= RUN_CHARACTERS_MAXIMUM) return false;
+  const end = lookupEndOfRun(text, 0, RUN_CHARACTERS_MAXIMUM, isDigitAt);
+  assert(end !== null, "a run in text shorter than the bound ends inside the bound");
+  assert(end <= text.length, "a run of digits ends inside the text it was read from");
+  return end === text.length;
+}
+
+// libs/number-text.ts
+var MINUS = "-";
+var PLACES_MAXIMUM = 100;
+var FIXED_MAGNITUDE_MAXIMUM = 1e21;
+var POINT = ".";
+function parseInteger(text) {
+  const digits = text.startsWith(MINUS) ? text.slice(MINUS.length) : text;
+  if (!isDigitRun(digits)) return null;
+  const integer = Number(text);
+  if (!Number.isSafeInteger(integer)) return null;
+  assert(String(integer).length <= text.length, "reading a number never lengthens its text");
+  if (digits === text) assert(integer >= 0, "digits with no minus read as nothing or above");
+  else assert(integer <= 0, "digits behind a minus read as nothing or below");
+  return integer;
+}
+function parseDecimal(text) {
+  const point = text.indexOf(POINT);
+  if (point === -1) {
+    if (!isDigitRun(text)) return null;
+  } else {
+    if (!isDigitRun(text.slice(0, point))) return null;
+    if (!isDigitRun(text.slice(point + POINT.length))) return null;
+  }
+  const decimal = Number(text);
+  if (!Number.isFinite(decimal)) return null;
+  assert(decimal >= 0, "a decimal read from digits is never below nothing, having no sign");
+  return decimal;
+}
+function formatInteger(integer) {
+  assert(Number.isSafeInteger(integer), "an integer written is one held exactly");
+  const text = String(integer);
+  assert(text.length > 0, "a number is written as at least one character");
+  return text;
+}
+function formatDecimal(decimal, places) {
+  assert(Number.isFinite(decimal), "a number written is a number");
+  assert(Math.abs(decimal) < FIXED_MAGNITUDE_MAXIMUM, "and one the platform writes in digits");
+  assert(Number.isSafeInteger(places), "and is written to a whole number of places");
+  assert(places >= 0, "never fewer than none");
+  assert(places <= PLACES_MAXIMUM, "and never more than the platform writes");
+  return decimal.toFixed(places);
+}
+
+// src/core/protocol-number.ts
+var HEALTH_PERCENT_PLACES = 2;
+var HEALTH_PERCENT_MAXIMUM = 100;
+var POINT2 = ".";
+function parseHealthPercent(text) {
+  const pointIndex = text.indexOf(POINT2);
+  if (pointIndex === -1) return null;
+  const fraction = text.slice(pointIndex + POINT2.length);
+  if (fraction.length !== HEALTH_PERCENT_PLACES) return null;
+  if (!isDigitRun(text.slice(0, pointIndex))) return null;
+  if (!isDigitRun(fraction)) return null;
+  const healthPercent = parseDecimal(text);
+  if (healthPercent === null) return null;
+  if (healthPercent > HEALTH_PERCENT_MAXIMUM) return null;
+  assert(healthPercent >= 0, "a percentage read from digits is never below nothing");
+  return healthPercent;
+}
+
+// src/core/protocol-key.ts
+var KEY_FAMILY = {
+  damage: "damage",
+  prevented: "prevented",
+  destroyed: "destroyed",
+  proc: "proc",
+  healthChange: "health-change",
+  declaration: "declaration",
+  valuelessDeclaration: "valueless-declaration",
+  skillName: "skill-name",
+  customSkillName: "custom-skill-name",
+  skillId: "skill-id",
+  outcome: "outcome",
+  fled: "fled",
+  unaccountedHealth: "unaccounted-health",
+  namedDamage: "named-damage",
+  namedHealing: "named-healing"
+};
+var PROC_END = {
+  actor: "actor",
+  target: "target",
+  unsettled: "unsettled"
+};
+var LEGENDARY_BONUS_SHOWING = {
+  fired: "fired",
+  held: "held"
+};
+var DEFENCE_MECHANISM = {
+  pool: "pool",
+  chance: "chance"
+};
+var DAMAGE_HALF = {
+  raw: "raw",
+  applied: "applied"
+};
+var KEY_REACH = {
+  castersSide: "casters-side",
+  otherSide: "other-side"
+};
+var DAMAGE_MARKER = "dmg";
+var DAMAGE_MARKER_AT = 1;
+var RAW_SIGN = "+";
+var APPLIED_SIGN = "-";
+var TEXT_KEY = "txt";
+var SKILL_ID_KEY = "skillId";
+var STEP_KEY = "step";
+var PREPARE_KEY = "prepare";
+var CHARGE_BROKEN_KEY = "+superspell-dispel";
+var HOLYTOUCH_DECLARATION_KEY = "+legbon_holytouch";
+var HOLYTOUCH_HEAL_KEY = "legbon_holytouch_heal";
+var LASTHEAL_KEY = "legbon_lastheal";
+var CURSE_KEY = "+legbon_curse";
+var VERYCRIT_KEY = "+legbon_verycrit";
+var CLEANSE_KEY = "-legbon_cleanse";
+var GLARE_KEY = "-legbon_glare";
+var PUNCTURE_KEY = "+legbon_puncture";
+var CRITRED_KEY = "-legbon_critred";
+var FACADE_KEY = "-legbon_facade";
+var ANGUISH_KEY = "+legbon_anguish";
+var HEALING_REDUCER_KEY = "lowheal_per-enemies";
+var PROVOCATION_KEY = "shout";
+var SLOW_ALL_KEY = "allslow_per";
+var HASTE_AURA_KEY = "aura-sa_per";
+var NAME_SEPARATOR = ", ";
+var WOUND_ANNOUNCEMENT_KEY = "+injure";
+var WOUND_TICK_KEY = "injure";
+var HEAL_KEY = "heal";
+var CRITICAL_KEY = "+crit";
+var CRITICAL_OF_KEY = "+of_crit";
+var CRITICAL_PROC_KEYS = [
+  CRITICAL_KEY,
+  CRITICAL_OF_KEY
+];
+var SELF_SOURCED_HEALING_KEYS = [
+  HEAL_KEY,
+  HOLYTOUCH_HEAL_KEY,
+  LASTHEAL_KEY
+];
+var DAMAGE_KEYS = [
+  "+thirdatt",
+  "-thirdatt"
+];
+var DEFENCE_BY_KEY = /* @__PURE__ */ new Map([
+  [
+    "-absorb",
+    {
+      mechanism: DEFENCE_MECHANISM.pool,
+      elementsAbsorbed: [
+        "dmg",
+        "dmgd"
+      ]
+    }
+  ],
+  [
+    "-absorbm",
+    {
+      mechanism: DEFENCE_MECHANISM.pool,
+      elementsAbsorbed: [
+        "dmgf",
+        "dmgc",
+        "dmgl"
+      ]
+    }
+  ],
+  [
+    "-blok",
+    {
+      mechanism: DEFENCE_MECHANISM.chance,
+      elementsAbsorbed: []
+    }
+  ]
+]);
+var DESTROYED_KEYS = [
+  "+acdmg",
+  "+critpierce",
+  "+resdmg",
+  "+resdmgc",
+  "+resdmgf",
+  "+resdmgl",
+  // One letter from `+acdmg`, and a different pool: that empties armour in points, this a
+  // poison resistance in percentage points (`docs/protocol-keys.md`).
+  "+actdmg",
+  "+abdest_per",
+  "+abmdest_per"
+];
+var PROC_END_BY_KEY = /* @__PURE__ */ new Map([
+  [
+    CRITICAL_KEY,
+    PROC_END.actor
+  ],
+  [
+    CRITICAL_OF_KEY,
+    PROC_END.actor
+  ],
+  [
+    "+pierce",
+    PROC_END.actor
+  ],
+  [
+    "-pierceb",
+    PROC_END.target
+  ],
+  [
+    "+stun",
+    PROC_END.actor
+  ],
+  [
+    "+stun2",
+    PROC_END.actor
+  ],
+  [
+    "+stun2-c",
+    PROC_END.actor
+  ],
+  [
+    "+stun2-d",
+    PROC_END.actor
+  ],
+  [
+    "+stun2-f",
+    PROC_END.actor
+  ],
+  [
+    "+stun2-l",
+    PROC_END.actor
+  ],
+  [
+    "+freeze",
+    PROC_END.actor
+  ],
+  [
+    "+wound",
+    PROC_END.actor
+  ],
+  [
+    "+of_wound",
+    PROC_END.actor
+  ],
+  [
+    "+woundpoison",
+    PROC_END.actor
+  ],
+  [
+    "+woundfrost",
+    PROC_END.actor
+  ],
+  [
+    "+woundmagic",
+    PROC_END.actor
+  ],
+  [
+    "+of_woundpoison",
+    PROC_END.actor
+  ],
+  [
+    "+of_woundmagic",
+    PROC_END.actor
+  ],
+  [
+    "+fastarrow",
+    PROC_END.actor
+  ],
+  [
+    "+swing",
+    PROC_END.actor
+  ],
+  [
+    "+acdmg_destroyed",
+    PROC_END.actor
+  ],
+  [
+    CURSE_KEY,
+    PROC_END.actor
+  ],
+  [
+    VERYCRIT_KEY,
+    PROC_END.actor
+  ],
+  [
+    CLEANSE_KEY,
+    PROC_END.target
+  ],
+  [
+    GLARE_KEY,
+    PROC_END.target
+  ],
+  [
+    CHARGE_BROKEN_KEY,
+    PROC_END.unsettled
+  ],
+  [
+    "+superspell-prevented",
+    PROC_END.unsettled
+  ],
+  [
+    "-tenacity",
+    PROC_END.unsettled
+  ],
+  [
+    "-evade",
+    PROC_END.target
+  ],
+  [
+    "-parry",
+    PROC_END.target
+  ],
+  [
+    "-contra",
+    PROC_END.target
+  ],
+  [
+    "-arrowblock",
+    PROC_END.target
+  ]
+]);
+var PROCS_WITH_VALUE = [
+  "+woundpoison",
+  "+woundfrost",
+  "+woundmagic",
+  "+of_woundpoison",
+  "+of_woundmagic"
+];
+var HEALTH_CHANGE_BY_KEY = /* @__PURE__ */ new Map([
+  [
+    HEAL_KEY,
+    {
+      sign: 1,
+      isOnTarget: false
+    }
+  ],
+  [
+    HOLYTOUCH_HEAL_KEY,
+    {
+      sign: 1,
+      isOnTarget: false
+    }
+  ],
+  [
+    "heal_target",
+    {
+      sign: 1,
+      isOnTarget: true
+    }
+  ],
+  [
+    "npc_heal",
+    {
+      sign: 1,
+      isOnTarget: false
+    }
+  ],
+  [
+    "bandage",
+    {
+      sign: 1,
+      isOnTarget: false
+    }
+  ],
+  [
+    "poison",
+    {
+      sign: -1,
+      isOnTarget: false
+    }
+  ],
+  [
+    WOUND_TICK_KEY,
+    {
+      sign: -1,
+      isOnTarget: false
+    }
+  ],
+  [
+    "wound",
+    {
+      sign: -1,
+      isOnTarget: false
+    }
+  ],
+  [
+    "fire",
+    {
+      sign: -1,
+      isOnTarget: false
+    }
+  ],
+  [
+    "light",
+    {
+      sign: -1,
+      isOnTarget: false
+    }
+  ],
+  [
+    "anguish",
+    {
+      sign: -1,
+      isOnTarget: false
+    }
+  ]
+]);
+var DECLARATION_KEYS = [
+  "+absorb",
+  "+absorbm",
+  "+critpoison_per",
+  "+critsa",
+  "+critslow_per",
+  "+crush_physical",
+  "+engback",
+  "+exp",
+  WOUND_ANNOUNCEMENT_KEY,
+  PUNCTURE_KEY,
+  "+ph",
+  "+rage",
+  "+taken_dmg",
+  "-endest",
+  CRITRED_KEY,
+  FACADE_KEY,
+  "-manadest",
+  "-poison_lowdmg_per",
+  "active_absorbdest_per",
+  "active_block_per",
+  "active_decblock_per",
+  "active_decblock_per-enemies",
+  "afterheal",
+  "alllowdmg",
+  SLOW_ALL_KEY,
+  "aura-ac_per",
+  "aura-adddmg2_per-meele",
+  "aura-resall",
+  HASTE_AURA_KEY,
+  "combo-max",
+  "critmval-allies",
+  "critval-allies",
+  "en-regen",
+  "energy",
+  "heal_per-allies",
+  "heal_per-enemies",
+  "hp_per-allies",
+  "hp_per-enemies",
+  HEALING_REDUCER_KEY,
+  "mana",
+  "poison_lowdmg_per-enemies",
+  PREPARE_KEY,
+  "resfire_per",
+  "resfrost_per",
+  "reslight_per",
+  PROVOCATION_KEY,
+  "surpass_bonus_total",
+  TEXT_KEY
+];
+var VALUELESS_DECLARATION_KEYS = [
+  ANGUISH_KEY,
+  HOLYTOUCH_DECLARATION_KEY,
+  "+spell-taken_dmg-all",
+  "en-regen-cast",
+  "removedot-allies",
+  "removeslow-allies",
+  "removestun-allies",
+  STEP_KEY,
+  "sunshield_per"
+];
+var REACH_BY_KEY = /* @__PURE__ */ new Map([
+  // The `all` says everybody and not which side. The register: _a reduction to the damage dealt
+  // by everyone on the opposing side_ (`docs/protocol-keys.md`).
+  [
+    "alllowdmg",
+    KEY_REACH.otherSide
+  ],
+  [
+    "+spell-taken_dmg-all",
+    KEY_REACH.otherSide
+  ],
+  [
+    HEALING_REDUCER_KEY,
+    KEY_REACH.otherSide
+  ],
+  [
+    "active_decblock_per-enemies",
+    KEY_REACH.otherSide
+  ],
+  [
+    "poison_lowdmg_per-enemies",
+    KEY_REACH.otherSide
+  ],
+  // ⚠️ The one the register does not settle, so it is measured instead: after a `Szadź` the
+  // opposing combatant carries `swow_down` (`docs/auras-standing.md`).
+  [
+    SLOW_ALL_KEY,
+    KEY_REACH.otherSide
+  ],
+  [
+    "aura-adddmg2_per-meele",
+    KEY_REACH.castersSide
+  ],
+  [
+    "aura-ac_per",
+    KEY_REACH.castersSide
+  ],
+  [
+    "aura-resall",
+    KEY_REACH.castersSide
+  ],
+  [
+    HASTE_AURA_KEY,
+    KEY_REACH.castersSide
+  ],
+  [
+    "critval-allies",
+    KEY_REACH.castersSide
+  ],
+  [
+    "critmval-allies",
+    KEY_REACH.castersSide
+  ],
+  [
+    "removedot-allies",
+    KEY_REACH.castersSide
+  ],
+  [
+    "removeslow-allies",
+    KEY_REACH.castersSide
+  ],
+  [
+    "removestun-allies",
+    KEY_REACH.castersSide
+  ],
+  // The affected are forced to attack the character who used the skill: you do not force an
+  // ally to strike you, and every character a shout names stands opposite its caster
+  // (`docs/auras-standing.md`, _The register_).
+  [
+    PROVOCATION_KEY,
+    KEY_REACH.otherSide
+  ]
+]);
+var SIDE_WIDE_OPENING = "aura-";
+var SIDE_WIDE_ENDINGS = [
+  "-all",
+  "-allies",
+  "-enemies"
+];
+var SIDE_WIDE_KEYS = [
+  PROVOCATION_KEY,
+  SLOW_ALL_KEY,
+  "alllowdmg"
+];
+var LEGENDARY_BONUS_BY_KEY = /* @__PURE__ */ new Map([
+  [
+    HOLYTOUCH_DECLARATION_KEY,
+    {
+      end: PROC_END.actor,
+      showing: LEGENDARY_BONUS_SHOWING.fired,
+      doesReachOtherEnd: false
+    }
+  ],
+  [
+    VERYCRIT_KEY,
+    {
+      end: PROC_END.actor,
+      showing: LEGENDARY_BONUS_SHOWING.fired,
+      doesReachOtherEnd: true
+    }
+  ],
+  [
+    CURSE_KEY,
+    {
+      end: PROC_END.actor,
+      showing: LEGENDARY_BONUS_SHOWING.fired,
+      doesReachOtherEnd: true
+    }
+  ],
+  [
+    ANGUISH_KEY,
+    {
+      end: PROC_END.actor,
+      showing: LEGENDARY_BONUS_SHOWING.fired,
+      doesReachOtherEnd: true
+    }
+  ],
+  [
+    CLEANSE_KEY,
+    {
+      end: PROC_END.target,
+      showing: LEGENDARY_BONUS_SHOWING.fired,
+      doesReachOtherEnd: false
+    }
+  ],
+  [
+    GLARE_KEY,
+    {
+      end: PROC_END.target,
+      showing: LEGENDARY_BONUS_SHOWING.fired,
+      doesReachOtherEnd: true
+    }
+  ],
+  [
+    CRITRED_KEY,
+    {
+      end: PROC_END.target,
+      showing: LEGENDARY_BONUS_SHOWING.fired,
+      doesReachOtherEnd: true
+    }
+  ],
+  [
+    LASTHEAL_KEY,
+    {
+      end: PROC_END.target,
+      showing: LEGENDARY_BONUS_SHOWING.fired,
+      doesReachOtherEnd: false
+    }
+  ],
+  [
+    PUNCTURE_KEY,
+    {
+      end: PROC_END.actor,
+      showing: LEGENDARY_BONUS_SHOWING.held,
+      doesReachOtherEnd: false
+    }
+  ],
+  [
+    FACADE_KEY,
+    {
+      end: PROC_END.target,
+      showing: LEGENDARY_BONUS_SHOWING.held,
+      doesReachOtherEnd: false
+    }
+  ]
+]);
+var KEY_MEANING_BY_KEY = indexKeyMeanings();
+var DEFENCE_BY_DEFENCE = indexDefences();
+function lookupKeyReach(key) {
+  assert(key.length > 0, "a reach is asked of a key");
+  const reach = REACH_BY_KEY.get(key) ?? null;
+  if (reach !== null) assert(isSideWideKey(key), "a key reaching a side is a side-wide key");
+  return reach;
+}
+function lookupLegendaryBonus(key) {
+  assert(key.length > 0, "a bonus is asked of a key");
+  const bonus = LEGENDARY_BONUS_BY_KEY.get(key) ?? null;
+  if (bonus === null) return null;
+  assert(bonus.end !== PROC_END.unsettled, "a bonus held here is somebody's");
+  if (bonus.showing === LEGENDARY_BONUS_SHOWING.held) {
+    assert(!bonus.doesReachOtherEnd, "a held bonus names one blow of the many it acts on");
+  }
+  return bonus;
+}
+function isSideWideKey(key) {
+  assert(key.length > 0, "a key that is asked about is named");
+  if (key.startsWith(SIDE_WIDE_OPENING)) return true;
+  for (const ending of SIDE_WIDE_ENDINGS) {
+    if (key.endsWith(ending)) return true;
+  }
+  return SIDE_WIDE_KEYS.includes(key);
+}
+function lookupKeyMeaning(key) {
+  assert(key.length > 0, "a key asked about is a key the message wrote");
+  const listed = KEY_MEANING_BY_KEY.get(key);
+  if (listed !== void 0) return listed;
+  if (!key.startsWith(DAMAGE_MARKER, DAMAGE_MARKER_AT)) return null;
+  let half;
+  if (key.startsWith(RAW_SIGN)) half = DAMAGE_HALF.raw;
+  else if (key.startsWith(APPLIED_SIGN)) half = DAMAGE_HALF.applied;
+  else return null;
+  return {
+    kind: KEY_FAMILY.damage,
+    half
+  };
+}
+function getDefenceMechanism(defence) {
+  assert(defence.length > 0, "a defence asked about is one an event named");
+  const listed = DEFENCE_BY_DEFENCE.get(defence);
+  assert(listed !== void 0, "every defence an event names is one this table reads");
+  return listed.mechanism;
+}
+function getElementsAbsorbed(defence) {
+  assert(defence.length > 0, "a defence asked about is one an event named");
+  const listed = DEFENCE_BY_DEFENCE.get(defence);
+  assert(listed !== void 0, "every defence an event names is one this table reads");
+  return listed.elementsAbsorbed;
+}
+function isDefence(token) {
+  assert(token.length > 0, "a token asked about is one somebody stated");
+  return DEFENCE_BY_DEFENCE.has(token);
+}
+function indexKeyMeanings() {
+  const keyMeaningByKey = /* @__PURE__ */ new Map();
+  const addKeyMeaning = (key, keyMeaning) => {
+    assert(!keyMeaningByKey.has(key), "a key belongs to one family");
+    keyMeaningByKey.set(key, keyMeaning);
+  };
+  for (const key of DAMAGE_KEYS) {
+    addKeyMeaning(key, {
+      kind: KEY_FAMILY.damage,
+      half: key.startsWith(RAW_SIGN) ? DAMAGE_HALF.raw : DAMAGE_HALF.applied
+    });
+  }
+  for (const key of DEFENCE_BY_KEY.keys()) {
+    addKeyMeaning(key, {
+      kind: KEY_FAMILY.prevented
+    });
+  }
+  for (const key of DESTROYED_KEYS) addKeyMeaning(key, {
+    kind: KEY_FAMILY.destroyed
+  });
+  for (const [key, end] of PROC_END_BY_KEY) {
+    addKeyMeaning(key, {
+      kind: KEY_FAMILY.proc,
+      end,
+      doesTakeValue: PROCS_WITH_VALUE.includes(key)
+    });
+  }
+  for (const [key, change] of HEALTH_CHANGE_BY_KEY) {
+    addKeyMeaning(key, {
+      kind: KEY_FAMILY.healthChange,
+      ...change
+    });
+  }
+  for (const key of DECLARATION_KEYS) addKeyMeaning(key, {
+    kind: KEY_FAMILY.declaration
+  });
+  for (const key of VALUELESS_DECLARATION_KEYS) {
+    addKeyMeaning(key, {
+      kind: KEY_FAMILY.valuelessDeclaration
+    });
+  }
+  addKeyMeaning("tspell", {
+    kind: KEY_FAMILY.skillName
+  });
+  addKeyMeaning("tcustom", {
+    kind: KEY_FAMILY.customSkillName
+  });
+  addKeyMeaning(SKILL_ID_KEY, {
+    kind: KEY_FAMILY.skillId
+  });
+  addKeyMeaning("winner", {
+    kind: KEY_FAMILY.outcome,
+    result: OUTCOME_RESULT.won
+  });
+  addKeyMeaning("loser", {
+    kind: KEY_FAMILY.outcome,
+    result: OUTCOME_RESULT.lost
+  });
+  addKeyMeaning("flee", {
+    kind: KEY_FAMILY.fled
+  });
+  addKeyMeaning("healall_per", {
+    kind: KEY_FAMILY.unaccountedHealth
+  });
+  addKeyMeaning("+oth_dmg", {
+    kind: KEY_FAMILY.namedDamage
+  });
+  addKeyMeaning(LASTHEAL_KEY, {
+    kind: KEY_FAMILY.namedHealing
+  });
+  assert(keyMeaningByKey.size > PROC_END_BY_KEY.size, "every family is indexed, not only the procs");
+  return keyMeaningByKey;
+}
+function indexDefences() {
+  const defenceByDefence = /* @__PURE__ */ new Map();
+  for (const [key, defence] of DEFENCE_BY_KEY) {
+    assert(key.startsWith(APPLIED_SIGN), "a defence stops damage on the applied side");
+    if (defence.mechanism === DEFENCE_MECHANISM.pool) {
+      assert(defence.elementsAbsorbed.length > 0, "a pool takes from some element");
+    } else {
+      assert(defence.elementsAbsorbed.length === 0, "and a chance takes from none");
+    }
+    const token = key.slice(APPLIED_SIGN.length);
+    assert(!defenceByDefence.has(token), "a defence is named by one key");
+    defenceByDefence.set(token, defence);
+  }
+  assert(defenceByDefence.size === DEFENCE_BY_KEY.size, "every defence key is indexed");
+  return defenceByDefence;
+}
+
+// src/core/fight-decoder.ts
+var UnreadMessage = class extends Error {
+  name = "UnreadMessage";
+  unreadCause;
+  keys;
+  combatantIds;
+  text;
+  events;
+  announcementStanding;
+  /** A message the grammar refused carries the refusal as its `cause`. */
+  constructor(details, options) {
+    super(void 0, options);
+    this.unreadCause = details.unreadCause;
+    this.keys = details.keys;
+    this.combatantIds = details.combatantIds;
+    this.text = details.text;
+    this.events = details.events;
+    this.announcementStanding = details.announcementStanding;
+  }
+};
+var MESSAGE_END = {
+  actor: "actor",
+  target: "target"
+};
+var SegmentsExceeded = class extends Error {
+  name = "SegmentsExceeded";
+  segments;
+  maximum;
+  constructor(segments, maximum) {
+    super();
+    this.segments = segments;
+    this.maximum = maximum;
+  }
+};
+var EndUnreadable = class extends Error {
+  name = "EndUnreadable";
+  end;
+  constructor(end) {
+    super();
+    this.end = end;
+  }
+};
+var ParameterKeyEmpty = class extends Error {
+  name = "ParameterKeyEmpty";
+  index;
+  constructor(index) {
+    super();
+    this.index = index;
+  }
+};
+var MESSAGES_MAXIMUM = 32768;
+var BLOWS_GRANTED_MAXIMUM = 4;
+var NAME_LENGTH_MAXIMUM = 4096;
+var MEMBER_SEPARATOR = ",";
+var HEALTH_CHANGE_MEMBERS_MAXIMUM = 8;
+var NAMED_DAMAGE_MEMBERS = 3;
+var NAMED_HEALING_MEMBERS = 2;
+var PERCENT_OPENER = "(";
+var PERCENT_CLOSER = "%)";
+var NO_WINNER = "?";
+var TURN_LOST_SEPARATOR = " - ";
+var SENTENCE_STOP = ".";
+var ENDS_MAXIMUM = 2;
+var SEGMENTS_MAXIMUM = 512;
+var MESSAGE_PARTS_MAXIMUM = 32;
+var FIGURE_MAXIMUM = 2 ** 30;
+var SKILLS_GRANTING_MAXIMUM = 16;
+var SKILL_KEYS_READ_MAXIMUM = 2;
+var SEGMENT_SEPARATOR = ";";
+var VALUE_SEPARATOR = "=";
+var NO_COMBATANT = "0";
+var SIDE_SEGMENTS = 2;
+function indexBlowsGrantedBySkillId(skills) {
+  assert(skills.length <= SKILLS_GRANTING_MAXIMUM, "the table grants a bounded few skills");
+  const blowsGrantedBySkillId = /* @__PURE__ */ new Map();
+  for (const skill of skills) {
+    assert(skill.blowsGrantedMinimum > 0, "a skill in the table grants at least one blow");
+    assert(skill.blowsGrantedMinimum < BLOWS_GRANTED_MAXIMUM, "and stays inside the bound");
+    assert(!blowsGrantedBySkillId.has(skill.id), "and is named once");
+    blowsGrantedBySkillId.set(skill.id, skill.blowsGrantedMinimum);
+  }
+  return blowsGrantedBySkillId;
+}
+function decodePayloadMessages(texts, context) {
+  assert(texts.length <= MESSAGES_MAXIMUM, "a payload stays inside its stated bound");
+  const events = [];
+  const unread = [];
+  let announcementStanding = context.announcementStanding;
+  for (const text of texts) {
+    const decoded = decodeMessage(text, {
+      ...context,
+      announcementStanding
+    });
+    if (decoded instanceof Error) {
+      events.push(...decoded.events, decodeUnknownMessageEvent(decoded));
+      unread.push(decoded);
+    } else {
+      events.push(...decoded.events);
+    }
+    announcementStanding = decoded.announcementStanding;
+  }
+  assert(events.length >= texts.length, "every message leaves at least one event behind");
+  assert(unread.length <= texts.length, "and at most one unread record");
+  return {
+    events,
+    unread,
+    announcementStanding
+  };
+}
+function decodeUnknownMessageEvent(unread) {
+  assert(unread.keys.length <= unread.text.length, "an unread key is part of its message");
+  assert(unread.combatantIds.length <= ENDS_MAXIMUM, "a message names at most two ends");
+  return {
+    kind: BATTLE_EVENT.unknownMessage,
+    message: unread.text,
+    unreadCause: unread.unreadCause,
+    unreadKeys: unread.keys,
+    combatantIds: unread.combatantIds
+  };
+}
+function decodeMessage(text, context) {
+  const message = parseProtocolMessage(text);
+  if (message instanceof Error) {
+    const unreadCause = UNREAD_CAUSE.grammarRefused;
+    return new UnreadMessage({
+      unreadCause,
+      keys: [],
+      combatantIds: [],
+      text,
+      events: [],
+      announcementStanding: null
+    }, {
+      cause: message
+    });
+  }
+  const parametersDecoded = decodeMessageParameters(message);
+  const isBlow = hasAttackFigure(parametersDecoded);
+  const announcedHere = decodeAnnouncedSkill(message, parametersDecoded.announcement);
+  const announced = lookupAnnouncedForMessage(message, announcedHere, context.announcementStanding, isBlow);
+  if (!isBlow) parametersDecoded.unreadKeys.push(...parametersDecoded.procs);
+  const events = decodeMessageEvents(message, parametersDecoded, announced, context.roster, isBlow);
+  const announcementStanding = composeAnnouncementStanding(context, events, announcedHere);
+  if (parametersDecoded.unreadKeys.length > 0) {
+    const combatantIds = getNamedCombatantIds(message);
+    const unreadCause = UNREAD_CAUSE.unknownKey;
+    const keys = parametersDecoded.unreadKeys;
+    return new UnreadMessage({
+      unreadCause,
+      keys,
+      combatantIds,
+      text,
+      events,
+      announcementStanding
+    });
+  }
+  if (events.length === 0) {
+    const combatantIds = getNamedCombatantIds(message);
+    const unreadCause = UNREAD_CAUSE.noParameter;
+    return new UnreadMessage({
+      unreadCause,
+      keys: [],
+      combatantIds,
+      text,
+      events,
+      announcementStanding
+    });
+  }
+  return {
+    events,
+    announcementStanding
+  };
+}
+function composeAnnouncementStanding(context, events, announced) {
+  if (announced !== null) {
+    const blowsRemaining2 = calculateBlowsForAnnouncement(announced, context.tables);
+    return {
+      announced,
+      blowsRemaining: blowsRemaining2,
+      isGlued: true
+    };
+  }
+  const announcementStanding = context.announcementStanding;
+  if (announcementStanding === null) return null;
+  const attack = events.find((event) => event.kind === BATTLE_EVENT.attack);
+  if (attack === void 0) {
+    if (!announcementStanding.isGlued) return null;
+    if (!isHealingAnnouncerOnly(events, announcementStanding.announced)) return null;
+    return {
+      ...announcementStanding,
+      isGlued: false
+    };
+  }
+  if (attack.actorId !== announcementStanding.announced.actorId) return null;
+  assert(announcementStanding.blowsRemaining > 0, "a standing handed on has a blow left to spend");
+  const blowsRemaining = announcementStanding.blowsRemaining - 1;
+  assert(blowsRemaining >= 0, "a standing spends no more blows than it was given");
+  if (blowsRemaining === 0) return null;
+  return {
+    announced: announcementStanding.announced,
+    blowsRemaining,
+    isGlued: false
+  };
+}
+function isHealingAnnouncerOnly(events, announced) {
+  assert(announced.skillName.length > 0, "a standing announcement names something");
+  assert(events.every((event) => event.kind !== BATTLE_EVENT.attack), "only a message that struck no blow is asked whether it hands a standing on");
+  if (announced.actorId === null) return false;
+  if (events.length === 0) return false;
+  return events.every((event) => {
+    if (event.kind !== BATTLE_EVENT.healthChange) return false;
+    if (event.combatantId !== announced.actorId) return false;
+    return event.amount >= 0;
+  });
+}
+function calculateBlowsForAnnouncement(announced, tables) {
+  if (announced.skillId === null) return BLOWS_GRANTED_MAXIMUM;
+  const blowsGranted = tables.blowsGrantedBySkillId.get(announced.skillId) ?? 0;
+  assert(blowsGranted >= 0, "a table grants nothing or more");
+  assert(1 + blowsGranted <= BLOWS_GRANTED_MAXIMUM, "a reach stays inside its stated bound");
+  return 1 + blowsGranted;
+}
+function decodeMessageParameters(message) {
+  const parametersDecoded = {
+    raw: [],
+    applied: [],
+    prevented: [],
+    destroyed: [],
+    procs: [],
+    healthChanges: [],
+    namedDamage: [],
+    namedHealing: [],
+    unaccountedShares: [],
+    outcomes: [],
+    declared: [],
+    announcement: null,
+    skillName: null,
+    skillId: null,
+    skillKeysRead: 0,
+    unreadKeys: []
+  };
+  for (const parameter of message.parameters) {
+    const key = parameter.key;
+    const keyMeaning = lookupKeyMeaning(key);
+    const valueText = parameter.value;
+    let isRead;
+    if (keyMeaning === null) isRead = false;
+    else if (valueText === null) {
+      assert(key.length > 0, "a key is never empty");
+      switch (keyMeaning.kind) {
+        case KEY_FAMILY.proc:
+          isRead = addParameterRead(parametersDecoded.procs, key);
+          break;
+        case KEY_FAMILY.fled:
+          isRead = addParameterRead(parametersDecoded.outcomes, decodeFledOutcome());
+          break;
+        case KEY_FAMILY.valuelessDeclaration:
+          isRead = addParameterRead(parametersDecoded.declared, {
+            effect: key,
+            amount: null,
+            text: null
+          });
+          break;
+        default:
+          isRead = false;
+      }
+    } else isRead = addValuedKey(parametersDecoded, message, key, valueText, keyMeaning);
+    if (!isRead) parametersDecoded.unreadKeys.push(key);
+  }
+  {
+    assert(parametersDecoded.skillKeysRead <= SKILL_KEYS_READ_MAXIMUM, "a message names its skill once by name and once by id, at most");
+    if (parametersDecoded.skillName !== null) {
+      parametersDecoded.announcement = {
+        skillName: parametersDecoded.skillName,
+        skillId: parametersDecoded.skillId
+      };
+    } else if (parametersDecoded.skillKeysRead > 0) {
+      parametersDecoded.unreadKeys.push(SKILL_ID_KEY);
+      parametersDecoded.skillKeysRead -= 1;
+    }
+  }
+  const parametersReadCount = countParametersRead(parametersDecoded);
+  assert(parametersReadCount === message.parameters.length, "every parameter is read or named unread, once");
+  return parametersDecoded;
+}
+function addValuedKey(parametersDecoded, message, key, valueText, keyMeaning) {
+  assert(key.length > 0, "a key is never empty");
+  assert(message.parameters.length > 0, "a valued key stands in a message that has parameters");
+  switch (keyMeaning.kind) {
+    case KEY_FAMILY.damage:
+    case KEY_FAMILY.prevented:
+    case KEY_FAMILY.destroyed: {
+      const amount = parseInteger(valueText);
+      if (amount === null) return false;
+      if (amount < 0) return false;
+      if (amount > FIGURE_MAXIMUM) return false;
+      assert(Number.isSafeInteger(amount), "a figure read from digits is held exactly");
+      const token = parseKeyToken(key);
+      if (keyMeaning.kind === KEY_FAMILY.prevented) {
+        return addParameterRead(parametersDecoded.prevented, {
+          defence: token,
+          amount
+        });
+      }
+      if (keyMeaning.kind === KEY_FAMILY.destroyed) {
+        return addParameterRead(parametersDecoded.destroyed, {
+          statistic: token,
+          amount
+        });
+      }
+      if (keyMeaning.half === DAMAGE_HALF.raw) {
+        return addParameterRead(parametersDecoded.raw, {
+          element: token,
+          amount
+        });
+      }
+      return addParameterRead(parametersDecoded.applied, {
+        element: token,
+        amount
+      });
+    }
+    case KEY_FAMILY.proc:
+      if (keyMeaning.doesTakeValue) return addParameterRead(parametersDecoded.procs, key);
+      return false;
+    case KEY_FAMILY.healthChange:
+      return addParameterRead(parametersDecoded.healthChanges, decodeHealthChange(key, valueText, keyMeaning));
+    case KEY_FAMILY.declaration:
+      if (key === PROVOCATION_KEY) {
+        const names = valueText.split(NAME_SEPARATOR).filter((name) => name.length > 0);
+        if (names.length > COMBATANTS_MAXIMUM) return false;
+        const isShoutRead = parametersDecoded.declared.some((declaredEffect) => declaredEffect.effect === PROVOCATION_KEY);
+        if (isShoutRead) return false;
+      }
+      return addParameterRead(parametersDecoded.declared, {
+        effect: key,
+        amount: parseInteger(valueText),
+        text: valueText
+      });
+    case KEY_FAMILY.skillName:
+    case KEY_FAMILY.customSkillName: {
+      const isUserNamed = keyMeaning.kind === KEY_FAMILY.customSkillName ? doesNameOneCombatant(message) : true;
+      if (valueText.length === 0) return false;
+      if (valueText.length > NAME_LENGTH_MAXIMUM) return false;
+      if (!isUserNamed) return false;
+      if (parametersDecoded.skillName !== null) return false;
+      parametersDecoded.skillName = valueText;
+      parametersDecoded.skillKeysRead += 1;
+      assert(parametersDecoded.skillKeysRead <= message.parameters.length, "a skill key is one of the message's");
+      return true;
+    }
+    case KEY_FAMILY.skillId: {
+      const skillId = parseInteger(valueText);
+      if (skillId === null) return false;
+      if (parametersDecoded.skillId !== null) return false;
+      parametersDecoded.skillId = skillId;
+      parametersDecoded.skillKeysRead += 1;
+      return true;
+    }
+    case KEY_FAMILY.outcome:
+      return addParameterRead(parametersDecoded.outcomes, decodeFightOutcome(valueText, keyMeaning.result));
+    case KEY_FAMILY.fled:
+      return addParameterRead(parametersDecoded.outcomes, decodeFledOutcome());
+    case KEY_FAMILY.unaccountedHealth:
+      return addParameterRead(parametersDecoded.unaccountedShares, decodeUnaccountedShare(key, valueText));
+    case KEY_FAMILY.namedDamage:
+      return addParameterRead(parametersDecoded.namedDamage, decodeNamedDamage(valueText));
+    case KEY_FAMILY.namedHealing:
+      return addParameterRead(parametersDecoded.namedHealing, decodeNamedHealing(key, valueText));
+    case KEY_FAMILY.valuelessDeclaration:
+      return false;
+  }
+}
+function addParameterRead(decodedParameters, decoded) {
+  if (decoded === null) return false;
+  if (decodedParameters.length >= MESSAGE_PARTS_MAXIMUM) return false;
+  const count = decodedParameters.push(decoded);
+  assert(count <= MESSAGE_PARTS_MAXIMUM, "a message's parts stay inside their stated bound");
+  return true;
+}
+function decodeFledOutcome() {
+  return {
+    kind: BATTLE_EVENT.fightOutcome,
+    result: OUTCOME_RESULT.fled,
+    combatantNames: []
+  };
+}
+function parseKeyToken(key) {
+  let token;
+  if (key.startsWith(RAW_SIGN)) token = key.slice(RAW_SIGN.length);
+  else {
+    assert(key.startsWith(APPLIED_SIGN), "a figure's key carries one of the two signs");
+    token = key.slice(APPLIED_SIGN.length);
+  }
+  assert(token.length > 0, "a figure carries the client's own token");
+  assert(key.endsWith(token), "a token is the key's own tail");
+  return token;
+}
+function decodeHealthChange(key, valueText, keyMeaning) {
+  const members = valueText.split(MEMBER_SEPARATOR);
+  if (members.length > HEALTH_CHANGE_MEMBERS_MAXIMUM) return null;
+  const magnitude = parseInteger(members[0] ?? "");
+  if (magnitude === null) return null;
+  if (Math.abs(magnitude) > FIGURE_MAXIMUM) return null;
+  const declared = [];
+  for (const member of members.slice(1)) {
+    declared.push({
+      effect: key,
+      amount: parseInteger(member),
+      text: member
+    });
+  }
+  assert(declared.length < members.length, "the health figure is not a declaration");
+  const amount = keyMeaning.sign * magnitude;
+  return {
+    source: key,
+    amount,
+    isOnTarget: keyMeaning.isOnTarget,
+    declared
+  };
+}
+function doesNameOneCombatant(message) {
+  if (message.actor === null) return message.target !== null;
+  if (message.target === null) return true;
+  return message.actor.combatantId === message.target.combatantId;
+}
+function decodeFightOutcome(valueText, outcomeResult) {
+  if (valueText.length === 0) return null;
+  if (valueText === NO_WINNER) {
+    if (outcomeResult === OUTCOME_RESULT.lost) return null;
+    return {
+      kind: BATTLE_EVENT.fightOutcome,
+      result: OUTCOME_RESULT.drawn,
+      combatantNames: []
+    };
+  }
+  const combatantNames = valueText.split(NAME_SEPARATOR);
+  if (combatantNames.length > COMBATANTS_MAXIMUM) return null;
+  if (combatantNames.some((combatantName) => combatantName.length === 0)) return null;
+  if (combatantNames.some((combatantName) => combatantName.startsWith(" "))) return null;
+  assert(combatantNames.length > 0, "a side that is named has at least one member");
+  return {
+    kind: BATTLE_EVENT.fightOutcome,
+    result: outcomeResult,
+    combatantNames
+  };
+}
+function decodeUnaccountedShare(key, valueText) {
+  const declaredShare = parseDecimal(valueText);
+  if (declaredShare === null) return null;
+  if (declaredShare > HEALTH_PERCENT_MAXIMUM) return null;
+  assert(declaredShare >= 0, "a share read is never below nothing");
+  return {
+    source: key,
+    declaredShare
+  };
+}
+function decodeNamedDamage(valueText) {
+  const members = valueText.split(MEMBER_SEPARATOR);
+  if (members.length !== NAMED_DAMAGE_MEMBERS) return null;
+  const [amountText = "", elementText = "", namedText = ""] = members;
+  const amount = parseInteger(amountText);
+  if (amount === null) return null;
+  if (amount < 0) return null;
+  if (amount > FIGURE_MAXIMUM) return null;
+  const named = parseNamedTarget(namedText);
+  if (named === null) return null;
+  const damage = {
+    element: `${DAMAGE_MARKER}${elementText.trim()}`,
+    amount
+  };
+  assert(damage.element.startsWith(DAMAGE_MARKER), "an element named is of the family");
+  assert(named.targetName.length > 0, "a figure stated against a name has a name");
+  return {
+    ...named,
+    damage
+  };
+}
+function parseNamedTarget(text) {
+  if (!text.endsWith(PERCENT_CLOSER)) return null;
+  const openerIndex = text.lastIndexOf(PERCENT_OPENER);
+  if (openerIndex <= 0) return null;
+  const targetName = text.slice(0, openerIndex);
+  const percentText = text.slice(openerIndex + PERCENT_OPENER.length, -PERCENT_CLOSER.length);
+  assert(targetName.length > 0, "a stated name says something");
+  assert(percentText.length < text.length, "a percentage is shorter than what carried it");
+  return {
+    targetName,
+    targetHealthPercent: parseHealthPercent(percentText)
+  };
+}
+function decodeNamedHealing(key, valueText) {
+  const members = valueText.split(MEMBER_SEPARATOR);
+  if (members.length !== NAMED_HEALING_MEMBERS) return null;
+  const [amountText = "", namedText = ""] = members;
+  const amount = parseInteger(amountText);
+  if (amount === null) return null;
+  if (amount < 0) return null;
+  if (amount > FIGURE_MAXIMUM) return null;
+  const named = parseNamedTarget(namedText);
+  if (named === null) return null;
+  assert(named.targetName.length > 0, "the healed is named inside the value");
+  assert(Number.isSafeInteger(amount), "healing read from digits is held exactly");
+  return {
+    ...named,
+    amount,
+    source: key
+  };
+}
+function countParametersRead(parametersDecoded) {
+  return parametersDecoded.raw.length + parametersDecoded.applied.length + parametersDecoded.prevented.length + parametersDecoded.destroyed.length + parametersDecoded.procs.length + parametersDecoded.healthChanges.length + parametersDecoded.namedDamage.length + parametersDecoded.namedHealing.length + parametersDecoded.unaccountedShares.length + parametersDecoded.outcomes.length + parametersDecoded.declared.length + parametersDecoded.skillKeysRead + parametersDecoded.unreadKeys.length;
+}
+function hasAttackFigure(parametersDecoded) {
+  if (parametersDecoded.raw.length > 0) return true;
+  if (parametersDecoded.applied.length > 0) return true;
+  if (parametersDecoded.prevented.length > 0) return true;
+  return parametersDecoded.destroyed.length > 0;
+}
+function lookupAnnouncedForMessage(message, announcedHere, announcementStanding, isBlow) {
+  if (announcedHere !== null) return announcedHere;
+  if (announcementStanding === null) return null;
+  const announced = announcementStanding.announced;
+  if (announced.actorId === null) return null;
+  if (message.actor === null) return null;
+  if (message.actor.combatantId !== announced.actorId) return null;
+  assert(announcementStanding.blowsRemaining > 0, "a standing announcement has a message left to reach");
+  if (announcementStanding.isGlued) return announced;
+  if (isBlow) return announced;
+  return null;
+}
+function decodeAnnouncedSkill(message, skill) {
+  if (skill === null) return null;
+  assert(skill.skillName.length > 0, "an announcement names something");
+  const actorId = message.actor?.combatantId ?? message.target?.combatantId ?? null;
+  return {
+    skillName: skill.skillName,
+    skillId: skill.skillId,
+    actorId
+  };
+}
+function decodeMessageEvents(message, parametersDecoded, announced, roster, isBlow) {
+  const events = [];
+  if (isBlow) events.push(decodeAttackEvent(message, parametersDecoded, announced));
+  for (const moved of parametersDecoded.healthChanges) {
+    const statedEnd = moved.isOnTarget ? message.target : message.actor;
+    events.push({
+      kind: BATTLE_EVENT.healthChange,
+      combatantId: statedEnd?.combatantId ?? null,
+      amount: moved.amount,
+      healthPercent: statedEnd?.healthPercent ?? null,
+      source: moved.source,
+      declared: moved.declared,
+      announced
+    });
+  }
+  for (const named of parametersDecoded.namedDamage) {
+    events.push({
+      kind: BATTLE_EVENT.damageToNamedCombatant,
+      actorId: message.actor?.combatantId ?? null,
+      targetName: named.targetName,
+      targetId: lookupNamedCombatantId(roster, named.targetName),
+      targetHealthPercent: named.targetHealthPercent,
+      damage: named.damage,
+      announced
+    });
+  }
+  for (const unaccounted of parametersDecoded.unaccountedShares) {
+    events.push({
+      kind: BATTLE_EVENT.unaccountedHealth,
+      source: unaccounted.source,
+      // The actor, always: the target slot may name somebody else, and reading it would
+      // credit the wrong combatant with the cast (`docs/auras-standing.md`).
+      combatantId: message.actor?.combatantId ?? null,
+      declaredShare: unaccounted.declaredShare,
+      announced
+    });
+  }
+  if (parametersDecoded.announcement !== null) {
+    events.push(decodeSkillUsedEvent(message, parametersDecoded, isBlow));
+  }
+  for (const restored of parametersDecoded.namedHealing) {
+    events.push({
+      kind: BATTLE_EVENT.healingToNamedCombatant,
+      targetName: restored.targetName,
+      targetId: lookupNamedCombatantId(roster, restored.targetName),
+      targetHealthPercent: restored.targetHealthPercent,
+      amount: restored.amount,
+      source: restored.source
+    });
+  }
+  events.push(...parametersDecoded.outcomes);
+  const declaration = decodeDeclaration(message, parametersDecoded, roster, isBlow);
+  if (declaration !== null) events.push(declaration);
+  assert(events.length >= parametersDecoded.outcomes.length, "every outcome read is an event");
+  assert(events.length <= message.parameters.length, "no parameter makes two events");
+  return events;
+}
+function decodeAttackEvent(message, parametersDecoded, announced) {
+  assert(hasAttackFigure(parametersDecoded), "an attack states a figure");
+  assert(parametersDecoded.procs.length <= message.parameters.length, "an event stays inside its bound");
+  return {
+    kind: BATTLE_EVENT.attack,
+    actorId: message.actor?.combatantId ?? null,
+    targetId: message.target?.combatantId ?? null,
+    actorHealthPercent: message.actor?.healthPercent ?? null,
+    targetHealthPercent: message.target?.healthPercent ?? null,
+    raw: parametersDecoded.raw,
+    applied: parametersDecoded.applied,
+    prevented: parametersDecoded.prevented,
+    destroyed: parametersDecoded.destroyed,
+    procs: parametersDecoded.procs,
+    declared: parametersDecoded.declared,
+    announced
+  };
+}
+function lookupNamedCombatantId(roster, name) {
+  if (roster === null) return null;
+  return lookupCombatantIdByName(roster, name);
+}
+function decodeSkillUsedEvent(message, parametersDecoded, isBlow) {
+  const skill = parametersDecoded.announcement;
+  assert(skill !== null, "a skill used is a skill announced");
+  assert(skill.skillName.length > 0, "an announcement names something");
+  return {
+    kind: BATTLE_EVENT.skillUsed,
+    actorId: message.actor?.combatantId ?? null,
+    targetId: message.target?.combatantId ?? null,
+    actorHealthPercent: message.actor?.healthPercent ?? null,
+    targetHealthPercent: message.target?.healthPercent ?? null,
+    skillName: skill.skillName,
+    skillId: skill.skillId,
+    declared: isBlow ? [] : parametersDecoded.declared
+  };
+}
+function decodeDeclaration(message, parametersDecoded, roster, isBlow) {
+  if (isBlow) return null;
+  if (parametersDecoded.announcement !== null) return null;
+  if (parametersDecoded.declared.length === 0) return null;
+  const turnLost = lookupTurnLostBy(parametersDecoded.declared, roster);
+  if (turnLost !== null) {
+    return {
+      kind: BATTLE_EVENT.turnLost,
+      combatantId: turnLost.combatantId
+    };
+  }
+  const statedEnd = message.actor ?? message.target;
+  assert(parametersDecoded.declared.every((declaredEffect) => declaredEffect.effect.length > 0), "each names its key");
+  return {
+    kind: BATTLE_EVENT.declaration,
+    combatantId: statedEnd?.combatantId ?? null,
+    healthPercent: statedEnd?.healthPercent ?? null,
+    declared: parametersDecoded.declared
+  };
+}
+function lookupTurnLostBy(declared, roster) {
+  if (roster === null) return null;
+  if (declared.length !== 1) return null;
+  const declaredEffect = declared[0];
+  if (declaredEffect === void 0) return null;
+  if (declaredEffect.effect !== TEXT_KEY) return null;
+  const text = declaredEffect.text;
+  if (text === null) return null;
+  if (text.endsWith(SENTENCE_STOP)) return null;
+  assert(roster.idByName.size <= COMBATANTS_MAXIMUM, "a roster stays inside its stated bound");
+  let longest = null;
+  for (const [name] of roster.idByName) {
+    if (!text.startsWith(name + TURN_LOST_SEPARATOR)) continue;
+    if (longest === null) longest = name;
+    else if (name.length > longest.length) longest = name;
+  }
+  if (longest === null) return null;
+  assert(text.length > longest.length, "the sentence says more than the name");
+  return {
+    combatantId: lookupCombatantIdByName(roster, longest)
+  };
+}
+function getNamedCombatantIds(message) {
+  const namedCombatantIds = [];
+  if (message.actor !== null) namedCombatantIds.push(message.actor.combatantId);
+  if (message.target !== null) {
+    if (!namedCombatantIds.includes(message.target.combatantId)) {
+      namedCombatantIds.push(message.target.combatantId);
+    }
+  }
+  assert(namedCombatantIds.length <= ENDS_MAXIMUM, "a message names at most two ends");
+  assert(new Set(namedCombatantIds).size === namedCombatantIds.length, "an end named twice is named once here");
+  return namedCombatantIds;
+}
+function parseProtocolMessage(text) {
+  const segments = parseProtocolMessageSegments(text);
+  if (segments instanceof Error) return segments;
+  const [actorSegment, targetSegment] = segments;
+  assert(actorSegment !== void 0, "text always splits into at least one segment");
+  const actor = parseProtocolMessageEnd(actorSegment, MESSAGE_END.actor);
+  if (actor instanceof Error) return actor;
+  if (targetSegment === void 0) return new EndUnreadable(MESSAGE_END.target);
+  const target = parseProtocolMessageEnd(targetSegment, MESSAGE_END.target);
+  if (target instanceof Error) return target;
+  const parameters = [];
+  for (const segment of segments.slice(SIDE_SEGMENTS)) {
+    const separatorIndex = segment.indexOf(VALUE_SEPARATOR);
+    const key = separatorIndex === -1 ? segment : segment.slice(0, separatorIndex);
+    if (key.length === 0) return new ParameterKeyEmpty(parameters.length);
+    const valueText = separatorIndex === -1 ? null : segment.slice(separatorIndex + 1);
+    parameters.push({
+      key,
+      value: valueText
+    });
+  }
+  assert(parameters.length + SIDE_SEGMENTS === segments.length, "no segment is dropped");
+  return {
+    actor,
+    target,
+    parameters
+  };
+}
+function parseProtocolMessageSegments(text) {
+  const segments = [];
+  let from = 0;
+  for (let look = 0; look < SEGMENTS_MAXIMUM; look += 1) {
+    const separatorIndex = text.indexOf(SEGMENT_SEPARATOR, from);
+    if (separatorIndex === -1) {
+      segments.push(text.slice(from));
+      assert(segments.length <= SEGMENTS_MAXIMUM, "a message kept is one inside the bound");
+      return segments;
+    }
+    segments.push(text.slice(from, separatorIndex));
+    from = separatorIndex + SEGMENT_SEPARATOR.length;
+  }
+  const count = countProtocolMessageSegments(text, from);
+  assert(count > SEGMENTS_MAXIMUM, "a message refused for its length is past the bound");
+  return new SegmentsExceeded(count, SEGMENTS_MAXIMUM);
+}
+function countProtocolMessageSegments(text, from) {
+  assert(from <= text.length, "the count resumes inside the text");
+  let count = SEGMENTS_MAXIMUM + 1;
+  let separatorIndex = text.indexOf(SEGMENT_SEPARATOR, from);
+  for (let look = 0; look < text.length; look += 1) {
+    if (separatorIndex === -1) break;
+    count += 1;
+    separatorIndex = text.indexOf(SEGMENT_SEPARATOR, separatorIndex + SEGMENT_SEPARATOR.length);
+  }
+  assert(separatorIndex === -1, "every separator in the text was counted");
+  return count;
+}
+function parseProtocolMessageEnd(segment, end) {
+  if (segment === NO_COMBATANT) return null;
+  const separatorIndex = segment.indexOf(VALUE_SEPARATOR);
+  const idText = separatorIndex === -1 ? segment : segment.slice(0, separatorIndex);
+  const combatantId = parseInteger(idText);
+  if (combatantId === null) return new EndUnreadable(end);
+  assert(Number.isSafeInteger(combatantId), "an id read is one held exactly");
+  if (formatInteger(combatantId) !== idText) return new EndUnreadable(end);
+  if (combatantId === 0) return new EndUnreadable(end);
+  if (separatorIndex === -1) return {
+    combatantId,
+    healthPercent: null
+  };
+  const healthPercent = parseHealthPercent(segment.slice(separatorIndex + 1));
+  if (healthPercent === null) return new EndUnreadable(end);
+  assert(healthPercent >= 0, "a percentage the grammar accepted is never below nothing");
+  return {
+    combatantId,
+    healthPercent
+  };
+}
+
+// src/core/turn-clock.ts
+var NO_TURN_STANDING = {
+  announcedStrikerId: null,
+  lastActorId: null
+};
+function lookupTurnOpener(event, turnStanding) {
+  if (event.kind === BATTLE_EVENT.skillUsed) return event.actorId;
+  if (event.kind === BATTLE_EVENT.attack) {
+    if (event.announced !== null) return null;
+    if (turnStanding.announcedStrikerId === event.actorId) return null;
+    return event.actorId;
+  }
+  if (event.kind !== BATTLE_EVENT.declaration) return null;
+  const key = lookupDeclarationOpenerKey(event);
+  if (key === STEP_KEY) return event.combatantId;
+  if (key === null) return null;
+  if (turnStanding.lastActorId === event.combatantId) return null;
+  return event.combatantId;
+}
+function lookupDeclarationOpenerKey(event) {
+  if (hasDeclaredEffect(event, STEP_KEY)) return STEP_KEY;
+  if (hasDeclaredEffect(event, PREPARE_KEY)) return PREPARE_KEY;
+  return null;
+}
+function hasDeclaredEffect(event, effect) {
+  assert(effect.length > 0, "a declaration is looked up under a key");
+  assert(event.declared.length > 0, "a declaration states something");
+  return event.declared.some((declared) => declared.effect === effect);
+}
+function addEventTurns(turnsByCombatantId, event, turnStanding) {
+  addTurn(turnsByCombatantId, lookupTurnOpener(event, turnStanding));
+  if (event.kind === BATTLE_EVENT.turnLost) addTurn(turnsByCombatantId, event.combatantId);
+  return composeTurnStanding(event, turnStanding);
+}
+function addTurn(turnsByCombatantId, combatantId) {
+  if (combatantId === null) return;
+  const turnsTaken = turnsByCombatantId.get(combatantId) ?? 0;
+  assert(turnsTaken >= 0, "a count of turns is never below nothing");
+  turnsByCombatantId.set(combatantId, turnsTaken + 1);
+  assert(turnsByCombatantId.size <= COMBATANTS_MAXIMUM, "a clock runs for no more than a fight");
+}
+function composeTurnStanding(event, turnStanding) {
+  if (turnStanding.announcedStrikerId !== null) {
+    assert(turnStanding.announcedStrikerId === turnStanding.lastActorId, "whoever is mid-blow acted last");
+  }
+  if (event.kind === BATTLE_EVENT.attack) {
+    let isStriking;
+    if (event.announced !== null) isStriking = true;
+    else isStriking = turnStanding.announcedStrikerId === event.actorId;
+    return {
+      announcedStrikerId: isStriking ? event.actorId : null,
+      lastActorId: event.actorId
+    };
+  }
+  if (event.kind === BATTLE_EVENT.skillUsed) {
+    return {
+      announcedStrikerId: null,
+      lastActorId: event.actorId
+    };
+  }
+  if (event.kind === BATTLE_EVENT.damageToNamedCombatant) {
+    return {
+      announcedStrikerId: null,
+      lastActorId: event.actorId
+    };
+  }
+  if (event.kind === BATTLE_EVENT.declaration) {
+    return {
+      announcedStrikerId: null,
+      lastActorId: turnStanding.lastActorId
+    };
+  }
+  if (event.kind === BATTLE_EVENT.unknownMessage) return turnStanding;
+  return NO_TURN_STANDING;
+}
+
+// src/core/aura-standing.ts
+var AURA_REACH = {
+  ...KEY_REACH,
+  bothSides: "both-sides"
+};
+var SKILLS_DATED_MAXIMUM = 16;
+var STANDINGS_MAXIMUM = COMBATANTS_MAXIMUM * SKILLS_DATED_MAXIMUM;
+function replayAuraStandings(view, statedSkills) {
+  const walk = {
+    castByCasterAndSkill: /* @__PURE__ */ new Map(),
+    shoutByProvokedId: /* @__PURE__ */ new Map(),
+    turnsByCombatantId: /* @__PURE__ */ new Map()
+  };
+  let turnStanding = NO_TURN_STANDING;
+  for (const [eventIndex, event] of view.events.entries()) {
+    turnStanding = addEventTurns(walk.turnsByCombatantId, event, turnStanding);
+    const cast = lookupAuraCast(event, statedSkills, walk.turnsByCombatantId, view.eventsAtSeatingByCombatantId, eventIndex);
+    if (cast === null) continue;
+    if (cast.turnsStated !== null) {
+      walk.castByCasterAndSkill.set(`${cast.casterId}/${cast.skillId}`, cast);
+    }
+    for (const provokedId of lookupProvokedIds(cast, view.roster)) {
+      const turnsAtShout = walk.turnsByCombatantId.get(provokedId) ?? 0;
+      walk.shoutByProvokedId.set(provokedId, {
+        cast,
+        turnsAtShout
+      });
+    }
+    assert(walk.castByCasterAndSkill.size <= STANDINGS_MAXIMUM, "a fight stays inside its stated bound");
+    assert(walk.shoutByProvokedId.size <= COMBATANTS_MAXIMUM, "and holds nobody the cast does not");
+  }
+  return {
+    auras: composeDatedCasts(walk).filter((cast) => cast.turnsElapsed < cast.turnsStated),
+    casts: composeDatedCasts(walk),
+    provocations: composeProvocationStandings(walk)
+  };
+}
+function lookupAuraCast(event, statedSkills, turnsByCombatantId, eventsAtSeatingByCombatantId, eventIndex) {
+  if (event.kind !== BATTLE_EVENT.skillUsed) return null;
+  if (event.actorId === null) return null;
+  if (event.skillId === null) return null;
+  if (!event.declared.some((declaredEffect) => isSideWideKey(declaredEffect.effect))) return null;
+  const turnsAtCast = turnsByCombatantId.get(event.actorId) ?? 0;
+  const isShout = event.declared.some((declaredEffect) => declaredEffect.effect === PROVOCATION_KEY);
+  const shoutStated = isShout ? statedSkills.shoutsBySkillId.get(event.skillId) : void 0;
+  const shout = shoutStated === void 0 ? null : {
+    turns: shoutStated.turns,
+    names: parseShoutNames(event.declared)
+  };
+  const turnsStated = statedSkills.auraTurnsBySkillId.get(event.skillId) ?? null;
+  if (turnsStated !== null) assert(turnsStated > 0, "a half that is dated runs for stated turns");
+  if (shout !== null) assert(shout.turns > 0, "and so does the other one");
+  assert(turnsAtCast > 0, "the cast stands on a turn its caster has taken");
+  return {
+    skillId: event.skillId,
+    skillName: event.skillName,
+    casterId: event.actorId,
+    turnsAtCast,
+    turnsStated,
+    reach: lookupReachOfEffects(event.declared),
+    shoutTargetId: isShout ? event.targetId : null,
+    shout,
+    amountByKey: indexAmountByKey(event.declared),
+    turnsAtCastByCombatantId: composeTurnsAtCast(turnsByCombatantId, eventsAtSeatingByCombatantId, eventIndex)
+  };
+}
+function composeTurnsAtCast(turnsByCombatantId, eventsAtSeatingByCombatantId, eventIndex) {
+  assert(eventIndex >= 0, "a cast stands at an event of the fight");
+  const turnsAtCastByCombatantId = /* @__PURE__ */ new Map();
+  for (const [combatantId, eventsAtSeating] of eventsAtSeatingByCombatantId) {
+    if (eventsAtSeating <= eventIndex) turnsAtCastByCombatantId.set(combatantId, 0);
+  }
+  for (const [combatantId, turnsTaken] of turnsByCombatantId) {
+    turnsAtCastByCombatantId.set(combatantId, turnsTaken);
+  }
+  assert(turnsAtCastByCombatantId.size <= COMBATANTS_MAXIMUM, "a cast dates nobody the fight does not count");
+  return turnsAtCastByCombatantId;
+}
+function indexAmountByKey(declared) {
+  const amountByKey = /* @__PURE__ */ new Map();
+  for (const declaredEffect of declared) {
+    if (declaredEffect.amount !== null) {
+      amountByKey.set(declaredEffect.effect, declaredEffect.amount);
+    }
+  }
+  assert(amountByKey.size <= declared.length, "no key states more figures than it was declared with");
+  return amountByKey;
+}
+function lookupProvokedIds(cast, roster) {
+  if (cast.shout === null) return [];
+  const provokedIds = [];
+  for (const name of cast.shout.names) {
+    const combatantId = lookupCombatantIdByName(roster, name);
+    if (combatantId === null) continue;
+    if (!provokedIds.includes(combatantId)) provokedIds.push(combatantId);
+  }
+  assert(provokedIds.length <= cast.shout.names.length, "no more are held than the value named");
+  assert(provokedIds.every((heldId) => roster.byId.has(heldId)), "and each of them is in the roster");
+  return provokedIds;
+}
+function composeDatedCasts(walk) {
+  const datedCasts = [];
+  for (const cast of walk.castByCasterAndSkill.values()) {
+    const turnsStated = cast.turnsStated;
+    assert(turnsStated !== null, "a cast the walk holds is one the table dates");
+    const turnsTakenNow = walk.turnsByCombatantId.get(cast.casterId) ?? cast.turnsAtCast;
+    const turnsElapsed = turnsTakenNow - cast.turnsAtCast;
+    assert(turnsElapsed >= 0, "a caster never takes fewer turns than they had at the cast");
+    datedCasts.push({
+      skillId: cast.skillId,
+      skillName: cast.skillName,
+      casterId: cast.casterId,
+      turnsElapsed,
+      turnsStated,
+      reach: cast.reach,
+      shoutTargetId: cast.shoutTargetId,
+      amountByKey: cast.amountByKey,
+      turnsAtCastByCombatantId: cast.turnsAtCastByCombatantId
+    });
+  }
+  assert(datedCasts.length === walk.castByCasterAndSkill.size, "every cast held is dated once");
+  return datedCasts;
+}
+function composeProvocationStandings(walk) {
+  const provocationStandings = [];
+  for (const [provokedId, provocation] of walk.shoutByProvokedId) {
+    const cast = provocation.cast;
+    assert(cast.shout !== null, "a cast holding somebody shouted");
+    const turnsTakenNow = walk.turnsByCombatantId.get(provokedId) ?? provocation.turnsAtShout;
+    const turnsElapsed = turnsTakenNow - provocation.turnsAtShout;
+    assert(turnsElapsed >= 0, "a character never takes fewer turns than they had at the shout");
+    if (turnsElapsed > cast.shout.turns) continue;
+    provocationStandings.push({
+      provokedId,
+      skillId: cast.skillId,
+      skillName: cast.skillName,
+      casterId: cast.casterId,
+      turnsElapsed,
+      turnsStated: cast.shout.turns
+    });
+  }
+  assert(provocationStandings.length <= walk.shoutByProvokedId.size, "no more are held than were shouted at");
+  return provocationStandings;
+}
+function parseShoutNames(declared) {
+  const shoutNames = [];
+  for (const declaredEffect of declared) {
+    if (declaredEffect.effect !== PROVOCATION_KEY) continue;
+    if (declaredEffect.text === null) continue;
+    for (const name of declaredEffect.text.split(NAME_SEPARATOR)) {
+      if (name.length > 0) shoutNames.push(name);
+    }
+  }
+  assert(shoutNames.length <= COMBATANTS_MAXIMUM, "a shout names no more than a fight holds");
+  return shoutNames;
+}
+function lookupReachOfEffects(effects) {
+  assert(effects.length <= MESSAGE_PARTS_MAXIMUM, "a cast states no more than a message is read to");
+  let castReach = null;
+  for (const declaredEffect of effects) {
+    const reach = lookupKeyReach(declaredEffect.effect);
+    if (reach === null) continue;
+    if (castReach === null) castReach = reach;
+    else if (castReach !== reach) castReach = AURA_REACH.bothSides;
+  }
+  return castReach;
+}
+function indexAuraTurnsBySkillId(skills) {
+  assert(skills.length <= SKILLS_DATED_MAXIMUM, "the table dates a bounded few skills");
+  const auraTurnsBySkillId = /* @__PURE__ */ new Map();
+  for (const skill of skills) {
+    assert(skill.turns > 0, "a skill in the table runs for a stated number of turns");
+    auraTurnsBySkillId.set(skill.id, skill.turns);
+  }
+  assert(auraTurnsBySkillId.size === skills.length, "and each of them is named once");
+  return auraTurnsBySkillId;
+}
+function indexShoutsBySkillId(skills) {
+  assert(skills.length <= SKILLS_DATED_MAXIMUM, "the table dates a bounded few shouts");
+  const shoutsBySkillId = /* @__PURE__ */ new Map();
+  for (const skill of skills) {
+    assert(skill.turns > 0, "a shout in the table holds for a stated number of turns");
+    assert(skill.coverageMinimum > 0, "and covers at least one character");
+    shoutsBySkillId.set(skill.id, {
+      turns: skill.turns,
+      coverageMinimum: skill.coverageMinimum
+    });
+  }
+  assert(shoutsBySkillId.size === skills.length, "and each of them is named once");
+  return shoutsBySkillId;
+}
+
+// src/core/carried-status.ts
+var STATUS_BITS_MAXIMUM = 32;
+var CARRIERS_MAXIMUM = COMBATANTS_MAXIMUM;
+var NO_CARRIED_STATUS_WALK = {
+  turnStanding: NO_TURN_STANDING,
+  turnsByCombatantId: /* @__PURE__ */ new Map(),
+  lightingTurnByBitByCombatantId: /* @__PURE__ */ new Map()
+};
+function prepareCarriedStatusWalk(walk, events, masksByCombatantId) {
+  const turnsByCombatantId = new Map(walk.turnsByCombatantId);
+  let turnStanding = walk.turnStanding;
+  for (const event of events) {
+    turnStanding = addEventTurns(turnsByCombatantId, event, turnStanding);
+  }
+  const lightingTurnByBitByCombatantId = new Map(walk.lightingTurnByBitByCombatantId);
+  for (const [combatantId, mask] of masksByCombatantId) {
+    assert(Number.isSafeInteger(mask), "a mask handed to the walk is a whole count of bits");
+    assert(mask >= 0, "and never a sign");
+    assert(mask < 2 ** STATUS_BITS_MAXIMUM, "and no bit past the ones a mask holds");
+    const turnsNow = turnsByCombatantId.get(combatantId) ?? 0;
+    const lightingTurnByBit = prepareLightingTurnByBit(lightingTurnByBitByCombatantId.get(combatantId), mask, turnsNow);
+    if (lightingTurnByBit.size === 0) lightingTurnByBitByCombatantId.delete(combatantId);
+    else lightingTurnByBitByCombatantId.set(combatantId, lightingTurnByBit);
+  }
+  assert(lightingTurnByBitByCombatantId.size <= CARRIERS_MAXIMUM, "no more carriers than a board holds");
+  return {
+    turnStanding,
+    turnsByCombatantId,
+    lightingTurnByBitByCombatantId
+  };
+}
+function prepareLightingTurnByBit(lightingTurnByBitBefore, mask, turnsNow) {
+  assert(turnsNow >= 0, "a clock counts turns from none");
+  const lightingTurnByBit = /* @__PURE__ */ new Map();
+  for (let bit = 0; bit < STATUS_BITS_MAXIMUM; bit += 1) {
+    if ((mask >> bit & 1) !== 1) continue;
+    lightingTurnByBit.set(bit, lightingTurnByBitBefore?.get(bit) ?? turnsNow);
+  }
+  assert(lightingTurnByBit.size <= STATUS_BITS_MAXIMUM, "a combatant holds no more statuses than a mask has");
+  return lightingTurnByBit;
+}
+function composeCarriedStatuses(walk) {
+  const carriedStatuses = [];
+  for (const [combatantId, lightingTurnByBit] of walk.lightingTurnByBitByCombatantId) {
+    const turnsNow = walk.turnsByCombatantId.get(combatantId) ?? 0;
+    for (const [bit, turnsAtLighting] of lightingTurnByBit) {
+      const turnsElapsed = turnsNow - turnsAtLighting;
+      assert(turnsElapsed >= 0, "a clock never runs behind the turn a status lit on");
+      carriedStatuses.push({
+        combatantId,
+        bit,
+        turnsElapsed
+      });
+    }
+  }
+  assert(carriedStatuses.length <= CARRIERS_MAXIMUM * STATUS_BITS_MAXIMUM, "no more rows than bits");
+  return carriedStatuses.sort((leftStatus, rightStatus) => leftStatus.combatantId - rightStatus.combatantId || leftStatus.bit - rightStatus.bit);
+}
+
+// src/core/carried-figure.ts
+var SOURCES_COUNTED = 2;
+var HALVED_FOR_THE_CASTER = [
+  HASTE_AURA_KEY
+];
+var SLOW_BIT_NAME = "swow_down";
+var HASTE_BIT_NAME = "speed_up";
+var KEY_BY_BIT_NAME = /* @__PURE__ */ new Map([
+  [
+    SLOW_BIT_NAME,
+    SLOW_ALL_KEY
+  ],
+  [
+    HASTE_BIT_NAME,
+    HASTE_AURA_KEY
+  ]
+]);
+function indexKeyByStatusBit(bits) {
+  assert(bits.length <= STATUS_BITS_MAXIMUM, "the client registers a short list of statuses");
+  const keyByStatusBit = /* @__PURE__ */ new Map();
+  for (let bit = 0; bit < bits.length; bit += 1) {
+    const key = KEY_BY_BIT_NAME.get(bits[bit] ?? "");
+    if (key !== void 0) keyByStatusBit.set(bit, key);
+  }
+  assert(keyByStatusBit.size <= KEY_BY_BIT_NAME.size, "no more are witnessed than have a key");
+  return keyByStatusBit;
+}
+function tallyCarriedFigures(inputs) {
+  assert(inputs.keyByStatusBit.size <= STATUS_BITS_MAXIMUM, "the bits witnessed are a short list");
+  const carriedFigures = [];
+  for (const status of inputs.statuses) {
+    const key = inputs.keyByStatusBit.get(status.bit);
+    if (key === void 0) continue;
+    const combatant = inputs.roster.byId.get(status.combatantId);
+    if (combatant === void 0) continue;
+    const turnsTaken = inputs.turnsByCombatantId.get(status.combatantId) ?? 0;
+    const bearer = {
+      combatantId: status.combatantId,
+      side: combatant.side,
+      turnsTaken
+    };
+    const casts = lookupCastsOverBearer(inputs.casts, inputs.roster, bearer, key);
+    const percent = tallyPercentForBearer(casts, bearer, key);
+    carriedFigures.push({
+      combatantId: status.combatantId,
+      bit: status.bit,
+      percent
+    });
+  }
+  assert(carriedFigures.length <= inputs.statuses.length, "no more rows than statuses handed in");
+  return carriedFigures;
+}
+function lookupCastsOverBearer(casts, roster, bearer, key) {
+  assert(casts.length <= STANDINGS_MAXIMUM, "a walk over casts is bounded as the casts are");
+  assert(bearer.turnsTaken >= 0, "and a count of turns never runs backwards");
+  const castsOverBearer = [];
+  for (const cast of casts) {
+    if (cast.amountByKey.get(key) === void 0) continue;
+    const caster = roster.byId.get(cast.casterId);
+    if (caster === void 0) continue;
+    if (!doesKeyReachBearer(key, caster.side, bearer.side)) continue;
+    const turnsAtCast = cast.turnsAtCastByCombatantId.get(bearer.combatantId);
+    if (turnsAtCast === void 0) continue;
+    const turnsElapsed = bearer.turnsTaken - turnsAtCast;
+    if (turnsElapsed < 0) continue;
+    if (turnsElapsed < cast.turnsStated) castsOverBearer.push(cast);
+  }
+  assert(castsOverBearer.length <= casts.length, "a bearer is reached by some of the casts walked");
+  return castsOverBearer;
+}
+function doesKeyReachBearer(key, casterSide, bearerSide) {
+  assert(key.length > 0, "a reach is asked of a key");
+  assert(Number.isSafeInteger(casterSide), "and between two sides the roster states");
+  const reach = lookupKeyReach(key);
+  if (reach === null) return false;
+  if (reach === KEY_REACH.castersSide) return casterSide === bearerSide;
+  return casterSide !== bearerSide;
+}
+function tallyPercentForBearer(casts, bearer, key) {
+  assert(key.length > 0, "a figure is asked of a key");
+  assert(casts.length <= STANDINGS_MAXIMUM, "and over the casts the walk above bounded");
+  if (isCasterHalved(casts, bearer.combatantId, key)) return null;
+  if (casts.length === 0) return null;
+  const highestByCasterId = /* @__PURE__ */ new Map();
+  for (const cast of casts) {
+    const amount = cast.amountByKey.get(key);
+    assert(amount !== void 0, "a cast over the bearer states the key it was walked for");
+    const highest = highestByCasterId.get(cast.casterId) ?? amount;
+    highestByCasterId.set(cast.casterId, Math.max(highest, amount));
+  }
+  assert(highestByCasterId.size <= casts.length, "no more sources than casts");
+  const amountsDescending = [
+    ...highestByCasterId.values()
+  ].sort((leftAmount, rightAmount) => rightAmount - leftAmount);
+  let summed = 0;
+  for (let amountIndex = 0; amountIndex < SOURCES_COUNTED; amountIndex += 1) {
+    summed += amountsDescending[amountIndex] ?? 0;
+  }
+  return summed;
+}
+function isCasterHalved(casts, combatantId, key) {
+  assert(Number.isSafeInteger(combatantId), "a bearer is asked about by identity");
+  if (!HALVED_FOR_THE_CASTER.includes(key)) return false;
+  return casts.some((cast) => {
+    if (cast.casterId !== combatantId) return false;
+    return cast.amountByKey.get(key) !== void 0;
+  });
+}
+
+// src/core/legendary-standing.ts
+var HOLYTOUCH_HEALS_STATED = 3;
+var HOLDERS_MAXIMUM = COMBATANTS_MAXIMUM;
+var BONUSES_PER_HOLDER_MAXIMUM = 16;
+var NO_LEGENDARY_WALK = {
+  holytouchHealsByHolderId: /* @__PURE__ */ new Map(),
+  lastHealSpentCombatantIds: /* @__PURE__ */ new Set()
+};
+function prepareLegendaryWalk(walk, events) {
+  const holytouchHealsByHolderId = new Map(walk.holytouchHealsByHolderId);
+  const lastHealSpentCombatantIds = new Set(walk.lastHealSpentCombatantIds);
+  for (const event of events) {
+    if (event.kind === BATTLE_EVENT.attack) {
+      const isLit = event.declared.some((declaredEffect) => declaredEffect.effect === HOLYTOUCH_DECLARATION_KEY);
+      if (isLit) {
+        if (event.actorId !== null) holytouchHealsByHolderId.set(event.actorId, 0);
+      }
+    }
+    if (event.kind === BATTLE_EVENT.healingToNamedCombatant) {
+      if (event.source === LASTHEAL_KEY) {
+        if (event.targetId !== null) lastHealSpentCombatantIds.add(event.targetId);
+      }
+    }
+    if (event.kind !== BATTLE_EVENT.healthChange) continue;
+    if (event.source !== HOLYTOUCH_HEAL_KEY) continue;
+    const holderId = event.combatantId;
+    if (holderId === null) continue;
+    const heals = holytouchHealsByHolderId.get(holderId);
+    if (heals === void 0) continue;
+    assert(heals >= 0, "a run open on a holder has given none or more");
+    holytouchHealsByHolderId.set(holderId, heals + 1);
+  }
+  assert(holytouchHealsByHolderId.size <= HOLDERS_MAXIMUM, "a board holds a bounded cast");
+  assert(lastHealSpentCombatantIds.size <= HOLDERS_MAXIMUM, "and so does what has been spent on it");
+  return {
+    holytouchHealsByHolderId,
+    lastHealSpentCombatantIds
+  };
+}
+function composeLegendaryStandings(walk) {
+  const standingByCombatantId = /* @__PURE__ */ new Map();
+  for (const [combatantId, heals] of walk.holytouchHealsByHolderId) {
+    assert(heals >= 0, "a run has given no fewer heals than none");
+    if (heals >= HOLYTOUCH_HEALS_STATED) continue;
+    const hasSpentLastheal = walk.lastHealSpentCombatantIds.has(combatantId);
+    standingByCombatantId.set(combatantId, {
+      combatantId,
+      holytouchHealsReceived: heals,
+      hasSpentLastheal
+    });
+  }
+  for (const combatantId of walk.lastHealSpentCombatantIds) {
+    if (standingByCombatantId.has(combatantId)) continue;
+    standingByCombatantId.set(combatantId, {
+      combatantId,
+      holytouchHealsReceived: null,
+      hasSpentLastheal: true
+    });
+  }
+  assert(standingByCombatantId.size <= HOLDERS_MAXIMUM, "a row for a combatant, whichever bonus it is for");
+  return [
+    ...standingByCombatantId.values()
+  ].sort((leftStanding, rightStanding) => leftStanding.combatantId - rightStanding.combatantId);
+}
+function countLegendaryBonuses(events) {
+  const countsByCombatantId = /* @__PURE__ */ new Map();
+  const reachedByCombatantId = /* @__PURE__ */ new Map();
+  for (const event of events) {
+    let keys;
+    let actorId;
+    let targetId;
+    if (event.kind === BATTLE_EVENT.attack) {
+      keys = [
+        ...event.procs,
+        ...event.declared.map((declared) => declared.effect)
+      ];
+      actorId = event.actorId;
+      targetId = event.targetId;
+    } else if (event.kind === BATTLE_EVENT.healingToNamedCombatant) {
+      keys = [
+        event.source
+      ];
+      actorId = null;
+      targetId = event.targetId;
+    } else {
+      continue;
+    }
+    for (const key of keys) {
+      const bonus = lookupLegendaryBonus(key);
+      if (bonus === null) continue;
+      const holderId = bonus.end === PROC_END.actor ? actorId : targetId;
+      if (holderId === null) continue;
+      const countByKey = countsByCombatantId.get(holderId) ?? /* @__PURE__ */ new Map();
+      countByKey.set(key, (countByKey.get(key) ?? 0) + 1);
+      countsByCombatantId.set(holderId, countByKey);
+      assert(countByKey.size <= BONUSES_PER_HOLDER_MAXIMUM, "a holder shows a bounded few");
+      if (!bonus.doesReachOtherEnd) continue;
+      const reachedId = bonus.end === PROC_END.actor ? targetId : actorId;
+      if (reachedId === null) continue;
+      const reachedByKey = reachedByCombatantId.get(reachedId) ?? /* @__PURE__ */ new Map();
+      reachedByKey.set(key, (reachedByKey.get(key) ?? 0) + 1);
+      reachedByCombatantId.set(reachedId, reachedByKey);
+      assert(reachedByKey.size <= BONUSES_PER_HOLDER_MAXIMUM, "and is reached by a bounded few");
+    }
+  }
+  assert(countsByCombatantId.size <= HOLDERS_MAXIMUM, "a board holds a bounded cast");
+  assert(reachedByCombatantId.size <= HOLDERS_MAXIMUM, "and so does whoever a bonus reached");
+  return {
+    byHolderId: countsByCombatantId,
+    byReachedId: reachedByCombatantId
+  };
+}
+
+// libs/number-range.ts
+function clampNumber(number, minimum, maximum) {
+  assert(Number.isFinite(number), "a value being held between two ends is a number");
+  assert(Number.isFinite(minimum), "and so is the bottom");
+  assert(Number.isFinite(maximum), "and the top");
+  if (maximum < minimum) return minimum;
+  if (number < minimum) return minimum;
+  if (number > maximum) return maximum;
+  return number;
+}
+
+// src/core/combatant-health.ts
+var PERCENT_WHOLE = 100;
+function calculateHealthFromPercent(percent, healthMaximum) {
+  assert(Number.isFinite(percent), "a percentage to read from is a number");
+  assert(percent >= 0, "a percentage is never below nothing");
+  if (healthMaximum === null) return null;
+  assert(Number.isFinite(healthMaximum), "a maximum to read against is a number");
+  const health = Math.round(percent * healthMaximum / PERCENT_WHOLE);
+  assert(health >= 0, "health read from a percentage is never below nothing");
+  return health;
+}
+function getHealthPercentsFromEvent(event) {
+  const stated = [];
+  const addStatedPercent = (combatantId, percent) => {
+    if (combatantId === null) return;
+    if (percent !== null) stated.push([
+      combatantId,
+      percent
+    ]);
+  };
+  switch (event.kind) {
+    case BATTLE_EVENT.attack:
+    case BATTLE_EVENT.skillUsed:
+      addStatedPercent(event.actorId, event.actorHealthPercent);
+      addStatedPercent(event.targetId, event.targetHealthPercent);
+      break;
+    case BATTLE_EVENT.healthChange:
+    case BATTLE_EVENT.declaration:
+      addStatedPercent(event.combatantId, event.healthPercent);
+      break;
+    case BATTLE_EVENT.damageToNamedCombatant:
+    case BATTLE_EVENT.healingToNamedCombatant:
+      addStatedPercent(event.targetId, event.targetHealthPercent);
+      break;
+  }
+  assert(stated.length <= ENDS_MAXIMUM, "an event states where at most two combatants stand");
+  return stated;
+}
+function indexFightEntryHealth(events, roster) {
+  assert(roster.byId.size <= COMBATANTS_MAXIMUM, "a roster stays inside its stated bound");
+  const entryHealthByCombatantId = /* @__PURE__ */ new Map();
+  for (const event of events) {
+    for (const [combatantId, percent] of getHealthPercentsFromEvent(event)) {
+      if (entryHealthByCombatantId.has(combatantId)) continue;
+      const maximum = roster.byId.get(combatantId)?.healthMaximum ?? null;
+      const health = calculateHealthFromPercent(percent, maximum);
+      if (health === null) continue;
+      assert(maximum !== null, "a health read off a percentage was read against a pool");
+      assert(health <= maximum, "nobody enters above their own pool");
+      entryHealthByCombatantId.set(combatantId, health);
+    }
+  }
+  assert(entryHealthByCombatantId.size <= roster.byId.size, "a fight is entered by the people in it");
+  return entryHealthByCombatantId;
+}
+function indexSideHeals(events, roster) {
+  const entryHealthByCombatantId = indexFightEntryHealth(events, roster);
+  const reducedSides = indexReducedSides(events, roster);
+  const healthByCombatantId = /* @__PURE__ */ new Map();
+  const sideHealByEvent = /* @__PURE__ */ new Map();
+  for (const event of events) {
+    const heal = composeSideHeal(event, roster, entryHealthByCombatantId, healthByCombatantId);
+    if (heal !== null) {
+      const casterSide = roster.byId.get(heal.casterId)?.side;
+      assert(casterSide !== void 0, "a cast is sized only on a side its caster stands on");
+      if (!reducedSides.has(casterSide)) {
+        sideHealByEvent.set(event, heal);
+        for (const [combatantId, amount] of heal.restoredByCombatantId) {
+          const healthNow = healthByCombatantId.get(combatantId);
+          assert(healthNow !== void 0, "a cast is sized only over health it read");
+          healthByCombatantId.set(combatantId, healthNow + amount);
+        }
+      }
+    }
+    for (const [combatantId, percent] of getHealthPercentsFromEvent(event)) {
+      const maximum = roster.byId.get(combatantId)?.healthMaximum ?? null;
+      const health = calculateHealthFromPercent(percent, maximum);
+      if (health !== null) healthByCombatantId.set(combatantId, health);
+    }
+  }
+  assert(sideHealByEvent.size <= events.length, "a cast is one event");
+  return sideHealByEvent;
+}
+function indexReducedSides(events, roster) {
+  const reducedSides = /* @__PURE__ */ new Set();
+  for (const event of events) {
+    if (event.kind !== BATTLE_EVENT.skillUsed) continue;
+    if (!event.declared.some((declaredEffect) => declaredEffect.effect === HEALING_REDUCER_KEY)) continue;
+    const casterSide = event.actorId === null ? void 0 : roster.byId.get(event.actorId)?.side;
+    for (const combatant of roster.byId.values()) {
+      if (combatant.side !== casterSide) reducedSides.add(combatant.side);
+    }
+  }
+  assert(reducedSides.size <= roster.byId.size, "a side reduced is a side somebody is on");
+  return reducedSides;
+}
+function composeSideHeal(event, roster, entryHealthByCombatantId, healthByCombatantId) {
+  if (event.kind !== BATTLE_EVENT.unaccountedHealth) return null;
+  if (event.combatantId === null) return null;
+  const casterSide = roster.byId.get(event.combatantId)?.side;
+  if (casterSide === void 0) return null;
+  assert(event.declaredShare >= 0, "a share sized is never below nothing");
+  const restoredByCombatantId = /* @__PURE__ */ new Map();
+  let isWhole = true;
+  for (const combatant of roster.byId.values()) {
+    if (combatant.side !== casterSide) continue;
+    const healthAtEntry = entryHealthByCombatantId.get(combatant.id);
+    const healthNow = healthByCombatantId.get(combatant.id);
+    const maximum = combatant.healthMaximum;
+    if (maximum === null) isWhole = false;
+    else if (healthAtEntry === void 0) isWhole = false;
+    else if (healthNow === void 0) isWhole = false;
+    else {
+      const share = Math.floor(event.declaredShare * maximum / PERCENT_WHOLE);
+      const amount = clampNumber(share, 0, healthAtEntry - healthNow);
+      assert(amount <= share, "nobody is given more than the share the protocol stated");
+      restoredByCombatantId.set(combatant.id, amount);
+    }
+  }
+  assert(restoredByCombatantId.size <= roster.byId.size, "a cast reaches the people in the fight");
+  const casterId = event.combatantId;
+  const source = event.source;
+  return {
+    casterId,
+    source,
+    declaredShare: event.declaredShare,
+    restoredByCombatantId,
+    isWhole
+  };
+}
+
+// src/core/fight-statistics.ts
+var TOTALLED_FIELDS = [
+  "damageDealt",
+  "damageTaken",
+  "damageDealtRaw",
+  "damageDealtApplied",
+  "damageTakenRaw",
+  "damageTakenApplied",
+  "damageDealtAbsorbed",
+  "damageTakenAbsorbed",
+  "damagePrevented",
+  "healthRestored",
+  "healthGiven"
+];
+var CUT_MAXIMUM = 64;
+var KIND_ELEMENTS_SEPARATOR = "|";
+var SKILLS_MAXIMUM = 256;
+var UNREAD_COUNT_BY_CAUSE = {
+  [UNREAD_CAUSE.unknownKey]: "unreadMessagesUnknownKey",
+  [UNREAD_CAUSE.noParameter]: "unreadMessagesNoParameter",
+  [UNREAD_CAUSE.grammarRefused]: "unreadMessagesGrammarRefused"
+};
+function tallyFightStatistics(events, sideHealByEvent) {
+  const tallying = {
+    byCombatantId: /* @__PURE__ */ new Map(),
+    woundByWoundedId: /* @__PURE__ */ new Map(),
+    damageDealtByNobody: 0,
+    damageTakenByNobody: 0,
+    healthGivenByNobody: 0,
+    healthRestoredToNobody: 0,
+    damageByNeitherEnd: 0,
+    damageByNeitherEndByKind: /* @__PURE__ */ new Map(),
+    unreadMessagesUnknownKey: 0,
+    unreadMessagesNoParameter: 0,
+    unreadMessagesGrammarRefused: 0,
+    sideHealsUnsized: 0,
+    sideHealsStated: 0,
+    turnStanding: NO_TURN_STANDING,
+    outcome: null
+  };
+  for (const event of events) {
+    if (event.kind === BATTLE_EVENT.unknownMessage) {
+      const { unreadCause, combatantIds } = event;
+      assert(combatantIds.length <= ENDS_MAXIMUM, "a message names at most its two ends");
+      tallying[UNREAD_COUNT_BY_CAUSE[unreadCause]] += 1;
+      if (unreadCause === UNREAD_CAUSE.grammarRefused) {
+        assert(combatantIds.length === 0, "a grammar nobody could read named nobody either");
+      }
+      for (const combatantId of new Set(combatantIds)) {
+        const figures = addCombatantFigures(tallying.byCombatantId, combatantId);
+        if (unreadCause === UNREAD_CAUSE.unknownKey) {
+          figures.unreadMessagesUnknownKey += 1;
+        } else figures.unreadMessagesNoParameter += 1;
+      }
+    }
+    if (event.kind === BATTLE_EVENT.unaccountedHealth) {
+      const casterId = event.combatantId;
+      const announced = event.announced;
+      const heal = sideHealByEvent.get(event);
+      tallying.sideHealsStated += 1;
+      if (casterId !== null) {
+        assert(Number.isSafeInteger(casterId), "a caster named is an id read");
+      }
+      if (heal === void 0) {
+        tallying.sideHealsUnsized += 1;
+        addUnplacedCast(tallying, casterId ?? announced?.actorId ?? null);
+      } else {
+        if (!heal.isWhole) {
+          tallying.sideHealsUnsized += 1;
+          addUnplacedCast(tallying, heal.casterId);
+        }
+        for (const [combatantId, amount] of heal.restoredByCombatantId) {
+          assert(amount >= 0, "a cast puts back no less than nothing");
+          addCombatantFigures(tallying.byCombatantId, combatantId).healthRestored += amount;
+          addHealthRestoredBySource(tallying, combatantId, heal.source, amount, announced);
+          const stated = {
+            source: heal.source,
+            announced
+          };
+          addHealthGiven(tallying, heal.casterId, amount, combatantId, stated);
+          if (announced === null) continue;
+          assert(announced.actorId === heal.casterId, "one combatant cast it and one announced it");
+          addSkillRestored(tallying, announced, amount, combatantId);
+        }
+        assert(tallying.sideHealsUnsized >= 0, "a count of casts never falls below nothing");
+        assert(tallying.sideHealsUnsized <= tallying.sideHealsStated, "and no more of them than were stated");
+      }
+    }
+    if (event.kind === BATTLE_EVENT.attack) {
+      const blow = tallyBlowFigures(event);
+      const dealer = event.actorId === null ? null : addCombatantFigures(tallying.byCombatantId, event.actorId);
+      if (dealer === null) tallying.damageDealtByNobody += blow.amount;
+      else addBlowDealt(dealer, event, blow);
+      if (event.targetId === null) {
+        addBlowProcs(dealer, null, event.procs);
+        addBlowWithNoTarget(tallying, event.actorId, blow.amount, blow.kinds);
+      } else {
+        const target = addCombatantFigures(tallying.byCombatantId, event.targetId);
+        addBlowTaken(target, event, blow);
+        addBlowProcs(dealer, target, event.procs);
+      }
+      const wound = lookupAnnouncedWound(event);
+      if (wound !== null) tallying.woundByWoundedId.set(wound.woundedId, wound.standing);
+      assert(tallying.woundByWoundedId.size <= COMBATANTS_MAXIMUM, "a fight stays inside its bound");
+    }
+    if (event.kind === BATTLE_EVENT.damageToNamedCombatant) {
+      const amount = event.damage.amount;
+      assert(Number.isSafeInteger(amount), "a figure totalled is a whole number");
+      assert(amount >= 0, "damage stated against a name is never below nothing");
+      if (event.actorId === null) tallying.damageDealtByNobody += amount;
+      else {
+        const dealer = addCombatantFigures(tallying.byCombatantId, event.actorId);
+        addDamageDealtApplied(dealer, amount);
+        dealer.damageDealtBlowLargest = calculateBlowLargest(dealer.damageDealtBlowLargest, amount);
+        addToCut(dealer.damageDealtByKind, event.damage.element, amount);
+        if (event.announced !== null) {
+          const otherEndKey = getOtherEndKey(event.targetId);
+          addSkillDealt(dealer.skills, event.announced, amount, otherEndKey);
+        } else if (event.targetId !== null) {
+          addToCut(dealer.damageDealtWithoutSkillByOpponent, `${event.targetId}`, amount);
+        }
+        if (event.targetId !== null) {
+          addToCut(dealer.damageDealtByOpponent, `${event.targetId}`, amount);
+          addDamageFiguresToOtherEndCut(dealer.damageDealtByOpponentAndKind, `${event.targetId}`, [
+            event.damage
+          ]);
+        }
+      }
+      if (event.targetId === null) {
+        addBlowWithNoTarget(tallying, event.actorId, amount, [
+          event.damage
+        ]);
+      } else {
+        const target = addCombatantFigures(tallying.byCombatantId, event.targetId);
+        addNamedDamageTaken(target, event, amount);
+      }
+    }
+    if (event.kind === BATTLE_EVENT.healthChange) {
+      assert(Number.isSafeInteger(event.amount), "a movement totalled is a whole number");
+      if (event.combatantId === null) {
+        if (event.amount >= 0) addRestoredToNobody(tallying, event.amount);
+        else {
+          const lost = -event.amount;
+          tallying.damageTakenByNobody += lost;
+          tallying.damageDealtByNobody += lost;
+          tallying.damageByNeitherEnd += lost;
+          addToCut(tallying.damageByNeitherEndByKind, event.source, lost);
+        }
+      } else {
+        const figures = addCombatantFigures(tallying.byCombatantId, event.combatantId);
+        const combatantId = event.combatantId;
+        if (event.amount >= 0) addHealthRestored(tallying, figures, event, combatantId);
+        else addHealthLost(tallying, figures, event, combatantId);
+      }
+    }
+    if (event.kind === BATTLE_EVENT.healingToNamedCombatant) {
+      assert(event.amount >= 0, "healing restored is never below nothing");
+      if (event.targetId === null) addRestoredToNobody(tallying, event.amount);
+      else {
+        const figures = addCombatantFigures(tallying.byCombatantId, event.targetId);
+        figures.healthRestored += event.amount;
+        addHealthRestoredBySource(tallying, event.targetId, event.source, event.amount, null);
+        const giverId = lookupGiverId(event.source, event.targetId, null);
+        const stated = {
+          source: event.source,
+          announced: null
+        };
+        addHealthGiven(tallying, giverId, event.amount, event.targetId, stated);
+        assert(Number.isSafeInteger(figures.healthRestored), "a total stays inside what a number holds exactly");
+      }
+    }
+    if (event.kind === BATTLE_EVENT.fightOutcome) {
+      const outcomeSoFar = tallying.outcome ?? {
+        wonNames: [],
+        lostNames: [],
+        isDrawn: false,
+        isFled: false
+      };
+      assert(event.combatantNames.every((combatantName) => combatantName.length > 0), "a side named is named in full");
+      if (event.result === OUTCOME_RESULT.drawn) {
+        tallying.outcome = {
+          ...outcomeSoFar,
+          isDrawn: true
+        };
+      } else if (event.result === OUTCOME_RESULT.fled) {
+        tallying.outcome = {
+          ...outcomeSoFar,
+          isFled: true
+        };
+      } else if (event.result === OUTCOME_RESULT.won) {
+        tallying.outcome = {
+          ...outcomeSoFar,
+          wonNames: [
+            ...event.combatantNames
+          ]
+        };
+      } else {
+        tallying.outcome = {
+          ...outcomeSoFar,
+          lostNames: [
+            ...event.combatantNames
+          ]
+        };
+      }
+    }
+    if (event.kind === BATTLE_EVENT.skillUsed) {
+      if (event.actorId !== null) {
+        assert(event.skillName.length > 0, "an announcement names the skill it announces");
+        const skills = addCombatantFigures(tallying.byCombatantId, event.actorId).skills;
+        const skillFigures = addSkillFigures(skills, event.skillName);
+        skillFigures.uses += 1;
+      }
+    }
+    {
+      const openerId = lookupTurnOpener(event, tallying.turnStanding);
+      tallying.turnStanding = composeTurnStanding(event, tallying.turnStanding);
+      if (openerId !== null) {
+        assert(Number.isSafeInteger(openerId), "a turn is charged to an id that was read");
+        const figures = addCombatantFigures(tallying.byCombatantId, openerId);
+        figures.turnsTaken += 1;
+      }
+    }
+    if (event.kind === BATTLE_EVENT.turnLost) {
+      if (event.combatantId !== null) {
+        assert(Number.isSafeInteger(event.combatantId), "a turn is lost by an id that was read");
+        const figures = addCombatantFigures(tallying.byCombatantId, event.combatantId);
+        figures.turnsLost += 1;
+      }
+    }
+  }
+  assert(tallying.byCombatantId.size <= COMBATANTS_MAXIMUM, "a fight stays inside its bound");
+  assert(tallyUnreadMessages(tallying) <= events.length, "a message is counted unread once");
+  return {
+    byCombatantId: tallying.byCombatantId,
+    totals: tallyTotals(tallying.byCombatantId),
+    damageDealtByNobody: tallying.damageDealtByNobody,
+    damageTakenByNobody: tallying.damageTakenByNobody,
+    healthGivenByNobody: tallying.healthGivenByNobody,
+    healthRestoredToNobody: tallying.healthRestoredToNobody,
+    damageByNeitherEnd: tallying.damageByNeitherEnd,
+    damageByNeitherEndByKind: tallying.damageByNeitherEndByKind,
+    unreadMessagesUnknownKey: tallying.unreadMessagesUnknownKey,
+    unreadMessagesNoParameter: tallying.unreadMessagesNoParameter,
+    unreadMessagesGrammarRefused: tallying.unreadMessagesGrammarRefused,
+    sideHealsUnsized: tallying.sideHealsUnsized,
+    sideHealsStated: tallying.sideHealsStated,
+    outcome: tallying.outcome,
+    legendaryBonuses: countLegendaryBonuses(events)
+  };
+}
+function addNamedDamageTaken(target, event, amount) {
+  addDamageTakenApplied(target, amount);
+  target.damageTakenBlowLargest = calculateBlowLargest(target.damageTakenBlowLargest, amount);
+  addToCut(target.damageTakenByKind, event.damage.element, amount);
+  if (event.actorId === null) {
+    target.damageTakenFromNobody += amount;
+    addToCut(target.damageTakenFromNobodyByKind, event.damage.element, amount);
+  } else {
+    addToCut(target.damageTakenByOpponent, `${event.actorId}`, amount);
+    addDamageFiguresToOtherEndCut(target.damageTakenByOpponentAndKind, `${event.actorId}`, [
+      event.damage
+    ]);
+    if (event.announced === null) {
+      addToCut(target.damageTakenWithoutSkillByOpponent, `${event.actorId}`, amount);
+    }
+  }
+}
+function addHealthRestored(tallying, figures, event, combatantId) {
+  figures.healthRestored += event.amount;
+  addHealthRestoredBySource(tallying, combatantId, event.source, event.amount, event.announced);
+  if (event.announced !== null) {
+    addSkillRestored(tallying, event.announced, event.amount, combatantId);
+  }
+  const giverId = lookupGiverId(event.source, combatantId, event.announced);
+  const stated = {
+    source: event.source,
+    announced: event.announced
+  };
+  addHealthGiven(tallying, giverId, event.amount, combatantId, stated);
+}
+function addHealthLost(tallying, figures, event, combatantId) {
+  const lost = -event.amount;
+  addDamageTakenApplied(figures, lost);
+  addToCut(figures.damageTakenByKind, event.source, lost);
+  addToCut(figures.damageTakenWithoutSkillByKey, event.source, lost);
+  const actorId = lookupWoundActorId(tallying, event);
+  if (actorId === null) {
+    figures.damageTakenFromNobody += lost;
+    addToCut(figures.damageTakenFromNobodyByKind, event.source, lost);
+    tallying.damageDealtByNobody += lost;
+  } else {
+    const woundedId = combatantId;
+    assert(lost > 0, "a wound ticking takes health off");
+    assert(Number.isSafeInteger(lost), "a figure totalled is a whole number");
+    const tickFigures = [
+      {
+        element: WOUND_TICK_KEY,
+        amount: lost
+      }
+    ];
+    const dealer = addCombatantFigures(tallying.byCombatantId, actorId);
+    addDamageDealtApplied(dealer, lost);
+    addToCut(dealer.damageDealtByKind, WOUND_TICK_KEY, lost);
+    addToCut(dealer.damageDealtWithoutSkillByKey, WOUND_TICK_KEY, lost);
+    addToCut(addCutForOtherEnd(dealer.damageDealtWithoutSkillByOpponentAndKey, `${woundedId}`), WOUND_TICK_KEY, lost);
+    addToCut(dealer.damageDealtByOpponent, `${woundedId}`, lost);
+    addDamageFiguresToOtherEndCut(dealer.damageDealtByOpponentAndKind, `${woundedId}`, tickFigures);
+    const wounded = addCombatantFigures(tallying.byCombatantId, woundedId);
+    addToCut(wounded.damageTakenByOpponent, `${actorId}`, lost);
+    addDamageFiguresToOtherEndCut(wounded.damageTakenByOpponentAndKind, `${actorId}`, tickFigures);
+  }
+  assert(figures.damageTakenApplied >= lost, "a row has taken at least the health this loss took");
+}
+function addBlowDealt(dealer, event, blow) {
+  assert(blow.amount >= blow.applied, "a pool adds to what landed and never takes from it");
+  dealer.damageDealtRaw += blow.raw;
+  dealer.damageDealtApplied += blow.applied;
+  dealer.damageDealtAbsorbed += blow.absorbed;
+  dealer.damageDealt += blow.amount;
+  dealer.blowsStruck += 1;
+  if (event.announced === null) {
+    dealer.blowsWithoutSkill += 1;
+    if (event.targetId !== null) {
+      addToCut(dealer.damageDealtWithoutSkillByOpponent, `${event.targetId}`, blow.amount);
+    }
+  } else {
+    const otherEndKey = getOtherEndKey(event.targetId);
+    addSkillDealt(dealer.skills, event.announced, blow.amount, otherEndKey);
+    {
+      assert(event.announced.skillName.length > 0, "a blow is counted under the announcement named");
+      const skillFigures = addSkillFigures(dealer.skills, event.announced.skillName);
+      skillFigures.blows += 1;
+    }
+  }
+  addDamageFiguresToCut(dealer.damageDealtByKind, blow.kinds);
+  for (const absorbedPart of blow.absorbedParts) {
+    addToCut(dealer.damageDealtAbsorbedByDefence, absorbedPart.defence, absorbedPart.amount);
+  }
+  if (event.targetId !== null) {
+    addToCut(dealer.damageDealtByOpponent, `${event.targetId}`, blow.amount);
+    addDamageFiguresToOtherEndCut(dealer.damageDealtByOpponentAndKind, `${event.targetId}`, blow.kinds);
+  }
+  {
+    assert(blow.amount >= 0, "a blow lands no less than nothing");
+    assert(event.destroyed.length <= MESSAGE_PARTS_MAXIMUM, "and destroys no more than one message is read to state");
+    dealer.damageDealtBlowLargest = calculateBlowLargest(dealer.damageDealtBlowLargest, blow.amount);
+    if (isBlowCritical(event.procs)) dealer.blowsCritical += 1;
+    for (const destroyed of event.destroyed) {
+      addToCut(dealer.statisticsDestroyed, destroyed.statistic, destroyed.amount);
+    }
+  }
+}
+function addBlowTaken(target, event, blow) {
+  assert(blow.amount >= blow.applied, "a pool adds to what landed and never takes from it");
+  target.damageTakenRaw += blow.raw;
+  target.damageTakenApplied += blow.applied;
+  target.damageTaken += blow.amount;
+  addDamageFiguresToCut(target.damageTakenByKind, blow.kinds);
+  if (event.actorId === null) {
+    target.damageTakenFromNobody += blow.amount;
+    addDamageFiguresToCut(target.damageTakenFromNobodyByKind, blow.kinds);
+  } else {
+    addToCut(target.damageTakenByOpponent, `${event.actorId}`, blow.amount);
+    addDamageFiguresToOtherEndCut(target.damageTakenByOpponentAndKind, `${event.actorId}`, blow.kinds);
+    if (event.announced === null) {
+      addToCut(target.damageTakenWithoutSkillByOpponent, `${event.actorId}`, blow.amount);
+    }
+  }
+  {
+    assert(blow.amount >= 0, "a blow lands no less than nothing");
+    target.damageTakenBlowLargest = calculateBlowLargest(target.damageTakenBlowLargest, blow.amount);
+    for (const absorbedPart of blow.absorbedParts) {
+      target.damageTakenAbsorbed += absorbedPart.amount;
+      addToCut(target.damageTakenAbsorbedByDefence, absorbedPart.defence, absorbedPart.amount);
+    }
+    for (const preventedPart of blow.preventedParts) {
+      target.damagePrevented += preventedPart.amount;
+      addToCut(target.damagePreventedByDefence, preventedPart.defence, preventedPart.amount);
+    }
+  }
+  assert(target.damageTaken >= 0, "a total of damage taken never falls below nothing");
+}
+function lookupAnnouncedWound(event) {
+  const actorId = event.actorId;
+  const woundedId = event.targetId;
+  if (actorId === null) return null;
+  if (woundedId === null) return null;
+  let announcedWound = null;
+  for (const declared of event.declared) {
+    if (declared.effect !== WOUND_ANNOUNCEMENT_KEY) continue;
+    if (declared.amount === null) continue;
+    if (declared.amount <= 0) continue;
+    announcedWound = {
+      woundedId,
+      standing: {
+        actorId,
+        amount: declared.amount
+      }
+    };
+  }
+  return announcedWound;
+}
+function addCombatantFigures(byCombatantId, combatantId) {
+  assert(Number.isSafeInteger(combatantId), "a row belongs to an id that was read");
+  const existing = byCombatantId.get(combatantId);
+  if (existing !== void 0) return existing;
+  assert(byCombatantId.size < COMBATANTS_MAXIMUM, "a fight stays inside its stated bound");
+  const figures = createCombatantFigures();
+  byCombatantId.set(combatantId, figures);
+  return figures;
+}
+function addUnplacedCast(tallying, casterId) {
+  if (casterId === null) return;
+  assert(Number.isSafeInteger(casterId), "a cast is charged to somebody the protocol named");
+  const figures = addCombatantFigures(tallying.byCombatantId, casterId);
+  figures.sideHealsUnsized += 1;
+}
+function addHealthRestoredBySource(tallying, healedId, source, amount, announced) {
+  assert(amount >= 0, "restored health is never below nothing");
+  assert(source.length > 0, "and comes under a key the protocol named");
+  const healed = addCombatantFigures(tallying.byCombatantId, healedId);
+  addToCut(healed.healthRestoredByKey, source, amount);
+  if (getSkillOwnerId(announced) !== null) return;
+  addToCut(healed.healthRestoredWithoutSkillByKey, source, amount);
+}
+function addToCut(cut, key, amount) {
+  assert(key.length > 0, "a cut is kept under a name");
+  cut.set(key, (cut.get(key) ?? 0) + amount);
+  assert(cut.size <= CUT_MAXIMUM, "a cut stays inside its stated bound");
+}
+function getSkillOwnerId(announced) {
+  if (announced === null) return null;
+  assert(announced.skillName.length > 0, "an announcement that was made is named");
+  return announced.actorId;
+}
+function addHealthGiven(tallying, giverId, amount, healedId, stated) {
+  assert(amount >= 0, "restored health is never below nothing");
+  assert(stated.source.length > 0, "and comes under a key the protocol named");
+  const healed = addCombatantFigures(tallying.byCombatantId, healedId);
+  if (giverId === null) {
+    tallying.healthGivenByNobody += amount;
+    healed.healthRestoredByNobody += amount;
+    addToCut(healed.healthRestoredByNobodyByKey, stated.source, amount);
+    return;
+  }
+  addToCut(healed.healthRestoredByGiver, `${giverId}`, amount);
+  const giver = addCombatantFigures(tallying.byCombatantId, giverId);
+  giver.healthGiven += amount;
+  addToCut(giver.healthGivenByReceiver, `${healedId}`, amount);
+  if (getSkillOwnerId(stated.announced) !== null) return;
+  const cut = addCutForOtherEnd(giver.healthGivenWithoutSkillByReceiverAndKey, `${healedId}`);
+  addToCut(cut, stated.source, amount);
+}
+function addCutForOtherEnd(cut, otherEndKey) {
+  assert(otherEndKey.length > 0, "the other end of a movement is named before it is cut by");
+  const cutForOtherEnd = cut.get(otherEndKey) ?? /* @__PURE__ */ new Map();
+  cut.set(otherEndKey, cutForOtherEnd);
+  assert(cut.size <= COMBATANTS_MAXIMUM, "a fight cuts by the people who are in it");
+  return cutForOtherEnd;
+}
+function addSkillRestored(tallying, announced, amount, healedId) {
+  assert(amount >= 0, "restored health is never below nothing");
+  assert(announced.skillName.length > 0, "and the announcement behind it is named");
+  const ownerId = getSkillOwnerId(announced);
+  if (ownerId === null) return;
+  const skills = addCombatantFigures(tallying.byCombatantId, ownerId).skills;
+  const skillFigures = addSkillFigures(skills, announced.skillName);
+  skillFigures.healthGiven += amount;
+  addToCut(skillFigures.healthGivenByReceiver, `${healedId}`, amount);
+}
+function addSkillFigures(skills, name) {
+  assert(name.length > 0, "a skill is kept under the name it was announced by");
+  const skillFigures = skills.get(name) ?? {
+    name,
+    uses: 0,
+    damageDealt: 0,
+    blows: 0,
+    damageDealtByOpponent: /* @__PURE__ */ new Map(),
+    healthGiven: 0,
+    healthGivenByReceiver: /* @__PURE__ */ new Map()
+  };
+  skills.set(name, skillFigures);
+  assert(skills.size <= SKILLS_MAXIMUM, "a fight states no more skills than it is bounded to");
+  return skillFigures;
+}
+function tallyBlowFigures(event) {
+  const raw = tallyDamageAmounts(event.raw);
+  const applied = tallyDamageAmounts(event.applied);
+  assert(raw >= 0, "a blow puts out no less than nothing");
+  assert(applied >= 0, "and lands no less than nothing");
+  assert(event.prevented.length <= MESSAGE_PARTS_MAXIMUM, "and is stopped as far as it is read");
+  const kinds = [
+    ...event.applied
+  ];
+  const absorbedParts = [];
+  const preventedParts = [];
+  let absorbed = 0;
+  for (const stopped of event.prevented) {
+    if (getDefenceMechanism(stopped.defence) === DEFENCE_MECHANISM.pool) {
+      absorbedParts.push(stopped);
+      const element = composeKindAbsorbed(event.raw, stopped.defence);
+      kinds.push({
+        element,
+        amount: stopped.amount
+      });
+      absorbed += stopped.amount;
+    } else preventedParts.push(stopped);
+  }
+  assert(Number.isSafeInteger(absorbed), "a total stays inside what a number holds exactly");
+  assert(absorbedParts.length + preventedParts.length === event.prevented.length, "every defence either drained a pool or drained nothing");
+  const amount = applied + absorbed;
+  return {
+    raw,
+    applied,
+    absorbed,
+    amount,
+    kinds,
+    absorbedParts,
+    preventedParts
+  };
+}
+function tallyDamageAmounts(figures) {
+  let total = 0;
+  for (const figure of figures) {
+    assert(Number.isSafeInteger(figure.amount), "a figure totalled is a whole number");
+    total += figure.amount;
+  }
+  assert(Number.isSafeInteger(total), "a total stays inside what a number holds exactly");
+  return total;
+}
+function composeKindAbsorbed(raw, defence) {
+  assert(raw.length <= MESSAGE_PARTS_MAXIMUM, "a blow puts out as far as it is read");
+  const elementsAbsorbed = getElementsAbsorbed(defence);
+  assert(elementsAbsorbed.length > 0, "a pool takes from some element");
+  const candidates = [];
+  for (const element of elementsAbsorbed) {
+    for (const figure of raw) {
+      if (figure.element !== element) continue;
+      if (figure.amount <= 0) continue;
+      candidates.push(element);
+      break;
+    }
+  }
+  assert(candidates.length <= elementsAbsorbed.length, "each element is a candidate once");
+  const elements = candidates.length === 0 ? elementsAbsorbed : candidates;
+  assert(elements.length > 0, "a pool's part stands under some element");
+  return elements.join(KIND_ELEMENTS_SEPARATOR);
+}
+function addSkillDealt(skills, announced, amount, otherEndKey) {
+  assert(amount >= 0, "what a blow lands is never below nothing");
+  assert(announced.skillName.length > 0, "and the announcement in front of it is named");
+  const skillFigures = addSkillFigures(skills, announced.skillName);
+  skillFigures.damageDealt += amount;
+  if (otherEndKey !== null) addToCut(skillFigures.damageDealtByOpponent, otherEndKey, amount);
+}
+function getOtherEndKey(targetId) {
+  if (targetId === null) return null;
+  assert(Number.isSafeInteger(targetId), "an end the protocol named is named by a number");
+  return `${targetId}`;
+}
+function addDamageFiguresToOtherEndCut(cut, otherEndKey, figures) {
+  const cutForOtherEnd = addCutForOtherEnd(cut, otherEndKey);
+  for (const figure of figures) addToCut(cutForOtherEnd, figure.element, figure.amount);
+}
+function calculateBlowLargest(largestSoFar, amount) {
+  assert(largestSoFar >= 0, "the hardest blow so far landed no less than nothing");
+  assert(amount >= 0, "and neither did the one being weighed against it");
+  return Math.max(largestSoFar, amount);
+}
+function isBlowCritical(procs) {
+  assert(procs.length <= MESSAGE_PARTS_MAXIMUM, "a blow fires no more procs than it is read to");
+  return procs.some((key) => CRITICAL_PROC_KEYS.includes(key));
+}
+function addBlowProcs(dealer, target, procs) {
+  assert(procs.length <= MESSAGE_PARTS_MAXIMUM, "a blow fires no more procs than it is read to");
+  for (const key of procs) {
+    const keyMeaning = lookupKeyMeaning(key);
+    assert(keyMeaning !== null, "a proc the decoder stated is a key the table reads");
+    assert(keyMeaning.kind === KEY_FAMILY.proc, "and one it places as a proc");
+    if (keyMeaning.end === PROC_END.actor) {
+      if (dealer !== null) addToCut(dealer.procsWhenStriking, key, 1);
+    }
+    if (keyMeaning.end === PROC_END.target) {
+      if (target !== null) addToCut(target.procsWhenStruck, key, 1);
+    }
+  }
+}
+function addBlowWithNoTarget(tallying, actorId, amount, kinds) {
+  assert(amount >= 0, "a blow lands no less than nothing");
+  tallying.damageTakenByNobody += amount;
+  if (actorId === null) {
+    tallying.damageByNeitherEnd += amount;
+    addDamageFiguresToCut(tallying.damageByNeitherEndByKind, kinds);
+    return;
+  }
+  const dealer = addCombatantFigures(tallying.byCombatantId, actorId);
+  dealer.damageDealtToNobody += amount;
+  addDamageFiguresToCut(dealer.damageDealtToNobodyByKind, kinds);
+}
+function addDamageFiguresToCut(cut, kinds) {
+  assert(kinds.length <= MESSAGE_PARTS_MAXIMUM * 2, "a blow carries its kinds inside the bound");
+  for (const kind of kinds) {
+    assert(kind.amount >= 0, "a kind of a blow lands no less than nothing");
+    addToCut(cut, kind.element, kind.amount);
+  }
+}
+function addDamageDealtApplied(dealer, amount) {
+  assert(amount >= 0, "health taken off is never below nothing");
+  dealer.damageDealtApplied += amount;
+  dealer.damageDealt += amount;
+  assert(dealer.damageDealt >= dealer.damageDealtApplied, "health is a part of what was dealt");
+}
+function addDamageTakenApplied(target, amount) {
+  assert(amount >= 0, "health taken off is never below nothing");
+  target.damageTakenApplied += amount;
+  target.damageTaken += amount;
+  assert(target.damageTaken >= target.damageTakenApplied, "health is a part of what was taken");
+}
+function addRestoredToNobody(tallying, amount) {
+  assert(amount >= 0, "health that came back never came back below nothing");
+  tallying.healthRestoredToNobody += amount;
+  assert(Number.isSafeInteger(tallying.healthRestoredToNobody), "a total stays inside what a number holds exactly");
+}
+function lookupGiverId(source, healedId, announced) {
+  assert(source.length > 0, "restored health names the key it was stated on");
+  if (announced !== null) {
+    if (announced.actorId !== null) return announced.actorId;
+  }
+  if (!SELF_SOURCED_HEALING_KEYS.includes(source)) return null;
+  return healedId;
+}
+function lookupWoundActorId(tallying, event) {
+  if (event.source !== WOUND_TICK_KEY) return null;
+  if (event.combatantId === null) return null;
+  const wound = tallying.woundByWoundedId.get(event.combatantId);
+  if (wound === void 0) return null;
+  assert(wound.amount > 0, "a wound kept announced a figure");
+  let woundTicking;
+  if (event.declared.length > 0) {
+    if (event.declared.length > 1) return null;
+    const weakeningPercent = event.declared[0]?.amount ?? null;
+    if (weakeningPercent === null) return null;
+    if (weakeningPercent < 0) return null;
+    if (weakeningPercent >= PERCENT_WHOLE) return null;
+    woundTicking = Math.ceil(wound.amount * (PERCENT_WHOLE - weakeningPercent) / PERCENT_WHOLE);
+  } else {
+    woundTicking = wound.amount;
+  }
+  assert(woundTicking > 0, "a wound ticks for something, weakened or whole");
+  if (woundTicking !== -event.amount) return null;
+  assert(Number.isSafeInteger(wound.actorId), "a wound was left by somebody named");
+  return wound.actorId;
+}
+function tallyTotals(byCombatantId) {
+  const totals = {
+    damageDealt: 0,
+    damageTaken: 0,
+    damageDealtRaw: 0,
+    damageDealtApplied: 0,
+    damageTakenRaw: 0,
+    damageTakenApplied: 0,
+    damageDealtAbsorbed: 0,
+    damageTakenAbsorbed: 0,
+    damagePrevented: 0,
+    healthRestored: 0,
+    healthGiven: 0
+  };
+  for (const figures of byCombatantId.values()) {
+    for (const field of TOTALLED_FIELDS) totals[field] += figures[field];
+  }
+  assert(totals.damageDealt >= totals.damageDealtApplied, "health is a part of what was dealt");
+  assert(totals.healthRestored >= 0, "a total of health restored never runs below nought");
+  return totals;
+}
+function composeKindsAbsorbed(event) {
+  assert(event.prevented.length <= MESSAGE_PARTS_MAXIMUM, "a blow is stopped as far as it is read");
+  const kinds = [];
+  for (const stopped of event.prevented) {
+    if (getDefenceMechanism(stopped.defence) === DEFENCE_MECHANISM.chance) continue;
+    kinds.push(composeKindAbsorbed(event.raw, stopped.defence));
+  }
+  assert(kinds.length <= event.prevented.length, "and no pool stands under two kinds");
+  return kinds;
+}
+function tallyUnreadMessages(counted) {
+  const unread = counted.unreadMessagesUnknownKey + counted.unreadMessagesNoParameter + counted.unreadMessagesGrammarRefused;
+  assert(Number.isSafeInteger(unread), "a count of messages stays inside what a number holds");
+  assert(unread >= 0, "and never falls below none");
+  return unread;
+}
+function createCombatantFigures() {
+  return {
+    damageDealt: 0,
+    damageTaken: 0,
+    damageDealtRaw: 0,
+    damageDealtApplied: 0,
+    damageTakenRaw: 0,
+    damageTakenApplied: 0,
+    damageDealtAbsorbed: 0,
+    damageTakenAbsorbed: 0,
+    damagePrevented: 0,
+    healthRestored: 0,
+    healthGiven: 0,
+    damageTakenFromNobody: 0,
+    damageDealtToNobody: 0,
+    healthRestoredByNobody: 0,
+    damageTakenFromNobodyByKind: /* @__PURE__ */ new Map(),
+    damageDealtToNobodyByKind: /* @__PURE__ */ new Map(),
+    healthRestoredByNobodyByKey: /* @__PURE__ */ new Map(),
+    healthRestoredByGiver: /* @__PURE__ */ new Map(),
+    healthGivenByReceiver: /* @__PURE__ */ new Map(),
+    healthRestoredByKey: /* @__PURE__ */ new Map(),
+    healthRestoredWithoutSkillByKey: /* @__PURE__ */ new Map(),
+    damageTakenWithoutSkillByKey: /* @__PURE__ */ new Map(),
+    damageDealtWithoutSkillByKey: /* @__PURE__ */ new Map(),
+    damageDealtWithoutSkillByOpponentAndKey: /* @__PURE__ */ new Map(),
+    damageDealtWithoutSkillByOpponent: /* @__PURE__ */ new Map(),
+    damageTakenWithoutSkillByOpponent: /* @__PURE__ */ new Map(),
+    healthGivenWithoutSkillByReceiverAndKey: /* @__PURE__ */ new Map(),
+    damageDealtByKind: /* @__PURE__ */ new Map(),
+    damageTakenByKind: /* @__PURE__ */ new Map(),
+    damageDealtByOpponent: /* @__PURE__ */ new Map(),
+    damageTakenByOpponent: /* @__PURE__ */ new Map(),
+    damageDealtByOpponentAndKind: /* @__PURE__ */ new Map(),
+    damageTakenByOpponentAndKind: /* @__PURE__ */ new Map(),
+    skills: /* @__PURE__ */ new Map(),
+    blowsStruck: 0,
+    blowsWithoutSkill: 0,
+    turnsTaken: 0,
+    turnsLost: 0,
+    blowsCritical: 0,
+    damageDealtBlowLargest: 0,
+    damageTakenBlowLargest: 0,
+    procsWhenStriking: /* @__PURE__ */ new Map(),
+    procsWhenStruck: /* @__PURE__ */ new Map(),
+    damagePreventedByDefence: /* @__PURE__ */ new Map(),
+    damageDealtAbsorbedByDefence: /* @__PURE__ */ new Map(),
+    damageTakenAbsorbedByDefence: /* @__PURE__ */ new Map(),
+    statisticsDestroyed: /* @__PURE__ */ new Map(),
+    unreadMessagesUnknownKey: 0,
+    unreadMessagesNoParameter: 0,
+    sideHealsUnsized: 0
+  };
+}
+function verifyFightStatistics(statistics) {
+  assert(tallyDealtTakenImbalance(statistics) === 0, "every point dealt is counted once at each end");
+  assert(tallyDamagePartsImbalance(statistics) === 0, "and every point dealt or taken reached health or drained a pool");
+  assert(tallyRestoredGivenImbalance(statistics) === 0, "and every point restored once at each of its own");
+  assert(tallyHalfNamedRowsImbalance(statistics) === 0, "and every half-named point is on the row it named");
+  assert(tallyHalfNamedCutsImbalance(statistics) === 0, "and under the key it was stated with");
+  assert(tallyDefenceCutsImbalance(statistics) === 0, "and what the defences stopped is stopped by one of them");
+  for (const figures of statistics.byCombatantId.values()) verifyDefenceMechanisms(figures);
+}
+function verifyDefenceMechanisms(figures) {
+  for (const defence of figures.damagePreventedByDefence.keys()) {
+    const mechanism = getDefenceMechanism(defence);
+    assert(mechanism === DEFENCE_MECHANISM.chance, "what was prevented drained no pool");
+  }
+  for (const defence of figures.damageDealtAbsorbedByDefence.keys()) {
+    const mechanism = getDefenceMechanism(defence);
+    assert(mechanism === DEFENCE_MECHANISM.pool, "what was absorbed drained a pool");
+  }
+  for (const defence of figures.damageTakenAbsorbedByDefence.keys()) {
+    const mechanism = getDefenceMechanism(defence);
+    assert(mechanism === DEFENCE_MECHANISM.pool, "what was absorbed drained a pool");
+  }
+  for (const kind of figures.damageDealtByKind.keys()) {
+    assert(!isDefence(kind), "a defence is no kind of damage");
+  }
+  for (const kind of figures.damageTakenByKind.keys()) {
+    assert(!isDefence(kind), "a defence is no kind of damage");
+  }
+}
+function tallyDealtTakenImbalance(statistics) {
+  let dealt = statistics.damageDealtByNobody;
+  let taken = statistics.damageTakenByNobody;
+  for (const figures of statistics.byCombatantId.values()) {
+    dealt += figures.damageDealt;
+    taken += figures.damageTaken;
+  }
+  assert(Number.isSafeInteger(dealt), "a total stays inside what a number holds exactly");
+  assert(Number.isSafeInteger(taken), "a total stays inside what a number holds exactly");
+  return dealt - taken;
+}
+function tallyDamagePartsImbalance(statistics) {
+  let imbalance = 0;
+  for (const figures of statistics.byCombatantId.values()) {
+    const dealt = figures.damageDealtApplied + figures.damageDealtAbsorbed;
+    const taken = figures.damageTakenApplied + figures.damageTakenAbsorbed;
+    imbalance += Math.abs(figures.damageDealt - dealt) + Math.abs(figures.damageTaken - taken);
+  }
+  assert(Number.isSafeInteger(imbalance), "a total stays inside what a number holds exactly");
+  return imbalance;
+}
+function tallyRestoredGivenImbalance(statistics) {
+  let restored = 0;
+  let given = statistics.healthGivenByNobody;
+  for (const figures of statistics.byCombatantId.values()) {
+    restored += figures.healthRestored;
+    given += figures.healthGiven;
+  }
+  assert(Number.isSafeInteger(restored), "a total stays inside what a number holds exactly");
+  assert(Number.isSafeInteger(given), "a total stays inside what a number holds exactly");
+  return restored - given;
+}
+function tallyHalfNamedRowsImbalance(statistics) {
+  let takenFromNobody = 0;
+  let dealtToNobody = 0;
+  let restoredByNobody = 0;
+  for (const figures of statistics.byCombatantId.values()) {
+    takenFromNobody += figures.damageTakenFromNobody;
+    dealtToNobody += figures.damageDealtToNobody;
+    restoredByNobody += figures.healthRestoredByNobody;
+  }
+  assert(statistics.damageByNeitherEnd >= 0, "what names neither end is never below nothing");
+  const dealt = statistics.damageDealtByNobody - takenFromNobody - statistics.damageByNeitherEnd;
+  const taken = statistics.damageTakenByNobody - dealtToNobody - statistics.damageByNeitherEnd;
+  const given = statistics.healthGivenByNobody - restoredByNobody;
+  return Math.abs(dealt) + Math.abs(taken) + Math.abs(given);
+}
+function tallyHalfNamedCutsImbalance(statistics) {
+  let imbalance = tallyCutImbalance(statistics.damageByNeitherEnd, statistics.damageByNeitherEndByKind);
+  for (const figures of statistics.byCombatantId.values()) {
+    const takenCut = figures.damageTakenFromNobodyByKind;
+    const dealtCut = figures.damageDealtToNobodyByKind;
+    const restoredCut = figures.healthRestoredByNobodyByKey;
+    imbalance += tallyCutImbalance(figures.damageTakenFromNobody, takenCut);
+    imbalance += tallyCutImbalance(figures.damageDealtToNobody, dealtCut);
+    imbalance += tallyCutImbalance(figures.healthRestoredByNobody, restoredCut);
+  }
+  assert(imbalance >= 0, "a difference counted as a distance is never below nothing");
+  return imbalance;
+}
+function tallyCutImbalance(figure, cut) {
+  assert(figure >= 0, "a figure being cut is never below nothing");
+  assert(cut.size <= CUT_MAXIMUM, "and is cut inside the stated bound");
+  let cutTotal = 0;
+  for (const amount of cut.values()) cutTotal += amount;
+  assert(Number.isSafeInteger(cutTotal), "a total stays inside what a number holds exactly");
+  return Math.abs(figure - cutTotal);
+}
+function tallyDefenceCutsImbalance(statistics) {
+  let imbalance = 0;
+  for (const figures of statistics.byCombatantId.values()) {
+    imbalance += tallyCutImbalance(figures.damagePrevented, figures.damagePreventedByDefence);
+    imbalance += tallyCutImbalance(figures.damageDealtAbsorbed, figures.damageDealtAbsorbedByDefence);
+    imbalance += tallyCutImbalance(figures.damageTakenAbsorbed, figures.damageTakenAbsorbedByDefence);
+  }
+  assert(imbalance >= 0, "a difference counted as a distance is never below nothing");
+  return imbalance;
+}
+
+// src/core/charged-skill.ts
+var CHARGED_SKILL_STATE = {
+  charging: "charging",
+  struck: "struck",
+  broken: "broken"
+};
+var CHARGED_SKILLS_MAXIMUM = COMBATANTS_MAXIMUM;
+function prepareChargedSkills(chargedSkillStandings, statements, events, ordinal) {
+  assert(chargedSkillStandings.length <= CHARGED_SKILLS_MAXIMUM, "what stood stays inside the bound");
+  const skillNamesByActorId = indexAnnouncedNamesByActor(events);
+  const chargeBrokenIds = indexChargeBrokenIds(events);
+  const statementByCombatantId = new Map(statements.map((statement) => [
+    statement.combatantId,
+    statement
+  ]));
+  const standingsNow = [];
+  for (const standingBefore of chargedSkillStandings) {
+    const statement = statementByCombatantId.get(standingBefore.combatantId);
+    if (statement !== void 0) {
+      if (statement.charge !== null) continue;
+    }
+    if (standingBefore.state !== CHARGED_SKILL_STATE.charging) {
+      if (!isPastItsTurn(standingBefore, ordinal)) standingsNow.push(standingBefore);
+      continue;
+    }
+    if (statement === void 0) {
+      standingsNow.push(standingBefore);
+      continue;
+    }
+    const state = lookupEndedState(standingBefore, skillNamesByActorId, chargeBrokenIds);
+    if (state !== null) {
+      standingsNow.push({
+        ...standingBefore,
+        state,
+        endedAtOrdinal: ordinal
+      });
+    }
+  }
+  for (const statement of statements) {
+    const charging = composeChargingStanding(statement);
+    if (charging === null) continue;
+    standingsNow.push(charging);
+  }
+  assert(standingsNow.length <= CHARGED_SKILLS_MAXIMUM, "and what stands now stays inside it too");
+  return standingsNow;
+}
+function indexAnnouncedNamesByActor(events) {
+  const skillNamesByActorId = /* @__PURE__ */ new Map();
+  const addAnnouncedName = (actorId, skillName) => {
+    assert(skillName.length > 0, "an announcement that was made is named");
+    if (actorId === null) return;
+    const skillNames = skillNamesByActorId.get(actorId) ?? /* @__PURE__ */ new Set();
+    skillNames.add(skillName);
+    skillNamesByActorId.set(actorId, skillNames);
+  };
+  for (const event of events) {
+    if (event.kind === BATTLE_EVENT.skillUsed) addAnnouncedName(event.actorId, event.skillName);
+    if (event.kind === BATTLE_EVENT.attack) {
+      if (event.announced !== null) {
+        addAnnouncedName(event.announced.actorId, event.announced.skillName);
+      }
+    }
+  }
+  assert(skillNamesByActorId.size <= events.length, "no more announcers than events announcing");
+  return skillNamesByActorId;
+}
+function indexChargeBrokenIds(events) {
+  const chargeBrokenIds = /* @__PURE__ */ new Set();
+  for (const event of events) {
+    if (event.kind !== BATTLE_EVENT.attack) continue;
+    if (event.targetId === null) continue;
+    if (event.procs.includes(CHARGE_BROKEN_KEY)) chargeBrokenIds.add(event.targetId);
+  }
+  assert(chargeBrokenIds.size <= events.length, "no more broken than blows");
+  return chargeBrokenIds;
+}
+function isPastItsTurn(chargedSkillStanding, ordinal) {
+  if (chargedSkillStanding.endedAtOrdinal === null) return true;
+  if (ordinal === null) return true;
+  return ordinal > chargedSkillStanding.endedAtOrdinal;
+}
+function lookupEndedState(chargedSkillStanding, skillNamesByActorId, chargeBrokenIds) {
+  assert(chargedSkillStanding.skillName.length > 0, "a charge that stood names the blow being made ready");
+  const skillNames = skillNamesByActorId.get(chargedSkillStanding.combatantId);
+  if (skillNames?.has(chargedSkillStanding.skillName) === true) {
+    return CHARGED_SKILL_STATE.struck;
+  }
+  if (chargeBrokenIds.has(chargedSkillStanding.combatantId)) return CHARGED_SKILL_STATE.broken;
+  return null;
+}
+function composeChargingStanding(statement) {
+  const charge = statement.charge;
+  if (charge === null) return null;
+  assert(charge.skillName.length > 0, "a charge that was read names the blow being made ready");
+  assert(charge.turnsElapsed >= 0, "and states a count of turns that have passed");
+  assert(charge.turnsStated >= charge.turnsElapsed, "no more of them than the whole charge runs");
+  return {
+    combatantId: statement.combatantId,
+    skillName: charge.skillName,
+    turnsElapsed: charge.turnsElapsed,
+    turnsStated: charge.turnsStated,
+    state: CHARGED_SKILL_STATE.charging,
+    endedAtOrdinal: null
+  };
+}
+
+// src/core/fight-session.ts
+var CombatantsExceeded = class extends Error {
+  name = "CombatantsExceeded";
+  count;
+  maximum;
+  constructor(count, maximum) {
+    super();
+    this.count = count;
+    this.maximum = maximum;
+  }
+};
+var CutKeysExceeded = class extends Error {
+  name = "CutKeysExceeded";
+  count;
+  maximum;
+  constructor(count, maximum) {
+    super();
+    this.count = count;
+    this.maximum = maximum;
+  }
+};
+var EventsExceeded = class extends Error {
+  name = "EventsExceeded";
+  count;
+  maximum;
+  constructor(count, maximum) {
+    super();
+    this.count = count;
+    this.maximum = maximum;
+  }
+};
+var PayloadsExceeded = class extends Error {
+  name = "PayloadsExceeded";
+  count;
+  maximum;
+  constructor(count, maximum) {
+    super();
+    this.count = count;
+    this.maximum = maximum;
+  }
+};
+var SkillsExceeded = class extends Error {
+  name = "SkillsExceeded";
+  count;
+  maximum;
+  constructor(count, maximum) {
+    super();
+    this.count = count;
+    this.maximum = maximum;
+  }
+};
+var PAYLOADS_MAXIMUM = 65536;
+var SESSION_OPTIONS = {
+  eventsMaximum: MESSAGES_MAXIMUM * 2,
+  payloadsMaximum: PAYLOADS_MAXIMUM,
+  combatantsMaximum: COMBATANTS_MAXIMUM
+};
+var NO_UNREAD = {
+  [UNREAD_CAUSE.unknownKey]: 0,
+  [UNREAD_CAUSE.noParameter]: 0,
+  [UNREAD_CAUSE.grammarRefused]: 0
+};
+function createFightSession(options) {
+  assert(options.combatantsMaximum <= COMBATANTS_MAXIMUM, "a cast is bounded by the roster");
+  assert(options.eventsMaximum > MESSAGES_MAXIMUM, "a fight holds more than one full payload");
+  assert(options.payloadsMaximum > 0, "a fight holds a payload");
+  return {
+    options,
+    state: null,
+    events: []
+  };
+}
+function preparePayload(session, record, tables) {
+  const stateBefore = record.isInit ? null : session.state;
+  const eventsBefore = stateBefore === null ? 0 : session.events.length;
+  const payloadsApplied = (stateBefore?.payloadsApplied ?? 0) + 1;
+  const options = session.options;
+  if (payloadsApplied > options.payloadsMaximum) {
+    return new PayloadsExceeded(payloadsApplied, options.payloadsMaximum);
+  }
+  const combatants = preparePayloadCombatants(stateBefore?.combatants ?? [], record.combatants);
+  if (combatants.length > options.combatantsMaximum) {
+    return new CombatantsExceeded(combatants.length, options.combatantsMaximum);
+  }
+  const roster = indexCombatantRoster(combatants);
+  const decoded = decodePayloadMessages(record.messages, {
+    roster,
+    announcementStanding: null,
+    tables
+  });
+  const eventsAfter = eventsBefore + decoded.events.length;
+  if (eventsAfter > options.eventsMaximum) {
+    return new EventsExceeded(eventsAfter, options.eventsMaximum);
+  }
+  const namedCombatantIds = prepareNamedCombatantIds(stateBefore?.namedCombatantIds ?? /* @__PURE__ */ new Set(), combatants, record, decoded.events);
+  if (namedCombatantIds.size > options.combatantsMaximum) {
+    return new CombatantsExceeded(namedCombatantIds.size, options.combatantsMaximum);
+  }
+  const cutKeys = prepareCutKeys(stateBefore?.cutKeys ?? /* @__PURE__ */ new Set(), decoded.events);
+  if (cutKeys.size > CUT_MAXIMUM) return new CutKeysExceeded(cutKeys.size, CUT_MAXIMUM);
+  const skillNames = prepareSkillNames(stateBefore?.skillNames ?? /* @__PURE__ */ new Set(), decoded.events);
+  if (skillNames.size > SKILLS_MAXIMUM) {
+    return new SkillsExceeded(skillNames.size, SKILLS_MAXIMUM);
+  }
+  const eventsAtSeatingByCombatantId = prepareEventsAtSeating(stateBefore?.eventsAtSeatingByCombatantId ?? /* @__PURE__ */ new Map(), combatants, eventsBefore);
+  const stateAfter = preparePayloadStanding(stateBefore, record, decoded, {
+    combatants,
+    namedCombatantIds,
+    cutKeys,
+    skillNames,
+    eventsAtSeatingByCombatantId
+  });
+  assert(stateAfter.payloadsApplied === payloadsApplied, "a payload prepared is counted once");
+  const payloadIndex = stateBefore?.payloadsApplied ?? 0;
+  return {
+    payloadIndex,
+    isOpening: stateBefore === null,
+    decoded,
+    stateAfter
+  };
+}
+function prepareEventsAtSeating(eventsAtSeatingBefore, combatants, eventsBefore) {
+  assert(eventsBefore >= 0, "a moment is a count of events");
+  const eventsAtSeatingByCombatantId = /* @__PURE__ */ new Map();
+  for (const combatant of combatants) {
+    const eventsAtSeating = eventsAtSeatingBefore.get(combatant.id) ?? eventsBefore;
+    assert(eventsAtSeating <= eventsBefore, "nobody was seated after the payload seating them");
+    eventsAtSeatingByCombatantId.set(combatant.id, eventsAtSeating);
+  }
+  assert(eventsAtSeatingByCombatantId.size === combatants.length, "a moment for everybody seated, and nobody else");
+  return eventsAtSeatingByCombatantId;
+}
+function preparePayloadCombatants(combatantsBefore, combatantsArriving) {
+  const combatants = [
+    ...combatantsBefore
+  ];
+  for (const combatant of combatantsArriving) {
+    const seenIndex = combatants.findIndex((seenCombatant) => seenCombatant.id === combatant.id);
+    if (seenIndex === -1) combatants.push(combatant);
+    else combatants[seenIndex] = combatant;
+  }
+  assert(combatants.length >= combatantsBefore.length, "a cast only grows or is restated");
+  assert(combatants.length <= combatantsBefore.length + combatantsArriving.length, "by no more than arrived");
+  return combatants;
+}
+function prepareNamedCombatantIds(namedBefore, combatants, record, events) {
+  const namedCombatantIds = new Set(namedBefore);
+  for (const combatant of combatants) namedCombatantIds.add(combatant.id);
+  for (const combatantId of record.statusMasksByCombatantId.keys()) {
+    namedCombatantIds.add(combatantId);
+  }
+  for (const statement of record.chargeStatements) namedCombatantIds.add(statement.combatantId);
+  for (const event of events) {
+    let eventCombatantIds;
+    switch (event.kind) {
+      case BATTLE_EVENT.attack:
+      case BATTLE_EVENT.damageToNamedCombatant:
+        eventCombatantIds = [
+          event.actorId,
+          event.targetId,
+          event.announced?.actorId ?? null
+        ];
+        break;
+      case BATTLE_EVENT.skillUsed:
+        eventCombatantIds = [
+          event.actorId,
+          event.targetId
+        ];
+        break;
+      case BATTLE_EVENT.healthChange:
+      case BATTLE_EVENT.unaccountedHealth:
+        eventCombatantIds = [
+          event.combatantId,
+          event.announced?.actorId ?? null
+        ];
+        break;
+      case BATTLE_EVENT.healingToNamedCombatant:
+        eventCombatantIds = [
+          event.targetId
+        ];
+        break;
+      case BATTLE_EVENT.declaration:
+      case BATTLE_EVENT.turnLost:
+        eventCombatantIds = [
+          event.combatantId
+        ];
+        break;
+      case BATTLE_EVENT.unknownMessage:
+        eventCombatantIds = event.combatantIds;
+        break;
+      case BATTLE_EVENT.fightOutcome:
+        eventCombatantIds = [];
+        break;
+    }
+    for (const combatantId of eventCombatantIds) {
+      if (combatantId !== null) namedCombatantIds.add(combatantId);
+    }
+  }
+  assert(namedCombatantIds.size >= namedBefore.size, "nobody named before is forgotten");
+  assert(namedCombatantIds.size >= combatants.length, "and everybody seated is named");
+  return namedCombatantIds;
+}
+function prepareCutKeys(cutKeysBefore, events) {
+  const cutKeys = new Set(cutKeysBefore);
+  for (const event of events) {
+    let eventCutKeys;
+    switch (event.kind) {
+      case BATTLE_EVENT.attack:
+        eventCutKeys = [
+          ...event.raw.map((figure) => figure.element),
+          ...event.applied.map((figure) => figure.element),
+          ...composeKindsAbsorbed(event)
+        ];
+        break;
+      case BATTLE_EVENT.damageToNamedCombatant:
+        eventCutKeys = [
+          event.damage.element
+        ];
+        break;
+      case BATTLE_EVENT.healthChange:
+      case BATTLE_EVENT.healingToNamedCombatant:
+      case BATTLE_EVENT.unaccountedHealth:
+        eventCutKeys = [
+          event.source
+        ];
+        break;
+      case BATTLE_EVENT.skillUsed:
+      case BATTLE_EVENT.declaration:
+      case BATTLE_EVENT.turnLost:
+      case BATTLE_EVENT.unknownMessage:
+      case BATTLE_EVENT.fightOutcome:
+        eventCutKeys = [];
+        break;
+    }
+    for (const cutKey of eventCutKeys) cutKeys.add(cutKey);
+  }
+  assert(cutKeys.size >= cutKeysBefore.size, "no name cut by before is forgotten");
+  return cutKeys;
+}
+function prepareSkillNames(skillNamesBefore, events) {
+  const skillNames = new Set(skillNamesBefore);
+  for (const event of events) {
+    if (event.kind === BATTLE_EVENT.skillUsed) skillNames.add(event.skillName);
+  }
+  for (const event of events) {
+    if (!("announced" in event)) continue;
+    if (event.announced === null) continue;
+    assert(skillNames.has(event.announced.skillName), "what a blow rides was announced");
+  }
+  assert(skillNames.size >= skillNamesBefore.size, "no skill announced before is forgotten");
+  return skillNames;
+}
+function preparePayloadStanding(stateBefore, record, decoded, prepared) {
+  const { combatants, namedCombatantIds, eventsAtSeatingByCombatantId } = prepared;
+  const isOnAuto = record.isOnAuto ?? stateBefore?.isOnAuto ?? false;
+  const turnStatement = isOnAuto ? null : record.turnStatement ?? stateBefore?.turnStatement ?? null;
+  const chargeStatementByCombatantId = new Map(record.chargeStatements.map((statement) => [
+    statement.combatantId,
+    statement
+  ]));
+  assert(chargeStatementByCombatantId.size <= namedCombatantIds.size, "a charge is held by somebody the fight named");
+  const chargedSkills = prepareChargedSkills(stateBefore?.chargedSkills ?? [], [
+    ...chargeStatementByCombatantId.values()
+  ], decoded.events, turnStatement?.ordinal ?? null);
+  const events = decoded.events;
+  const statusMasksByCombatantId = record.statusMasksByCombatantId;
+  return {
+    combatants,
+    unread: preparePayloadUnread(stateBefore?.unread ?? NO_UNREAD, decoded),
+    messagesLost: (stateBefore?.messagesLost ?? 0) + calculateMessagesLost(record),
+    messagesRead: (stateBefore?.messagesRead ?? 0) + record.messages.length,
+    // `init` arrives once, so only the first payload of a fight can answer this.
+    hasJoinedInProgress: stateBefore === null ? !record.isInit : stateBefore.hasJoinedInProgress,
+    isOver: record.isEnd || (stateBefore?.isOver ?? false),
+    payloadsApplied: (stateBefore?.payloadsApplied ?? 0) + 1,
+    // Kept once seen, because only the opening payload carries it.
+    readerSide: record.readerSide ?? stateBefore?.readerSide ?? null,
+    turnStatement,
+    isOnAuto,
+    chargedSkills,
+    carriedStatusWalk: prepareCarriedStatusWalk(stateBefore?.carriedStatusWalk ?? NO_CARRIED_STATUS_WALK, events, statusMasksByCombatantId),
+    legendaryWalk: prepareLegendaryWalk(stateBefore?.legendaryWalk ?? NO_LEGENDARY_WALK, events),
+    namedCombatantIds,
+    cutKeys: prepared.cutKeys,
+    skillNames: prepared.skillNames,
+    eventsAtSeatingByCombatantId
+  };
+}
+function preparePayloadUnread(unreadBefore, decoded) {
+  const counts = {
+    ...unreadBefore
+  };
+  for (const unread of decoded.unread) counts[unread.unreadCause] += 1;
+  assert(decoded.unread.length <= decoded.events.length, "an unread message is an event too");
+  return counts;
+}
+function calculateMessagesLost(record) {
+  if (record.messagesStated === null) return 0;
+  const messagesLost = record.messagesStated - record.messages.length;
+  assert(record.messagesStated <= MESSAGES_MAXIMUM, "the envelope bounded what it stated");
+  if (messagesLost <= 0) return 0;
+  return messagesLost;
+}
+function commitPayload(session, prepared) {
+  const wasOver = session.state?.isOver ?? false;
+  if (prepared.isOpening) {
+    session.events = [];
+  } else {
+    assert(session.state !== null, "a payload read against a fight lands on that fight");
+    const payloadsApplied = session.state.payloadsApplied;
+    assert(payloadsApplied === prepared.payloadIndex, "and on the payload it was read against");
+  }
+  const events = prepared.decoded.events;
+  assert(session.events.length + events.length <= session.options.eventsMaximum, "a fight's events stay inside the bound its options state");
+  for (const event of events) session.events.push(event);
+  session.state = prepared.stateAfter;
+  let hasClosed;
+  if (prepared.stateAfter.isOver) hasClosed = prepared.isOpening || !wasOver;
+  else hasClosed = false;
+  return {
+    hasOpened: prepared.isOpening,
+    hasClosed,
+    eventsAdded: events.length,
+    unreadAdded: prepared.decoded.unread.length
+  };
+}
+function composeFightView(session) {
+  const state = session.state;
+  if (state === null) return null;
+  assert(state.payloadsApplied > 0, "a fight that exists was built from something");
+  assert(state.chargedSkills.length <= CHARGED_SKILLS_MAXIMUM, "and bounds what it charges");
+  return {
+    roster: indexCombatantRoster(state.combatants),
+    events: session.events,
+    unread: state.unread,
+    messagesLost: state.messagesLost,
+    messagesRead: state.messagesRead,
+    hasJoinedInProgress: state.hasJoinedInProgress,
+    isOver: state.isOver,
+    readerSide: state.readerSide,
+    turnStatement: state.turnStatement,
+    isOnAuto: state.isOnAuto,
+    payloadsApplied: state.payloadsApplied,
+    chargedSkills: state.chargedSkills,
+    carriedStatuses: composeCarriedStatuses(state.carriedStatusWalk),
+    legendaryStandings: composeLegendaryStandings(state.legendaryWalk),
+    turnsByCombatantId: state.carriedStatusWalk.turnsByCombatantId,
+    eventsAtSeatingByCombatantId: state.eventsAtSeatingByCombatantId
+  };
+}
+
+// src/ports/browser-store.ts
+var STORE_KEY = {
+  fights: "MargoMeter-fights",
+  meterFolded: "MargoMeter-meter-folded",
+  meterPosition: "MargoMeter-meter-position",
+  helperFolded: "MargoMeter-helper-folded",
+  helperPosition: "MargoMeter-helper-position",
+  storage: "MargoMeter-storage",
+  typeStep: "MargoMeter-type-step",
+  meterSize: "MargoMeter-meter-size",
+  helperSize: "MargoMeter-helper-size"
+};
+var StoreUnavailable = class extends Error {
+  name = "StoreUnavailable";
+};
+var StoreRefused = class extends Error {
+  name = "StoreRefused";
+  constructor(cause) {
+    super(void 0, {
+      cause
+    });
+  }
+};
+var StoreValueTooLong = class extends Error {
+  name = "StoreValueTooLong";
+  length;
+  maximum;
+  constructor(length, maximum) {
+    super();
+    this.length = length;
+    this.maximum = maximum;
+  }
+};
+var STORE_KEYS = Object.values(STORE_KEY);
+var STORE_VALUE_LENGTH_MAXIMUM = 4194304;
+function initBrowserStore(storage) {
+  return {
+    read(key) {
+      if (storage === null) return new StoreUnavailable();
+      const storedText = attempt(() => storage.getItem(key));
+      if (storedText instanceof Error) return new StoreRefused(storedText);
+      if (typeof storedText !== "string") return null;
+      return storedText;
+    },
+    write(key, storedText) {
+      if (storage === null) return new StoreUnavailable();
+      const tooLong = lookupStoreValueTooLong(storedText);
+      if (tooLong !== null) return tooLong;
+      const written = attempt(() => storage.setItem(key, storedText));
+      if (written instanceof Error) return new StoreRefused(written);
+      return void 0;
+    },
+    delete(key) {
+      if (storage === null) return new StoreUnavailable();
+      const deleted = attempt(() => storage.removeItem(key));
+      if (deleted instanceof Error) return new StoreRefused(deleted);
+      return void 0;
+    }
+  };
+}
+function lookupStoreValueTooLong(storedText) {
+  if (storedText.length <= STORE_VALUE_LENGTH_MAXIMUM) return null;
+  return new StoreValueTooLong(storedText.length, STORE_VALUE_LENGTH_MAXIMUM);
+}
+function initMemoryStore() {
+  const valuesByKey = /* @__PURE__ */ new Map();
+  return {
+    read(key) {
+      return valuesByKey.get(key) ?? null;
+    },
+    write(key, storedText) {
+      const tooLong = lookupStoreValueTooLong(storedText);
+      if (tooLong !== null) return tooLong;
+      valuesByKey.set(key, storedText);
+      assert(valuesByKey.size <= STORE_KEYS.length, "a store holds no more than the keys it has");
+      return void 0;
+    },
+    delete(key) {
+      valuesByKey.delete(key);
+      return void 0;
+    }
+  };
+}
+
+// src/ports/payload-envelope.ts
+var PayloadNotRecord = class extends Error {
+  name = "PayloadNotRecord";
+};
+var PayloadFieldMalformed = class extends Error {
+  name = "PayloadFieldMalformed";
+  field;
+  constructor(field, options) {
+    super(void 0, options);
+    this.field = field;
+  }
+};
+var PayloadFieldTooLong = class extends Error {
+  name = "PayloadFieldTooLong";
+  field;
+  count;
+  maximum;
+  constructor(field, count, maximum, options) {
+    super(void 0, options);
+    this.field = field;
+    this.count = count;
+    this.maximum = maximum;
+  }
+};
+var PayloadCombatantRepeated = class extends Error {
+  name = "PayloadCombatantRepeated";
+  combatantId;
+  constructor(combatantId) {
+    super();
+    this.combatantId = combatantId;
+  }
+};
+var ENVELOPE_KEYS = {
+  isInit: "init",
+  isEnd: "endBattle",
+  messages: "m",
+  messagesStated: "mi",
+  readerSide: "myteam",
+  isOnAuto: "auto",
+  turnStatement: "turns_warriors",
+  combatants: "w"
+};
+var QUEUE_ENTRIES_MAXIMUM = 1024;
+var WARRIOR_FIELDS = {
+  id: "id",
+  name: "name",
+  side: "team",
+  profession: "prof",
+  level: "lvl",
+  health: "hp",
+  statuses: "buffs",
+  charge: "super_cast"
+};
+var HEALTH_FIELDS = {
+  maximum: "max",
+  now: "cur"
+};
+var CHARGE_FIELDS = {
+  name: "name",
+  turnsElapsed: "turn",
+  turnsStated: "total_turns"
+};
+var NOTHING_CARRIED = 0;
+function readPayloadEnvelope(payload) {
+  if (!isRecord(payload)) return new PayloadNotRecord();
+  const messages = [];
+  {
+    const listed = getListField(payload, ENVELOPE_KEYS, "messages", MESSAGES_MAXIMUM);
+    if (listed instanceof Error) return createEnvelopeFailure(listed);
+    for (const message of listed ?? []) {
+      if (typeof message !== "string") return new PayloadFieldMalformed("messages");
+      if (message.length > 0) messages.push(message);
+    }
+    assert(messages.length <= MESSAGES_MAXIMUM, "a payload's messages stay inside the bound");
+  }
+  const messagesStated = getListField(payload, ENVELOPE_KEYS, "messagesStated", MESSAGES_MAXIMUM);
+  if (messagesStated instanceof Error) return createEnvelopeFailure(messagesStated);
+  const readerSide = readPayloadEnvelopeInteger(payload, "readerSide");
+  if (readerSide instanceof Error) return readerSide;
+  const onAutoStated = readPayloadEnvelopeInteger(payload, "isOnAuto");
+  if (onAutoStated instanceof Error) return onAutoStated;
+  let turnStatement;
+  readTurn: {
+    const queue = getRecordField(payload, ENVELOPE_KEYS, "turnStatement");
+    if (queue instanceof Error) return createEnvelopeFailure(queue);
+    if (queue === null) {
+      turnStatement = null;
+      break readTurn;
+    }
+    const ordinals = Object.keys(queue);
+    if (ordinals.length > QUEUE_ENTRIES_MAXIMUM) {
+      return new PayloadFieldTooLong("turnStatement", ordinals.length, QUEUE_ENTRIES_MAXIMUM);
+    }
+    let least = null;
+    for (const ordinalText of ordinals) {
+      const ordinal = parseInteger(ordinalText);
+      if (ordinal === null) return new PayloadFieldMalformed("turnStatement");
+      if (least === null) least = {
+        ordinal,
+        key: ordinalText
+      };
+      else if (ordinal < least.ordinal) least = {
+        ordinal,
+        key: ordinalText
+      };
+    }
+    if (least === null) {
+      turnStatement = null;
+      break readTurn;
+    }
+    const combatantId = queue[least.key];
+    if (typeof combatantId !== "number") return new PayloadFieldMalformed("turnStatement");
+    if (!Number.isSafeInteger(combatantId)) return new PayloadFieldMalformed("turnStatement");
+    turnStatement = {
+      ordinal: least.ordinal,
+      combatantId
+    };
+  }
+  let warriors;
+  {
+    const keyed = getRecordField(payload, ENVELOPE_KEYS, "combatants");
+    if (keyed instanceof Error) {
+      const listed = getListField(payload, ENVELOPE_KEYS, "combatants", COMBATANTS_MAXIMUM);
+      if (listed instanceof Error) return createEnvelopeFailure(listed);
+      warriors = [
+        ...listed ?? []
+      ];
+    } else if (keyed !== null) {
+      warriors = Object.values(keyed);
+    } else {
+      warriors = [];
+    }
+    if (warriors.length > COMBATANTS_MAXIMUM) {
+      return new PayloadFieldTooLong("combatants", warriors.length, COMBATANTS_MAXIMUM);
+    }
+  }
+  const warriorEntries = readPayloadWarriorEntries(warriors);
+  const ids = /* @__PURE__ */ new Set();
+  for (const combatant of warriorEntries.combatants) {
+    if (ids.has(combatant.id)) return new PayloadCombatantRepeated(combatant.id);
+    ids.add(combatant.id);
+  }
+  return {
+    isInit: isPayloadOpening(payload),
+    isEnd: Object.hasOwn(payload, ENVELOPE_KEYS.isEnd),
+    messages,
+    messagesStated: messagesStated === null ? null : messagesStated.length,
+    readerSide,
+    isOnAuto: onAutoStated === null ? null : onAutoStated !== 0,
+    turnStatement,
+    combatants: warriorEntries.combatants,
+    statusMasksByCombatantId: warriorEntries.statusMasksByCombatantId,
+    chargeStatements: warriorEntries.chargeStatements
+  };
+}
+function createEnvelopeFailure(failure) {
+  if (failure instanceof FieldWrongType) {
+    return new PayloadFieldMalformed(failure.field, {
+      cause: failure
+    });
+  }
+  const { field, count, maximum } = failure;
+  assert(count > maximum, "a list refused for its length is past the bound");
+  return new PayloadFieldTooLong(field, count, maximum, {
+    cause: failure
+  });
+}
+function readPayloadEnvelopeInteger(payload, field) {
+  const asNumber = getNumberField(payload, ENVELOPE_KEYS, field);
+  if (!(asNumber instanceof Error)) {
+    if (asNumber === null) return null;
+    if (!Number.isSafeInteger(asNumber)) return new PayloadFieldMalformed(field);
+    return asNumber;
+  }
+  const asText = getTextField(payload, ENVELOPE_KEYS, field);
+  if (asText instanceof Error) return new PayloadFieldMalformed(field, {
+    cause: asText
+  });
+  assert(asText !== null, "a field of the wrong type for a number is present");
+  const integer = parseInteger(asText);
+  if (integer === null) return new PayloadFieldMalformed(field, {
+    cause: asNumber
+  });
+  return integer;
+}
+function readPayloadWarriorEntries(entries) {
+  assert(entries.length <= COMBATANTS_MAXIMUM, "a payload's warriors are bounded by the envelope");
+  const warriorEntries = {
+    combatants: [],
+    statusMasksByCombatantId: /* @__PURE__ */ new Map(),
+    chargeStatements: []
+  };
+  for (const warriorEntry of entries) {
+    if (!isRecord(warriorEntry)) continue;
+    const id = getNumberField(warriorEntry, WARRIOR_FIELDS, "id");
+    if (id instanceof Error) continue;
+    if (id === null) continue;
+    if (!Number.isSafeInteger(id)) continue;
+    let combatant;
+    readCombatant: {
+      const name = getStatedTextField(warriorEntry, WARRIOR_FIELDS, "name");
+      if (name instanceof Error) {
+        combatant = null;
+        break readCombatant;
+      }
+      if (name === null) {
+        combatant = null;
+        break readCombatant;
+      }
+      const side = getNumberField(warriorEntry, WARRIOR_FIELDS, "side");
+      if (side instanceof Error) {
+        combatant = null;
+        break readCombatant;
+      }
+      if (side === null) {
+        combatant = null;
+        break readCombatant;
+      }
+      if (!Number.isSafeInteger(side)) {
+        combatant = null;
+        break readCombatant;
+      }
+      const profession = getStatedTextField(warriorEntry, WARRIOR_FIELDS, "profession");
+      const level = getNumberField(warriorEntry, WARRIOR_FIELDS, "level");
+      combatant = {
+        id,
+        name,
+        side,
+        profession: profession instanceof Error ? null : profession,
+        level: level instanceof Error ? null : level,
+        healthMaximum: readPayloadWarriorHealth(warriorEntry, "maximum")
+      };
+      assert(combatant.name.length > 0, "a name that was read says something");
+    }
+    if (combatant !== null) warriorEntries.combatants.push(combatant);
+    let mask;
+    readMask: {
+      const now = readPayloadWarriorHealth(warriorEntry, "now");
+      if (now !== null) {
+        if (now <= 0) {
+          mask = NOTHING_CARRIED;
+          break readMask;
+        }
+      }
+      const stated = getNumberField(warriorEntry, WARRIOR_FIELDS, "statuses");
+      if (stated instanceof Error) {
+        mask = null;
+        break readMask;
+      }
+      if (stated === null) {
+        mask = null;
+        break readMask;
+      }
+      if (stated < 0) {
+        mask = null;
+        break readMask;
+      }
+      if (!Number.isSafeInteger(stated)) {
+        mask = null;
+        break readMask;
+      }
+      if (stated < 2 ** STATUS_BITS_MAXIMUM) mask = stated;
+      else mask = null;
+    }
+    if (mask !== null) warriorEntries.statusMasksByCombatantId.set(id, mask);
+    let charge;
+    readCharge: {
+      const stated = getRecordField(warriorEntry, WARRIOR_FIELDS, "charge");
+      if (stated instanceof Error) {
+        charge = null;
+        break readCharge;
+      }
+      if (stated === null) {
+        charge = null;
+        break readCharge;
+      }
+      const skillName = getStatedTextField(stated, CHARGE_FIELDS, "name");
+      const turnsElapsed = getNumberField(stated, CHARGE_FIELDS, "turnsElapsed");
+      const turnsStated = getNumberField(stated, CHARGE_FIELDS, "turnsStated");
+      if (skillName instanceof Error) {
+        charge = null;
+        break readCharge;
+      }
+      if (turnsElapsed instanceof Error) {
+        charge = null;
+        break readCharge;
+      }
+      if (turnsStated instanceof Error) {
+        charge = null;
+        break readCharge;
+      }
+      if (skillName === null) {
+        charge = null;
+        break readCharge;
+      }
+      if (turnsElapsed === null) {
+        charge = null;
+        break readCharge;
+      }
+      if (turnsStated === null) {
+        charge = null;
+        break readCharge;
+      }
+      if (turnsElapsed < 0) {
+        charge = null;
+        break readCharge;
+      }
+      if (turnsStated < turnsElapsed) {
+        charge = null;
+        break readCharge;
+      }
+      charge = {
+        skillName,
+        turnsElapsed,
+        turnsStated
+      };
+    }
+    warriorEntries.chargeStatements.push({
+      combatantId: id,
+      charge
+    });
+  }
+  assert(warriorEntries.combatants.length <= entries.length, "a combatant is one entry");
+  return warriorEntries;
+}
+function readPayloadWarriorHealth(warriorEntry, field) {
+  const health = getRecordField(warriorEntry, WARRIOR_FIELDS, "health");
+  if (health instanceof Error) return null;
+  if (health === null) return null;
+  const figure = getNumberField(health, HEALTH_FIELDS, field);
+  if (figure instanceof Error) return null;
+  if (figure === null) return null;
+  if (field === "maximum") {
+    if (figure <= 0) return null;
+    if (!Number.isSafeInteger(figure)) return null;
+  }
+  return figure;
+}
+function isPayloadOpening(payload) {
+  if (!isRecord(payload)) return false;
+  return Object.hasOwn(payload, ENVELOPE_KEYS.isInit);
+}
+
+// src/ports/margonem-engine-warriors.ts
+var MargonemEngineWarriorsAbsent = class extends Error {
+  name = "MargonemEngineWarriorsAbsent";
+};
+var MargonemEngineWarriorCollectionAbsent = class extends Error {
+  name = "MargonemEngineWarriorCollectionAbsent";
+};
+var MargonemEngineWarriorsExceeded = class extends Error {
+  name = "MargonemEngineWarriorsExceeded";
+  count;
+  maximum;
+  constructor(count, maximum) {
+    super();
+    this.count = count;
+    this.maximum = maximum;
+  }
+};
+var WARRIOR_COLLECTIONS = [
+  "warriorsList",
+  "warriors"
+];
+var WARRIOR_ID_KEY = WARRIOR_FIELDS.id;
+var WARRIOR_SNAPSHOT_FIELDS = {
+  originalId: "originalId",
+  mana: "mana",
+  energy: "energy",
+  armour: "ac"
+};
+var IDENTITY_KEYS = [
+  WARRIOR_ID_KEY,
+  WARRIOR_SNAPSHOT_FIELDS.originalId
+];
+var COPIED_KEYS = [
+  WARRIOR_FIELDS.name,
+  WARRIOR_FIELDS.side,
+  WARRIOR_FIELDS.profession,
+  WARRIOR_FIELDS.level,
+  WARRIOR_SNAPSHOT_FIELDS.mana,
+  WARRIOR_SNAPSHOT_FIELDS.energy
+];
+var SHALLOW_COPIED_KEYS = [
+  WARRIOR_FIELDS.health,
+  WARRIOR_SNAPSHOT_FIELDS.armour
+];
+var NAME_KEY = WARRIOR_FIELDS.name;
+var WARRIOR_ENTRIES_MAXIMUM = COMBATANTS_MAXIMUM * 10;
+function readMargonemEngineWarriorSnapshot(battle) {
+  const named = readMargonemEngineWarriorsNamed(battle);
+  if (named instanceof Error) return named;
+  const snapshot = named.map(readCapturedCombatant);
+  assert(snapshot.length === named.length, "every named warrior is copied once");
+  return snapshot;
+}
+function readCapturedCombatant(warrior) {
+  let id = null;
+  for (const key of IDENTITY_KEYS) {
+    if (id !== null) break;
+    const stated = warrior[key];
+    if (typeof stated !== "number") continue;
+    if (Number.isFinite(stated)) id = stated;
+  }
+  const copied = {};
+  for (const key of COPIED_KEYS) copied[key] = warrior[key] ?? null;
+  for (const key of SHALLOW_COPIED_KEYS) {
+    const copiedValue = warrior[key];
+    copied[key] = isRecord(copiedValue) ? {
+      ...copiedValue
+    } : copiedValue ?? null;
+  }
+  assert(Object.keys(copied).length === COPIED_KEYS.length + SHALLOW_COPIED_KEYS.length, "a copy holds every kept key of the warrior, once");
+  const { name, team, prof, lvl, hp, mana, energy, ac } = copied;
+  return {
+    id,
+    name,
+    team,
+    prof,
+    lvl,
+    hp,
+    mana,
+    energy,
+    ac
+  };
+}
+function readMargonemEngineWarriorsNamed(battle) {
+  if (!isRecord(battle)) return new MargonemEngineWarriorsAbsent();
+  let hasCollection = false;
+  for (const collectionKey of WARRIOR_COLLECTIONS) {
+    const collection = battle[collectionKey];
+    if (!isRecord(collection)) continue;
+    hasCollection = true;
+    const named = [];
+    const idsSeen = /* @__PURE__ */ new Set();
+    let entriesLooked = 0;
+    for (const key in collection) {
+      if (!Object.hasOwn(collection, key)) continue;
+      entriesLooked += 1;
+      if (entriesLooked > WARRIOR_ENTRIES_MAXIMUM) {
+        return new MargonemEngineWarriorsExceeded(entriesLooked, WARRIOR_ENTRIES_MAXIMUM);
+      }
+      const warrior = collection[key];
+      if (!isMargonemEngineWarriorNamed(warrior)) continue;
+      const id = warrior[WARRIOR_ID_KEY];
+      if (typeof id === "number") {
+        if (idsSeen.has(id)) continue;
+        idsSeen.add(id);
+      }
+      named.push(warrior);
+      if (named.length > COMBATANTS_MAXIMUM) {
+        return new MargonemEngineWarriorsExceeded(named.length, COMBATANTS_MAXIMUM);
+      }
+    }
+    if (named.length === 0) continue;
+    return named;
+  }
+  if (!hasCollection) return new MargonemEngineWarriorCollectionAbsent();
+  return new MargonemEngineWarriorsAbsent();
+}
+function isMargonemEngineWarriorNamed(warriorCandidate) {
+  if (!isRecord(warriorCandidate)) return false;
+  const name = warriorCandidate[NAME_KEY];
+  if (typeof name !== "string") return false;
+  return name.length > 0;
+}
+
+// src/ports/margonem-engine-battle.ts
+var MargonemEngineAbsent = class extends Error {
+  name = "MargonemEngineAbsent";
+};
+var MargonemEngineBattleAbsent = class extends Error {
+  name = "MargonemEngineBattleAbsent";
+};
+var MargonemEngineMethodAbsent = class extends Error {
+  name = "MargonemEngineMethodAbsent";
+};
+var MargonemEngineMethodUnwritable = class extends Error {
+  name = "MargonemEngineMethodUnwritable";
+  constructor(cause) {
+    super(void 0, {
+      cause
+    });
+  }
+};
+var MargonemEngineAlreadyWrapped = class extends Error {
+  name = "MargonemEngineAlreadyWrapped";
+};
+var SearchAbandoned = class extends Error {
+  name = "SearchAbandoned";
+  looks;
+  maximum;
+  constructor(looks, maximum, cause) {
+    super(void 0, {
+      cause
+    });
+    this.looks = looks;
+    this.maximum = maximum;
+  }
+};
+var WrapCovered = class extends Error {
+  name = "WrapCovered";
+};
+var ENGINE_FIELD = "Engine";
+var ENGINE_CALL_FIELD = "getEngine";
+var BATTLE_FIELD = "battle";
+var WRAPPED_METHOD = "updateData";
+var WRAP_MARKER = "__margometerBattleWrap";
+var WRAP_VERSION = 1;
+var FAILURES_MAXIMUM = 1048576;
+var ENGINE_FIELDS = {
+  map: "map",
+  hero: "hero"
+};
+var HELD_FIELDS = {
+  data: "d"
+};
+var ENGINE_ASKERS = [
+  (browserWindow) => browserWindow[ENGINE_FIELD],
+  (browserWindow) => {
+    const getEngine = browserWindow[ENGINE_CALL_FIELD];
+    if (typeof getEngine !== "function") return null;
+    return Reflect.apply(getEngine, browserWindow, []);
+  }
+];
+function initMargonemEngineBattle(browserWindow) {
+  return {
+    readBattle() {
+      const asked = readMargonemEngineAnswer(browserWindow, lookupMargonemEngineBattle);
+      if (asked instanceof Caught) return asked;
+      if (!asked.hasEngine) return new MargonemEngineAbsent();
+      const battle = asked.answer;
+      if (battle === null) return new MargonemEngineBattleAbsent();
+      return {
+        // Put the wrap on the engine's own method.
+        wrap: (listener) => {
+          const looked = attempt(() => {
+            const method = battle[WRAPPED_METHOD];
+            return {
+              method,
+              isOurs: isOurWrap(method)
+            };
+          });
+          if (looked instanceof Caught) {
+            return new MargonemEngineMethodUnwritable(looked);
+          }
+          const original = looked.method;
+          if (typeof original !== "function") return new MargonemEngineMethodAbsent();
+          if (looked.isOurs) return new MargonemEngineAlreadyWrapped();
+          const failures = {
+            count: 0,
+            first: null
+          };
+          const recordFailure = (failure) => {
+            if (failures.count === FAILURES_MAXIMUM) return;
+            failures.count += 1;
+            if (failures.first === null) failures.first = failure;
+          };
+          const callEngineUpdate = function(...engineArguments) {
+            const before = attempt(() => listener.onBeforeCall());
+            if (before instanceof Error) recordFailure(before);
+            const answer = Reflect.apply(original, this, engineArguments);
+            const after = attempt(() => listener.onPayload(engineArguments[0]));
+            if (after instanceof Error) recordFailure(after);
+            return answer;
+          };
+          const wrapper = Object.assign(callEngineUpdate, {
+            [WRAP_MARKER]: WRAP_VERSION
+          });
+          const isWrapStanding = attempt(() => {
+            void Reflect.set(battle, WRAPPED_METHOD, wrapper);
+            if (battle[WRAPPED_METHOD] === wrapper) return true;
+            void Reflect.set(battle, WRAPPED_METHOD, original);
+            return false;
+          });
+          if (isWrapStanding instanceof Error) {
+            return new MargonemEngineMethodUnwritable(isWrapStanding);
+          }
+          if (!isWrapStanding) return new MargonemEngineMethodUnwritable(null);
+          return {
+            detach() {
+              const detached = attempt(() => {
+                if (battle[WRAPPED_METHOD] !== wrapper) return new WrapCovered();
+                if (Reflect.set(battle, WRAPPED_METHOD, original)) return void 0;
+                return new MargonemEngineMethodUnwritable(null);
+              });
+              if (detached instanceof Caught) {
+                return new MargonemEngineMethodUnwritable(detached);
+              }
+              return detached;
+            },
+            getFailureCount: () => failures.count,
+            getFirstFailure: () => failures.first
+          };
+        },
+        readWarriors() {
+          return attempt(() => readMargonemEngineWarriorSnapshot(battle));
+        }
+      };
+    }
+  };
+}
+function lookupMargonemEngineBattle(engine) {
+  const battle = engine[BATTLE_FIELD];
+  return isRecord(battle) ? battle : null;
+}
+function isOurWrap(engineMethod) {
+  if (typeof engineMethod !== "function") return false;
+  return WRAP_MARKER in engineMethod;
+}
+function readMargonemEngineAnswer(browserWindow, readEngine) {
+  if (!isRecord(browserWindow)) return {
+    answer: null,
+    hasEngine: false
+  };
+  let hasEngine = false;
+  let firstFailure = null;
+  for (const askEngine of ENGINE_ASKERS) {
+    const asked = attempt(() => {
+      const engine = askEngine(browserWindow);
+      if (!isRecord(engine)) return null;
+      return {
+        answer: readEngine(engine)
+      };
+    });
+    if (asked instanceof Caught) {
+      firstFailure ??= asked;
+      continue;
+    }
+    if (asked === null) continue;
+    hasEngine = true;
+    if (asked.answer !== null) return {
+      answer: asked.answer,
+      hasEngine
+    };
+  }
+  if (hasEngine) return {
+    answer: null,
+    hasEngine
+  };
+  if (firstFailure !== null) return firstFailure;
+  return {
+    answer: null,
+    hasEngine
+  };
+}
+function readMargonemEngineBattle(browserWindow) {
+  const asked = readMargonemEngineAnswer(browserWindow, lookupMargonemEngineBattle);
+  if (asked instanceof Caught) return asked;
+  return asked.answer;
+}
+function readMargonemEngineRecord(engine, member) {
+  const engineMember = getRecordField(engine, ENGINE_FIELDS, member);
+  if (engineMember instanceof Error) return null;
+  if (engineMember === null) return null;
+  const memberRecord = getRecordField(engineMember, HELD_FIELDS, "data");
+  if (memberRecord instanceof Error) return null;
+  return memberRecord;
+}
+
+// src/ports/margonem-value.ts
+var MARGONEM_VALUE = {
+  place: "place",
+  hero: "hero",
+  label: "label",
+  build: "build"
+};
+var MargonemValueAbsent = class extends Error {
+  name = "MargonemValueAbsent";
+  reading;
+  constructor(reading) {
+    super();
+    this.reading = reading;
+  }
+};
+
+// src/ports/margonem-engine-hero.ts
+var HERO_FIELDS = {
+  id: "id"
+};
+function initMargonemEngineHero(browserWindow) {
+  return {
+    readHeroId() {
+      const asked = readMargonemEngineAnswer(browserWindow, readMargonemEngineHeroId);
+      if (asked instanceof Caught) return asked;
+      if (asked.answer !== null) return asked.answer;
+      return new MargonemValueAbsent(MARGONEM_VALUE.hero);
+    }
+  };
+}
+function readMargonemEngineHeroId(engine) {
+  const heroData = readMargonemEngineRecord(engine, "hero");
+  if (heroData === null) return null;
+  let id;
+  readId: {
+    const text = getTextField(heroData, HERO_FIELDS, "id");
+    if (!(text instanceof Error)) {
+      if (text !== null) {
+        id = parseInteger(text);
+        break readId;
+      }
+    }
+    const stated = getNumberField(heroData, HERO_FIELDS, "id");
+    if (stated instanceof Error) {
+      id = null;
+      break readId;
+    }
+    id = stated;
+  }
+  if (id === null) return null;
+  if (!Number.isSafeInteger(id)) return null;
+  if (id <= 0) return null;
+  return id;
+}
+
+// src/ports/margonem-engine-place.ts
+var PLACE_FIELDS = {
+  mapName: "name",
+  x: "x",
+  y: "y"
+};
+function initMargonemEnginePlace(browserWindow) {
+  return {
+    readPlace() {
+      const asked = readMargonemEngineAnswer(browserWindow, readMargonemEnginePlace);
+      if (asked instanceof Caught) return asked;
+      if (asked.answer !== null) return asked.answer;
+      return new MargonemValueAbsent(MARGONEM_VALUE.place);
+    }
+  };
+}
+function readMargonemEnginePlace(engine) {
+  const map = readMargonemEngineRecord(engine, "map");
+  const hero = readMargonemEngineRecord(engine, "hero");
+  let mapName;
+  if (map === null) {
+    mapName = null;
+  } else {
+    const name = getStatedTextField(map, PLACE_FIELDS, "mapName");
+    if (name instanceof Error) mapName = null;
+    else mapName = name;
+  }
+  const x = hero === null ? null : readHeroCoordinate(hero, "x");
+  const y = hero === null ? null : readHeroCoordinate(hero, "y");
+  if (mapName !== null) return {
+    mapName,
+    x,
+    y
+  };
+  if (x !== null) return {
+    mapName,
+    x,
+    y
+  };
+  if (y === null) return null;
+  return {
+    mapName,
+    x,
+    y
+  };
+}
+function readHeroCoordinate(hero, field) {
+  const text = getTextField(hero, PLACE_FIELDS, field);
+  if (!(text instanceof Error)) {
+    if (text !== null) return parseInteger(text);
+  }
+  const stated = getNumberField(hero, PLACE_FIELDS, field);
+  if (stated instanceof Error) return null;
+  return stated;
+}
+
+// src/ports/margonem-engine-tooltip.ts
+var BLOCK_LANDING = {
+  on: "on",
+  off: "off",
+  kept: "kept",
+  refused: "refused"
+};
+var WARRIOR_ELEMENT_FIELD = "$";
+var TOOLTIP_TARGETS = ".canvas-warrior-icon, .grave-warrior-other, .grave-warrior-npc";
+var FIND_METHOD = "find";
+var READ_METHOD = "getTipData";
+var REPLACE_METHOD = "tip";
+var APPEND_METHOD = "concatTip";
+var TELL_METHOD = "trigger";
+var TELL_EVENT = "tipupdate";
+var CLIENT_BREAK = "<br>";
+var ROWS_WRITTEN_MAXIMUM = 20;
+function initMargonemEngineTooltip(browserWindow) {
+  let blocksById = /* @__PURE__ */ new Map();
+  return {
+    writeRows(rowsByCombatantId) {
+      const asked = [
+        ...rowsByCombatantId.values()
+      ].filter((rows) => rows.length > 0).length;
+      assert(asked <= COMBATANTS_MAXIMUM, "no more blocks than a fight puts on a board");
+      const warriorsById = attempt(() => {
+        const battle = readMargonemEngineBattle(browserWindow);
+        if (battle instanceof Caught) return battle;
+        const warriors = readMargonemEngineWarriorsNamed(battle);
+        if (warriors instanceof Error) return warriors;
+        const drawnById = /* @__PURE__ */ new Map();
+        for (const warrior of warriors) {
+          const id = warrior[WARRIOR_ID_KEY];
+          if (typeof id !== "number") continue;
+          assert(!drawnById.has(id), "the page's warriors are read each id once");
+          drawnById.set(id, warrior);
+        }
+        assert(drawnById.size <= warriors.length, "a fighter drawn is one the page holds");
+        return drawnById;
+      });
+      if (warriorsById instanceof MargonemEngineWarriorsExceeded) return warriorsById;
+      if (warriorsById instanceof Caught) return warriorsById;
+      if (warriorsById instanceof MargonemEngineWarriorCollectionAbsent) {
+        return {
+          written: 0,
+          refused: asked
+        };
+      }
+      if (warriorsById instanceof MargonemEngineWarriorsAbsent) {
+        return {
+          written: 0,
+          refused: 0
+        };
+      }
+      const nextBlocksById = new Map(blocksById);
+      const blocksWritten = attempt(() => {
+        const counts = {
+          written: 0,
+          refused: 0
+        };
+        for (const [id, warrior] of warriorsById) {
+          const block = encodeTooltipBlock(rowsByCombatantId.get(id) ?? []);
+          const blockBefore = nextBlocksById.get(id) ?? null;
+          const { landing, blockLeft } = writeMargonemEngineWarriorBlock(warrior, block, blockBefore);
+          if (landing === BLOCK_LANDING.on) {
+            assert(blockLeft !== null, "a block on is a block remembered");
+            assert(blockLeft.composed === block, "and the one composed now");
+            nextBlocksById.set(id, blockLeft);
+            counts.written += 1;
+          } else if (landing === BLOCK_LANDING.off) {
+            nextBlocksById.delete(id);
+          } else if (landing === BLOCK_LANDING.refused) {
+            if (block.length > 0) counts.refused += 1;
+          } else assert(landing === BLOCK_LANDING.kept, "a tooltip left as it was");
+        }
+        return counts;
+      });
+      for (const id of [
+        ...nextBlocksById.keys()
+      ]) {
+        if (!warriorsById.has(id)) nextBlocksById.delete(id);
+      }
+      assert(nextBlocksById.size <= COMBATANTS_MAXIMUM, "remembered blocks stay one board's worth");
+      blocksById = nextBlocksById;
+      if (blocksWritten instanceof Error) return blocksWritten;
+      assert(blocksWritten.written + blocksWritten.refused <= asked, "no more blocks landed or were refused than were composed");
+      return blocksWritten;
+    }
+  };
+}
+function encodeTooltipBlock(rows) {
+  assert(rows.length <= ROWS_WRITTEN_MAXIMUM, "a block handed over is a stated length");
+  const text = rows.map((row) => `${CLIENT_BREAK}${row}`).join("");
+  if (text.length > 0) assert(text.startsWith(CLIENT_BREAK), "it opens on the client's break");
+  return text;
+}
+function writeMargonemEngineWarriorBlock(warrior, block, blockBefore) {
+  const kept = {
+    landing: BLOCK_LANDING.kept,
+    blockLeft: null
+  };
+  const refused = {
+    landing: BLOCK_LANDING.refused,
+    blockLeft: null
+  };
+  const warriorElement = warrior[WARRIOR_ELEMENT_FIELD];
+  if (!isRecord(warriorElement)) return kept;
+  const find = warriorElement[FIND_METHOD];
+  if (typeof find !== "function") return refused;
+  const targets = Reflect.apply(find, warriorElement, [
+    TOOLTIP_TARGETS
+  ]);
+  if (!isTooltipTargets(targets)) return refused;
+  const registryText = targets.getTipData();
+  if (typeof registryText !== "string") return refused;
+  const rows = block.split(CLIENT_BREAK).slice(1);
+  if (blockBefore !== null) {
+    const blockIndex = registryText.lastIndexOf(blockBefore.held);
+    if (blockIndex !== -1) {
+      if (blockBefore.composed === block) {
+        return {
+          landing: BLOCK_LANDING.on,
+          blockLeft: blockBefore
+        };
+      }
+      const theirs = registryText.slice(0, blockIndex) + registryText.slice(blockIndex + blockBefore.held.length);
+      if (theirs.length === 0) {
+        if (block.length === 0) return kept;
+        const [firstRow, ...laterRows] = rows;
+        assert(firstRow !== void 0, "a block composed holds a row");
+        assert(firstRow.length > 0, "a tooltip is never replaced by nothing");
+        targets.tip(firstRow);
+        for (const row of laterRows) targets.concatTip(row);
+        targets.trigger(TELL_EVENT);
+        const blockLeft = {
+          composed: block,
+          held: rows.join(CLIENT_BREAK)
+        };
+        return {
+          landing: BLOCK_LANDING.on,
+          blockLeft
+        };
+      }
+      targets.tip(theirs);
+    }
+  }
+  if (block.length === 0) return {
+    landing: BLOCK_LANDING.off,
+    blockLeft: null
+  };
+  for (const row of rows) targets.concatTip(row);
+  targets.trigger(TELL_EVENT);
+  return {
+    landing: BLOCK_LANDING.on,
+    blockLeft: {
+      composed: block,
+      held: block
+    }
+  };
+}
+function isTooltipTargets(targetsCandidate) {
+  if (!isRecord(targetsCandidate)) return false;
+  if (typeof targetsCandidate[READ_METHOD] !== "function") return false;
+  if (typeof targetsCandidate[REPLACE_METHOD] !== "function") return false;
+  if (typeof targetsCandidate[APPEND_METHOD] !== "function") return false;
+  return typeof targetsCandidate[TELL_METHOD] === "function";
+}
+
+// src/ports/margonem-client-build.ts
+var BUILD_CHARACTERS_MINIMUM = 8;
+var SCRIPT_NAME_HEAD = "main.min";
+var SCRIPT_NAME_TAIL = ".js";
+var OPTIONAL_SEPARATOR = ".";
+var BUILD_DASH = "-";
+var BUILD_UNDERSCORE = "_";
+var SCRIPT_NAME_LOOKS_MAXIMUM = 256;
+var SCRIPTS_MAXIMUM = 4096;
+function initMargonemClientBuild(readScriptSources) {
+  return {
+    readBuildId() {
+      const sources = attempt(() => readScriptSources());
+      if (sources instanceof Error) return sources;
+      const walked = Math.min(sources.length, SCRIPTS_MAXIMUM);
+      for (let scriptIndex = 0; scriptIndex < walked; scriptIndex += 1) {
+        const source = sources[scriptIndex];
+        if (typeof source !== "string") continue;
+        const build = parseMargonemClientBuildId(source);
+        if (build !== null) return build;
+      }
+      return new MargonemValueAbsent(MARGONEM_VALUE.build);
+    }
+  };
+}
+function parseMargonemClientBuildId(text) {
+  const span = lookupScriptNameSpan(text);
+  if (span === null) return null;
+  return text.slice(span.buildStart, span.buildEnd);
+}
+function lookupScriptNameSpan(text) {
+  let from = 0;
+  for (let look = 0; look < SCRIPT_NAME_LOOKS_MAXIMUM; look += 1) {
+    const head = text.indexOf(SCRIPT_NAME_HEAD, from);
+    if (head === -1) return null;
+    from = head + 1;
+    let buildStart = head + SCRIPT_NAME_HEAD.length;
+    if (text.charAt(buildStart) === OPTIONAL_SEPARATOR) buildStart += 1;
+    const buildEnd = lookupEndOfRun(text, buildStart, RUN_CHARACTERS_MAXIMUM, isBuildCharacterAt);
+    if (buildEnd === null) continue;
+    if (buildEnd - buildStart < BUILD_CHARACTERS_MINIMUM) continue;
+    if (!text.startsWith(SCRIPT_NAME_TAIL, buildEnd)) continue;
+    assert(head < buildStart, "a name starts before the id inside it");
+    return {
+      nameStart: head,
+      buildStart,
+      buildEnd
+    };
+  }
+  return null;
+}
+function isBuildCharacterAt(text, index) {
+  const character = text.charAt(index);
+  if (character === BUILD_DASH) return true;
+  if (character === BUILD_UNDERSCORE) return true;
+  if (character >= "0") {
+    if (character <= "9") return true;
+  }
+  if (character >= "a") {
+    if (character <= "z") return true;
+  }
+  if (character >= "A") return character <= "Z";
+  return false;
+}
+
+// src/ports/margonem-client-dictionary.ts
+var TRANSLATE_FIELD = "_t";
+var DIRECTION_SIGNS = "+-";
+var HOLE_MARK = "%";
+var FULL_STOP = ".";
+var ENTRY_LENGTH_MAXIMUM = 4096;
+function initMargonemClientDictionary(browserWindow) {
+  return {
+    readLabel(labelId, category) {
+      assert(labelId.length > 0, "an id asked of the client is one the panel named");
+      if (category !== void 0) assert(category.length > 0, "and filed somewhere");
+      const dictionaryText = attempt(() => {
+        if (!isRecord(browserWindow)) return null;
+        const translate = browserWindow[TRANSLATE_FIELD];
+        if (typeof translate !== "function") return null;
+        const translation = Reflect.apply(translate, browserWindow, [
+          labelId,
+          null,
+          category
+        ]);
+        if (typeof translation !== "string") return null;
+        return translation;
+      });
+      if (dictionaryText instanceof Error) return dictionaryText;
+      if (dictionaryText === null) return new MargonemValueAbsent(MARGONEM_VALUE.label);
+      if (dictionaryText.length > ENTRY_LENGTH_MAXIMUM) {
+        return new MargonemValueAbsent(MARGONEM_VALUE.label);
+      }
+      const label = parseLabel(dictionaryText);
+      if (label === null) return new MargonemValueAbsent(MARGONEM_VALUE.label);
+      return label;
+    }
+  };
+}
+function parseLabel(dictionaryText) {
+  assert(dictionaryText.length <= ENTRY_LENGTH_MAXIMUM, "an entry read for a label stays inside that bound");
+  if (hasHole(dictionaryText)) return null;
+  const firstCharacter = dictionaryText[0];
+  const isSigned = firstCharacter === void 0 ? false : DIRECTION_SIGNS.includes(firstCharacter);
+  const unsigned = (isSigned ? dictionaryText.slice(1) : dictionaryText).trim();
+  assert(unsigned.length <= dictionaryText.length, "taking a sign off never lengthens an entry");
+  const label = (unsigned.endsWith(FULL_STOP) ? unsigned.slice(0, -1) : unsigned).trim();
+  if (label.length === 0) return null;
+  assert(!hasHole(label), "a label carries no hole the client would have filled");
+  assert(label.length <= dictionaryText.length, "and is no longer than the entry it was read out of");
+  return label;
+}
+function hasHole(dictionaryText) {
+  assert(dictionaryText.length <= ENTRY_LENGTH_MAXIMUM, "text walked for a hole stays inside its bound");
+  const open = dictionaryText.indexOf(HOLE_MARK);
+  if (open === -1) return false;
+  return dictionaryText.indexOf(HOLE_MARK, open + 1) !== -1;
+}
+
+// src/ports/browser-time.ts
+var DAY_MAXIMUM = 31;
+var MONTH_MAXIMUM = 12;
+var FIRST_MONTH_OFFSET = 1;
+var HOUR_MAXIMUM = 23;
+var MINUTE_MAXIMUM = 59;
+function initBrowserClock(date) {
+  return {
+    // ⚠️ A page's `Date` is somebody else's, and a now that is no whole millisecond past nought
+    // breaks it as a throw would: it is answered as one, and nothing is kept under it.
+    readNowMilliseconds: () => attempt(() => {
+      const now = date.now();
+      assert(typeof now === "number", "a page's now is a number");
+      assert(Number.isSafeInteger(now), "of whole milliseconds");
+      assert(now >= 0, "counted from the clock's nought");
+      return now;
+    }),
+    readMoment(atMilliseconds) {
+      assert(Number.isSafeInteger(atMilliseconds), "a moment asked about is one a clock stated");
+      const moment = attempt(() => {
+        const dateValue = new date(atMilliseconds);
+        const day = readMomentPart(dateValue.getDate?.(), 1, DAY_MAXIMUM);
+        const monthFromZero = readMomentPart(dateValue.getMonth?.(), 0, MONTH_MAXIMUM - FIRST_MONTH_OFFSET);
+        const hour = readMomentPart(dateValue.getHours?.(), 0, HOUR_MAXIMUM);
+        const minute = readMomentPart(dateValue.getMinutes?.(), 0, MINUTE_MAXIMUM);
+        if (day === null) return null;
+        if (monthFromZero === null) return null;
+        if (hour === null) return null;
+        if (minute === null) return null;
+        return {
+          day,
+          month: monthFromZero + FIRST_MONTH_OFFSET,
+          hour,
+          minute
+        };
+      });
+      if (moment instanceof Error) return null;
+      return moment;
+    },
+    readTimestampText(atMilliseconds) {
+      assert(Number.isSafeInteger(atMilliseconds), "a moment written down is one a clock stated");
+      return attempt(() => {
+        const timestampText = new date(atMilliseconds).toISOString();
+        assert(typeof timestampText === "string", "a page's clock writes a moment as text");
+        return timestampText;
+      });
+    }
+  };
+}
+function readMomentPart(momentPart, minimum, maximum) {
+  assert(minimum <= maximum, "a range is read low to high");
+  if (typeof momentPart !== "number") return null;
+  if (!Number.isSafeInteger(momentPart)) return null;
+  if (momentPart < minimum) return null;
+  if (momentPart <= maximum) return momentPart;
+  return null;
+}
+function initBrowserFrames(frames) {
+  return {
+    requestFrame(step, onStepFailure) {
+      const runGuardedStep = () => {
+        const ran = attempt(step);
+        if (!(ran instanceof Error)) return;
+        void attempt(() => onStepFailure(ran));
+      };
+      const handle = attempt(() => frames.requestAnimationFrame(runGuardedStep));
+      if (handle instanceof Error) return handle;
+      return {
+        cancel: () => attempt(() => frames.cancelAnimationFrame(handle))
+      };
+    }
+  };
+}
+function initBrowserInterval(timers) {
+  return {
+    every(step, everyMilliseconds, onStepFailure) {
+      assert(Number.isSafeInteger(everyMilliseconds), "a step repeats every whole millisecond");
+      assert(everyMilliseconds > 0, "and some time passes between two of them");
+      const runGuardedStep = () => {
+        const ran = attempt(step);
+        if (!(ran instanceof Error)) return;
+        void attempt(() => onStepFailure(ran));
+      };
+      const handle = attempt(() => timers.setInterval(runGuardedStep, everyMilliseconds));
+      if (handle instanceof Error) return handle;
+      return {
+        cancel: () => attempt(() => timers.clearInterval(handle))
+      };
+    }
+  };
+}
+
+// src/ports/browser-console.ts
+var BRAND = "MargoMeter/Panel";
+function initBrowserConsole(browserConsole) {
+  return {
+    writeBrandedLine(kind, detail) {
+      void attempt(() => browserConsole.error(`${BRAND} ${kind}`, detail));
+    }
+  };
+}
+
+// src/ports/browser-file.ts
+var FileApiAbsent = class extends Error {
+  name = "FileApiAbsent";
+};
+var DOWNLOAD_ANCHOR_CLASS = "MargoMeter-download";
+var FILE_TYPE = "application/json";
+function initBrowserFile(downloads) {
+  return {
+    writeFile(name, text, onLateFailure) {
+      assert(name.length > 0, "a file handed over is named");
+      assert(text.length > 0, "and says something");
+      if (downloads === null) return new FileApiAbsent();
+      const url = attempt(() => {
+        return downloads.createObjectURL(downloads.createBlob(text, FILE_TYPE));
+      });
+      if (url instanceof Error) return url;
+      if (url.length === 0) return new FileApiAbsent();
+      const wasClicked = attempt(() => {
+        const anchor = downloads.createAnchor();
+        if (anchor === null) return false;
+        anchor.href = url;
+        anchor.download = name;
+        anchor.className = DOWNLOAD_ANCHOR_CLASS;
+        downloads.appendAnchor(anchor);
+        try {
+          anchor.click();
+        } finally {
+          anchor.remove();
+        }
+        return true;
+      });
+      const releaseObjectUrl = () => {
+        const revoked = attempt(() => downloads.revokeObjectURL(url));
+        if (revoked instanceof Error) void attempt(() => onLateFailure(revoked));
+      };
+      const scheduled = attempt(() => downloads.setTimeout(releaseObjectUrl, 0));
+      if (scheduled instanceof Error) return scheduled;
+      if (wasClicked instanceof Error) return wasClicked;
+      if (!wasClicked) return new FileApiAbsent();
+      return void 0;
+    }
+  };
+}
+
+// src/ports/browser-surroundings.ts
+var LOCATION_FIELD = "location";
+var HOST_FIELD = "hostname";
+var NAVIGATOR_FIELD = "navigator";
+var USER_AGENT_FIELD = "userAgent";
+var HOST_SEPARATOR = ".";
+function initBrowserSurroundings(browserWindow) {
+  return {
+    readWorld() {
+      const hostText = attempt(() => readBrowserText(browserWindow, LOCATION_FIELD, HOST_FIELD));
+      if (hostText instanceof Error) return null;
+      return parseWorld(hostText ?? "");
+    },
+    readUserAgent() {
+      const userAgent = attempt(() => readBrowserText(browserWindow, NAVIGATOR_FIELD, USER_AGENT_FIELD));
+      if (userAgent instanceof Error) return null;
+      return userAgent;
+    }
+  };
+}
+function readBrowserText(browserWindow, memberName, field) {
+  assert(memberName.length > 0, "a field of the page is asked for by name");
+  if (!isRecord(browserWindow)) return null;
+  const member = browserWindow[memberName];
+  if (!isRecord(member)) return null;
+  const text = member[field];
+  if (typeof text !== "string") return null;
+  if (text.length === 0) return null;
+  return text;
+}
+function parseWorld(host) {
+  const end = host.indexOf(HOST_SEPARATOR);
+  const world = end === -1 ? host : host.slice(0, end);
+  assert(world.length <= host.length, "a world is part of the host it was read off");
+  if (world.length === 0) return null;
+  return world;
+}
+
+// src/ui/panel-words.ts
+var CAVEAT = {
+  reduction: "reduction",
+  turns: "turns",
+  unannounced: "unannounced",
+  undivided: "undivided"
+};
+var PANEL_REGION = {
+  header: "header",
+  strips: "strips",
+  crumb: "crumb",
+  list: "list",
+  pinned: "pinned",
+  sides: "sides",
+  outside: "outside",
+  suspicions: "suspicions",
+  defects: "defects",
+  /** The card a row opens. It is not a region of the panel's frame, and it is drawn like one. */
+  card: "card",
+  /** The window beside the panel. Its own region, drawn and undrawn like any other. */
+  helper: "helper"
+};
+var PANEL_DEFECT_KIND = {
+  kept: "kept",
+  keeping: "keeping",
+  mount: "mount",
+  region: "region",
+  reading: "reading",
+  figures: "figures",
+  gesture: "gesture",
+  file: "file",
+  engine: "engine"
+};
+var SUSPECT_MARK = "\u26A0 ";
+var DEFECT_MARK = "\u2716 ";
+var TURN_MARK = "\u25B8 ";
+var CAVEAT_MARK = "i";
+var PANEL_WORDS = {
+  title: "MargoMeter",
+  // Neither says "bez": the figure was placed, and it is the person that was never named.
+  withoutActor: "Nieznany sprawca",
+  withoutTarget: "Nieznany cel",
+  unknown: "Nie wiadomo",
+  unknownHowMany: "Nie wiadomo, ile",
+  nothingYet: "Nikogo tu jeszcze nie ma.",
+  noFightYet: "Nie by\u0142o jeszcze walki.",
+  // Never "no fight yet": there was one, and it is this panel that could not show it.
+  fightUnread: "Nie da si\u0119 pokaza\u0107 tej walki.",
+  // Never "no fight yet" either: the shelf holds this one, and it is the one that would not read.
+  keptUnread: "Nie da si\u0119 odczyta\u0107 zapisanej walki.",
+  // What pointing at such a fight on the shelf says: what it will not do, never why.
+  keptUnreadNote: "Nie da si\u0119 odczyta\u0107 tej walki, wi\u0119c nie otworzy si\u0119 ani nie zapisze do pliku.",
+  noSides: "brak sk\u0142adu",
+  fights: "Walki",
+  backFromFights: "wr\xF3\u0107",
+  options: "Opcje",
+  backFromOptions: "wr\xF3\u0107",
+  storage: "Zapisane walki",
+  typeSize: "Rozmiar czcionki",
+  windowSize: "Rozmiar okien",
+  version: "Wersja dodatku",
+  resizeHint: "Rozmiar zmienisz, ci\u0105gn\u0105c prawy dolny r\xF3g okna.",
+  sizeOwn: "w\u0142asny",
+  sizeDefault: "domy\u015Blny",
+  sizeReset: "przywr\xF3\u0107",
+  ourSide: "My",
+  theirSide: "Oni",
+  withoutSide: "Bez strony",
+  wholeFight: "Ca\u0142a walka",
+  openFights: "Poka\u017C albo schowaj zapisane walki",
+  openOptions: "Poka\u017C albo schowaj opcje",
+  back: "sk\u0142ad",
+  shelfEmpty: "Nie ma jeszcze zapisanych walk.",
+  dealtTo: "KOMU",
+  takenFrom: "OD KOGO",
+  damageKind: "TYP OBRA\u017BE\u0143",
+  healthSource: "OD CZEGO",
+  skills: "CZYM",
+  withoutKind: "Bez podanego typu",
+  /** Between the last two kinds a pool's part may have been, when the blow does not say which. */
+  eitherKind: "lub",
+  /** What a bound would not give a row to, summed. Never the row that closes a section: that
+     * one is what the game named nothing for, and this is what it named (`develop ADR 0055`). */
+  restOfKinds: "pozosta\u0142e",
+  /**
+     * The section under the list, and the row inside it. **Never `pozostałe`**, which the line
+     * above already is: that one is a bound's leftovers inside a cut, and a reader meeting one
+     * word over two different claims has no way to tell which they are looking at (**N9**).
+     */
+  outsideRanking: "POZA RANKINGIEM",
+  outsideRow: "Poza wierszami",
+  outsideNote: "Tej cz\u0119\u015Bci nie ma nigdzie wy\u017Cej \u2014 ani na wierszu postaci, ani pod list\u0105.",
+  restNote: "Za du\u017Co pozycji, \u017Ceby pokaza\u0107 ka\u017Cd\u0105 \u2014 te s\u0105 tu zsumowane.",
+  share: "Udzia\u0142 w walce",
+  shareOfFigure: "Udzia\u0142 w tej liczbie",
+  collapse: "Zwi\u0144 okno",
+  expand: "Rozwi\u0144 okno",
+  saveFight: "Zapisz t\u0119 walk\u0119 do pliku: policzone liczby i surowy zapis prosto z gry"
+};
+var OUTCOME_WORDS = {
+  won: "wygrana",
+  lost: "przegrana",
+  drawn: "remis",
+  fled: "ucieczka"
+};
+var OUTCOME_LETTERS = {
+  won: "W",
+  lost: "P",
+  drawn: "R",
+  fled: "U"
+};
+var NOTHING_WORDS = {
+  damageDealt: "Nie zada\u0142a nikomu obra\u017Ce\u0144.",
+  damageTaken: "Nic jej nie uby\u0142o.",
+  healthGiven: "Nikogo nie leczy\u0142a.",
+  healthRestored: "Nikt jej nie leczy\u0142."
+};
+var UNANNOUNCED_WORDS = {
+  damageDealt: "Zwyk\u0142y cios",
+  damageTaken: "Zwyk\u0142y cios",
+  healthGiven: "Bez podanej umiej\u0119tno\u015Bci",
+  healthRestored: "Bez podanej umiej\u0119tno\u015Bci"
+};
+var NOUN_WORDS = {
+  damage: "Obra\u017Cenia",
+  healing: "Leczenie"
+};
+var DIRECTION_WORDS = {
+  damageDealt: "zadane",
+  damageTaken: "otrzymane",
+  healthGiven: "dane",
+  healthRestored: "otrzymane"
+};
+var SIDE_WORDS = {
+  everyone: "Wszyscy",
+  reader: PANEL_WORDS.ourSide,
+  opposing: PANEL_WORDS.theirSide
+};
+var CARD_METRIC_WORDS = {
+  damageDealt: "Zadane",
+  damageTaken: "Otrzymane",
+  healthGiven: "Leczenie dane",
+  healthRestored: "Leczenie otrzymane"
+};
+var UNNAMED_END_NOTES = {
+  actor: {
+    damage: "Gra nie m\xF3wi, kto to zada\u0142 \u2014 wiadomo tylko, kto to otrzyma\u0142.",
+    healing: "Gra nie m\xF3wi, kto leczy\u0142 \u2014 wiadomo tylko, komu \u017Cycia przyby\u0142o."
+  },
+  target: {
+    damage: "Gra nie m\xF3wi, w kogo \u2014 wiadomo tylko, \u017Ce cios wszed\u0142.",
+    healing: "Gra nie m\xF3wi, komu \u2014 wiadomo tylko, \u017Ce leczenie wesz\u0142o."
+  }
+};
+var CAVEATS = Object.values(CAVEAT);
+var UNANNOUNCED_CAVEATS = {
+  damage: CAVEAT.unannounced,
+  healing: null
+};
+var APART_NOTE = "Nikt tego nie ma na swoim wierszu \u2014 dlatego stoi osobno.";
+var PINNED_PLACING_NOTES = {
+  dealtWithNoActor: APART_NOTE,
+  givenWithNoActor: APART_NOTE,
+  takenWithNoTarget: APART_NOTE,
+  takenWithNoActor: "Te obra\u017Cenia s\u0105 ju\u017C policzone wy\u017Cej, u tych, kt\xF3rzy je otrzymali.",
+  restoredWithNoActor: "To leczenie jest ju\u017C policzone wy\u017Cej, u tych, kt\xF3rzy je dostali."
+};
+var PINNED_SCOPE_NOTES = {
+  dealtWithNoActor: "Tylko z pokazanej dru\u017Cyny \u2014 to ona to zada\u0142a, cho\u0107 gra nie m\xF3wi kto.",
+  givenWithNoActor: "Tylko z pokazanej dru\u017Cyny \u2014 to ona to wyleczy\u0142a, cho\u0107 gra nie m\xF3wi kto.",
+  takenWithNoActor: "Tylko z pokazanej dru\u017Cyny \u2014 liczone po tym, kto je otrzyma\u0142.",
+  takenWithNoTarget: "Tylko z pokazanej dru\u017Cyny \u2014 gra nie m\xF3wi, kogo z niej.",
+  restoredWithNoActor: "Tylko z pokazanej dru\u017Cyny \u2014 liczone po tym, komu przyby\u0142o \u017Cycia."
+};
+var OPENED_UNNAMED_STANDING_NOTES = {
+  damageDealt: `W obra\u017Ceniach otrzymanych ta cz\u0119\u015B\u0107 stoi osobno, w wierszu \u201E${PANEL_WORDS.withoutTarget}\u201D pod list\u0105.`,
+  damageTaken: `Pod list\u0105 ta cz\u0119\u015B\u0107 jest te\u017C w wierszu \u201E${PANEL_WORDS.withoutActor}\u201D, razem z reszt\u0105 takich obra\u017Ce\u0144.`,
+  healthGiven: null,
+  healthRestored: `Pod list\u0105 ta cz\u0119\u015B\u0107 jest te\u017C w wierszu \u201E${PANEL_WORDS.withoutActor}\u201D, razem z reszt\u0105 takiego leczenia.`
+};
+var NO_KIND_NOTES = {
+  damage: "Gra nie m\xF3wi, jakiego typu by\u0142y te obra\u017Cenia.",
+  healing: "Gra nie m\xF3wi, od czego by\u0142o to leczenie."
+};
+var NEITHER_END_WORDS = {
+  label: "Nie do przypisania",
+  note: "Ta cz\u0119\u015B\u0107 nie trafi\u0142a na \u017Caden wiersz \u2014 nie wiadomo ani kto, ani komu."
+};
+var CARD_WORDS = {
+  /**
+     * The heading over the figures the fight is summed over, and it is what the two blow headings
+     * below are read against: a card whose blocks each name their own scope needs the widest one
+     * named too, or the widest reads as the default every other figure is a part of.
+     */
+  wholeFight: "W ca\u0142ej walce",
+  /**
+     * **It says what the protocol stated, not what this reader summed.** `surowe z ciosów` named a
+     * scope, and the scope was not true: `-dmga` — *obrażenia nieuchronne* — never carries a
+     * `+dmga` half, because nothing reduces it (`docs/protocol-keys.md`), so the figure
+     * sits below the blows' own applied total on 5 of the 113 rows stating one, measured over
+     * `captures/` on 2026-09-14. Worded as what was **stated** it claims nothing about
+     * coverage, which is the register the rest of this file's sentences are written in (**L3**).
+     */
+  raw: "Podane przed redukcj\u0105",
+  blows: "Ciosy",
+  blowsWithoutSkill: "bez umiej\u0119tno\u015Bci",
+  skillUses: "U\u017Cycia umiej\u0119tno\u015Bci",
+  /**
+     * **Two labels, because the card states one figure or two**: which one is whether a lost turn
+     * was heard anywhere in this fight, and where none was the second half is unread, not nought.
+     * The longer one is exactly `LABEL_CHARACTERS_MAXIMUM` long, which is why its slash carries
+     * no space where the figures beside it do. `develop ADR 0110`.
+     */
+  turns: "Tury wykonane",
+  turnsWithLost: "Tury wykonane/utracone",
+  prevented: "Zatrzymane",
+  blowsCritical: "Krytyki",
+  /** A subset of the line above, which is what a sub-line under it means. */
+  blowsCriticalOffhand: "broni\u0105 pomocnicz\u0105",
+  /**
+     * A heading each, because the two runs stand together and half the keys under them belong to
+     * the other end: `+pierce` fires when its holder attacks and `-evade` when its holder is hit
+     * (`docs/protocol-keys.md`). `develop ADR 0032`.
+     */
+  striking: "W ciosach zadanych",
+  struck: "W ciosach przyj\u0119tych",
+  /** Said only where the row under the card states a narrower figure than the card does. */
+  scope: "Liczby z ca\u0142ej walki.",
+  /**
+     * Said by the end left out of an opened figure: the section over it comes to a hundred with
+     * that row, and a reader adding up the rest is otherwise left a part short.
+     */
+  insideSection: "Ta cz\u0119\u015B\u0107 jest wliczona w sum\u0119 nad sekcj\u0105 \u2014 bez niej udzia\u0142y nie da\u0142yby 100%.",
+  /**
+     * A heading over a run of parts and **never a sum of them**: points of armour and percentage
+     * points of resistance stand under it, and one number over both would be two quantities
+     * wearing one word (`src/core/battle-event.ts`).
+     */
+  destroyed: "Zniszczone",
+  /**
+     * The run of its own the legendary bonuses stand in, at whichever end of a blow each fired —
+     * the line under it names which. Those held for the whole fight stand after the colon in one
+     * sentence, because a count of them would read as a count of firings (ADR 0029).
+     */
+  legendary: "Bonusy legendarne",
+  legendaryHeld: "Przez ca\u0142\u0105 walk\u0119:",
+  /**
+     * Somebody else's bonuses, in the run after, each by its name and count. The word is the one
+     * the screens already use for what reached a combatant (ADR 0032).
+     */
+  legendaryReached: "Otrzymane bonusy legendarne",
+  /**
+     * The instruction a row gives, and it stands wherever pressing leads somewhere —
+     * `DESIGN.md` owns that rule. The right press is not named beside it: a reader on the
+     * ranking has nowhere to go back to, so a row's card would promise a gesture that does nothing
+     * there.
+     */
+  gesture: "LPM \u2014 rozwi\u0144 wiersz",
+  /**
+     * The way back, and it stands on the crumb alone — which is drawn only where a level is open,
+     * so both gestures it names do something wherever it is read. The second is the cheapest
+     * gesture the panel has and the only one nothing else states. `develop ADR 0086`.
+     */
+  gestureBack: "LPM tutaj \u2014 wr\xF3\u0107 o krok",
+  gestureBackAnywhere: "PPM gdziekolwiek \u2014 wr\xF3\u0107 o krok",
+  /**
+     * Said where the window is too short for the whole card, which is the one thing this panel
+     * cannot answer by drawing less of a figure. **L3**: what is not shown, never which of our
+     * runs was dropped to make it fit.
+     */
+  cut: "Nie wszystko si\u0119 mie\u015Bci w tym oknie."
+};
+var CAVEAT_NOTES = {
+  reduction: "Pancerza ani odporno\u015Bci gra nie podaje, wi\u0119c z tych liczb nie wyliczysz ca\u0142ej redukcji.",
+  turns: "Gra nie podaje, ile tur kto\u015B dosta\u0142, tylko co w nich zrobi\u0142.",
+  unannounced: "Gra nie m\xF3wi, czym te ciosy zadano \u2014 wiadomo tylko, \u017Ce pad\u0142y.",
+  undivided: "Absorpcj\u0119 gra podaje jedn\u0105 liczb\u0105 na ca\u0142y cios, wi\u0119c nie wiadomo, ile z niej przypada na kt\xF3ry typ."
+};
+var DEFENCE_WORD_BY_KEY = new Map(Object.entries({
+  blok: "blok",
+  absorb: "absorpcja",
+  absorbm: "absorpcja magiczna"
+}));
+var PROC_WORD_BY_KEY = new Map(Object.entries({
+  "+crit": "krytyk",
+  /** Never drawn beside the others: the card states it under the count it is a part of. */
+  "+of_crit": "broni\u0105 pomocnicz\u0105",
+  "+pierce": "przebicie",
+  "-pierceb": "blok przebicia",
+  "+stun": "og\u0142uszenie",
+  "+stun2": "og\u0142uszenie",
+  "+stun2-c": "og\u0142uszenie",
+  "+stun2-d": "og\u0142uszenie",
+  "+stun2-f": "og\u0142uszenie",
+  "+stun2-l": "og\u0142uszenie",
+  "+freeze": "zamro\u017Cenie",
+  "+wound": "g\u0142\u0119boka rana",
+  /**
+     * The same wound off the auxiliary weapon, sharing the word rather than taking one of its own:
+     * a second row would split one mechanic over the hand that threw it, which is a difference the
+     * five stun keys were not given either.
+     */
+  "+of_wound": "g\u0142\u0119boka rana",
+  /** A deep wound something weakened, which is a deep wound: `PROC_SUB_WORD_BY_KEY` says so. */
+  "+woundpoison": "g\u0142\u0119boka rana",
+  "+woundfrost": "g\u0142\u0119boka rana",
+  "+woundmagic": "g\u0142\u0119boka rana",
+  "+of_woundpoison": "g\u0142\u0119boka rana",
+  "+of_woundmagic": "g\u0142\u0119boka rana",
+  "+fastarrow": "szybka strza\u0142a",
+  "+swing": "szeroki zamach",
+  "+acdmg_destroyed": "pancerz zniszczony",
+  "-evade": "unik",
+  "-parry": "parowanie",
+  "-contra": "kontra",
+  "-arrowblock": "blok strza\u0142y"
+}));
+var PROC_SUB_WORD_BY_KEY = new Map(Object.entries({
+  "+woundpoison": "os\u0142abiona",
+  "+woundfrost": "os\u0142abiona",
+  "+woundmagic": "os\u0142abiona",
+  "+of_woundpoison": "os\u0142abiona",
+  "+of_woundmagic": "os\u0142abiona"
+}));
+var CLIENT_LABEL_CHARACTERS_MAXIMUM = 64;
+var CLIENT_ID_BY_UNWORDED_KEY = new Map(Object.entries({
+  "-tenacity": "msg_-tenacity",
+  "+superspell-dispel": "msg_+dispel",
+  "+superspell-prevented": "msg_+superspell-prevented"
+}));
+var DESTROYED_WORD_BY_KEY = new Map(Object.entries({
+  acdmg: {
+    name: "pancerz",
+    unit: "pkt"
+  },
+  // The one pair here that empties the same pool in the same unit, so the names say which
+  // took it rather than what it was (`docs/protocol-keys.md`).
+  critpierce: {
+    name: "pancerz z przebicia",
+    unit: "pkt"
+  },
+  resdmg: {
+    name: "odporno\u015B\u0107",
+    unit: "p.p."
+  },
+  // The element rides after a colon rather than after "na", which the bound decides:
+  // `odporność na błyskawice` runs one character past LABEL_CHARACTERS_MAXIMUM above, and
+  // a label past it is cut by the column with nothing saying it was cut.
+  resdmgf: {
+    name: "odporno\u015B\u0107: ogie\u0144",
+    unit: "p.p."
+  },
+  resdmgc: {
+    name: "odporno\u015B\u0107: zimno",
+    unit: "p.p."
+  },
+  resdmgl: {
+    name: "odporno\u015B\u0107: b\u0142yskawice",
+    unit: "p.p."
+  },
+  // `acdmg` opening this table is one letter away and is armour in points, not this
+  // (`docs/protocol-keys.md`).
+  actdmg: {
+    name: "odporno\u015B\u0107: trucizna",
+    unit: "p.p."
+  },
+  // The article's own words, as the defence line above already draws them — one pool, one
+  // spelling on both surfaces (`develop ADR 0077`, **N13**).
+  abdest_per: {
+    name: "absorpcja",
+    unit: "pkt"
+  },
+  abmdest_per: {
+    name: "absorpcja magiczna",
+    unit: "pkt"
+  }
+}));
+var PROFESSION_WORD_BY_KEY = new Map(Object.entries({
+  w: "Wojownik",
+  p: "Paladyn",
+  t: "Tropiciel",
+  h: "\u0141owca",
+  m: "Mag",
+  b: "Tancerz ostrzy"
+}));
+var SIDE_PART_WORDS = {
+  reader: SIDE_WORDS.reader,
+  opposing: SIDE_WORDS.opposing,
+  nobody: null
+};
+var ELEMENT_WORD_BY_KEY = new Map(Object.entries({
+  dmg: "fizyczne",
+  dmgd: "dystansowe",
+  dmgo: "pomocnicze",
+  dmgf: "ogie\u0144",
+  dmgc: "zimno",
+  dmgl: "b\u0142yskawice",
+  dmga: "nieuchronne",
+  dmgp: "trucizna",
+  thirdatt: "trzeci cios"
+}));
+var HEALTH_SOURCE_WORD_BY_KEY = new Map(Object.entries({
+  heal: "przywracanie \u017Cycia",
+  heal_target: "uleczenie wskazanego",
+  legbon_holytouch_heal: "dotyk anio\u0142a",
+  legbon_lastheal: "ostatni ratunek",
+  healall_per: "uleczenie sojusznik\xF3w",
+  npc_heal: "regeneracja potwora",
+  bandage: "banda\u017Cowanie"
+}));
+var LEGENDARY_BONUS_WORD_BY_KEY = new Map(Object.entries({
+  "+legbon_curse": "Kl\u0105twa",
+  "+legbon_verycrit": "Cios bardzo krytyczny",
+  "-legbon_cleanse": "P\u0142omienne oczyszczenie",
+  "-legbon_glare": "O\u015Blepienie",
+  "+legbon_holytouch": "Dotyk anio\u0142a",
+  "+legbon_anguish": "Krwawa udr\u0119ka",
+  "-legbon_critred": "Krytyczna os\u0142ona",
+  legbon_lastheal: "Ostatni ratunek",
+  "-legbon_facade": "Fasada opieki",
+  "+legbon_puncture": "Przeszywaj\u0105ca skuteczno\u015B\u0107"
+}));
+var COUNTED_NOUN_WORDS = {
+  messages: {
+    one: "wiadomo\u015B\u0107",
+    few: "wiadomo\u015Bci",
+    many: "wiadomo\u015Bci"
+  },
+  heals: {
+    one: "uleczenie",
+    few: "uleczenia",
+    many: "ulecze\u0144"
+  },
+  fights: {
+    one: "walka",
+    few: "walki",
+    many: "walk"
+  },
+  combatants: {
+    one: "posta\u0107",
+    few: "postacie",
+    many: "postaci"
+  },
+  turns: {
+    one: "tura",
+    few: "tury",
+    many: "tur"
+  }
+};
+var HEALTH_LOSS_WORD_BY_KEY = new Map(Object.entries({
+  poison: "zatrucie",
+  fire: "podpalenie",
+  light: "pora\u017Cenie",
+  injure: "zranienie",
+  wound: "g\u0142\u0119boka rana",
+  anguish: "krwawienie",
+  heal: "ujemne przywracanie \u017Cycia"
+}));
+var TEEN_FLOOR = 12;
+var TEEN_CEILING = 14;
+var FEW_FLOOR = 2;
+var FEW_CEILING = 4;
+var TEN = 10;
+var HUNDRED = 100;
+var HELPER_WORDS = {
+  title: "Pomocnik",
+  collapse: "Zwi\u0144 Pomocnika",
+  expand: "Rozwi\u0144 Pomocnika",
+  now: "Teraz",
+  nothingHappens: "Nic si\u0119 nie dzieje.",
+  /** The two shouts share one state, so they share one heading — `develop ADR 0062`. */
+  provocation: "Prowokacja",
+  /**
+     * Between whoever is holding somebody and the shout they hold them with — `develop ADR 0097`.
+     */
+  castSeparator: "\xB7",
+  /**
+     * What a card in this window states a length under, a charge's and a shout's alike: the turns
+     * left, as the game writes a charge's (ADR 0040). Never `CARD_WORDS.turns`: that one names the
+     * turns a combatant took and carries the caveat that the game publishes none of them.
+     */
+  turnsLeft: "Zosta\u0142o",
+  /** The game's own name for it, the client's label on `DHSqC3Uh` (ADR 0038, **L2**). */
+  chargedSkill: "Cios specjalny"
+};
+var TOOLTIP_WORDS = {
+  /**
+     * ⚠️ **Two skills put a fighter here, so the row names the state and never either of them.**
+     * `Wyzywający okrzyk` and `Prowokujący okrzyk` announce the one key — 118 casts against 48 over
+     * `captures/`, 2026-09-22 — so a row reading `Wyzwany` named one of the two while the
+     * state had come from either.
+     */
+  provokedBy: "Sprowokowany przez",
+  provokedCount: "Prowokuje",
+  /** The bonus fires once a fight, so this is a state and never a count. */
+  spent: "wykorzystany",
+  turnsTaken: CARD_WORDS.turns
+};
+var STATUS_CATEGORY = "buff";
+var ADD_ON_NAME = PANEL_WORDS.title;
+var LEADING_STATUS_NAMES = [
+  SLOW_BIT_NAME,
+  HASTE_BIT_NAME
+];
+var MARKUP_OPENER = "<";
+var MARKUP_ENTITY = "&";
+var ROWS_BESIDE_THE_STATUSES = 6;
+var CHARGED_SKILL_WORDS = {
+  charging: "",
+  struck: "wykonane",
+  broken: "przerwane"
+};
+var TURN_STATE_WORDS = {
+  held: "",
+  unread: "Nie wiadomo, czyja tura.",
+  afterFight: "Walka si\u0119 sko\u0144czy\u0142a.",
+  onAuto: "Szybka walka \u2014 gra nie podaje tur."
+};
+var HELPER_ABSENCE_WORDS = {
+  noFightYet: PANEL_WORDS.noFightYet,
+  betweenFights: HELPER_WORDS.nothingHappens,
+  fightUnread: PANEL_WORDS.fightUnread
+};
+var STORAGE_WORDS = {
+  local: "na sta\u0142e",
+  session: "do zamkni\u0119cia karty",
+  memory: "tylko teraz"
+};
+var STORAGE_MEANING_WORDS = {
+  local: "Zostaj\u0105 te\u017C po zamkni\u0119ciu przegl\u0105darki.",
+  session: "Przetrwaj\u0105 od\u015Bwie\u017Cenie strony, znikn\u0105 z zamkni\u0119ciem karty.",
+  memory: "Znikn\u0105 przy od\u015Bwie\u017Ceniu strony."
+};
+var WINDOW_WORDS = {
+  meter: "Licznik",
+  helper: HELPER_WORDS.title
+};
+var TYPE_STEP_WORDS = {
+  small: "ma\u0142y",
+  medium: "\u015Bredni",
+  large: "du\u017Cy"
+};
+var STORE_REFUSED_ANSWER = "Przegl\u0105darka nie przyj\u0119\u0142a tej walki \u2014 nie zosta\u0142a zapisana. Odepnij kt\xF3r\u0105\u015B, \u017Ceby zrobi\u0107 miejsce.";
+var STORE_MADE_ROOM_ANSWER = "Zabrak\u0142o miejsca w przegl\u0105darce \u2014 najstarsze walki zosta\u0142y usuni\u0119te, \u017Ceby zmie\u015Bci\u0107 t\u0119. Przypnij te, kt\xF3re chcesz zachowa\u0107.";
+var EVERY_SLOT_PINNED_ANSWER = "Wszystkie miejsca s\u0105 zaj\u0119te przez przypi\u0119te walki \u2014 ta si\u0119 nie zapisa\u0142a.";
+var CHOICE_REFUSED_ANSWER = "Przegl\u0105darka nie zapisa\u0142a tego wyboru \u2014 zostaje tak, jak by\u0142o.";
+var MOVE_REFUSED_ANSWER = "Wybrane miejsce nie przyj\u0119\u0142o zapisanych walk \u2014 zosta\u0142y tam, gdzie by\u0142y.";
+var PIN_REFUSED_ANSWER = "Przegl\u0105darka nie zapisa\u0142a przypi\u0119cia.";
+var FIGHT_CARD_WORDS = {
+  when: "Kiedy",
+  world: "\u015Awiat",
+  character: "Posta\u0107",
+  profession: "Profesja"
+};
+var LIVE_FIGHT_WORDS = {
+  time: "teraz",
+  outcome: "trwa"
+};
+var TWO_DIGITS = 2;
+var MONTH_FIRST = 1;
+var DAY_MINIMUM = 1;
+var DAY_MAXIMUM2 = 31;
+var HOUR_MAXIMUM2 = 23;
+var MINUTE_MAXIMUM2 = 59;
+var MONTH_WORDS = [
+  "sty",
+  "lut",
+  "mar",
+  "kwi",
+  "maj",
+  "cze",
+  "lip",
+  "sie",
+  "wrz",
+  "pa\u017A",
+  "lis",
+  "gru"
+];
+var MINUS_SIGN = "-";
+var THOUSAND_DIGITS = 3;
+var THOUSAND_SEPARATOR = "\xA0";
+var THOUSAND_GROUPS_MAXIMUM = 5;
+var NAMED_ROWS_MAXIMUM = 3;
+var REGION_WORDS = {
+  header: "nag\u0142\xF3wka",
+  strips: "zak\u0142adek",
+  crumb: "\u015Bcie\u017Cki",
+  list: "listy",
+  pinned: "wiersza",
+  sides: "podsumowania stron",
+  outside: "tego, co zosta\u0142o poza rankingiem",
+  suspicions: "ostrze\u017Cenia",
+  defects: "spisu usterek",
+  card: "szczeg\xF3\u0142\xF3w wiersza",
+  [PANEL_REGION.helper]: "pomocnika"
+};
+var DEFECT_WORDS = {
+  kept: "Panel nie odczyta\u0142 tego, co mia\u0142 zapisane",
+  keeping: "Panel nie zapisa\u0142 tej walki",
+  // Said in the past: a panel that is being read got onto the page in the end, and one that
+  // never did is not there to say anything at all.
+  mount: "Panel nie od razu stan\u0105\u0142 na stronie",
+  region: "Panel nie narysowa\u0142 jednej ze swoich cz\u0119\u015Bci",
+  reading: "Panel nie przeliczy\u0142 tej walki",
+  figures: "Liczby w panelu nie zgadzaj\u0105 si\u0119 ze sob\u0105",
+  gesture: "Panel nie zareagowa\u0142 na mysz",
+  file: "Panel nie przygotowa\u0142 pliku z walk\u0105",
+  // A panel waiting for a game says what it cannot see.
+  engine: "Nie wida\u0107 walki w grze"
+};
+var SHARE_FLOOR = "<1%";
+var SHARES_MAXIMUM = 384;
+var NOBODY_TO_PAY = {
+  index: 0,
+  amount: 0,
+  points: 0,
+  remainder: 0
+};
+function getWordsForOutcome(outcome) {
+  const words = OUTCOME_WORDS[outcome];
+  return words;
+}
+function getWordsForNothing(metric) {
+  const words = NOTHING_WORDS[metric];
+  return words;
+}
+function getWordsForUnannounced(metric) {
+  const words = UNANNOUNCED_WORDS[metric];
+  return words;
+}
+function getWordsForNoun(noun) {
+  const words = NOUN_WORDS[noun];
+  return words;
+}
+function getDirectionWordsForMetric(metric) {
+  const words = DIRECTION_WORDS[metric];
+  return words;
+}
+function getWordsForSide(choice) {
+  const words = SIDE_WORDS[choice];
+  return words;
+}
+function getWordsForCardMetric(metric) {
+  const words = CARD_METRIC_WORDS[metric];
+  return words;
+}
+function getNoteForUnnamedEnd(end, noun) {
+  const words = UNNAMED_END_NOTES[end][noun];
+  return words;
+}
+function getNoteForOpenedUnnamedStanding(metric) {
+  const words = OPENED_UNNAMED_STANDING_NOTES[metric];
+  return words;
+}
+function getNoteForNoKind(noun) {
+  const words = NO_KIND_NOTES[noun];
+  return words;
+}
+function getCaveatForUnannounced(noun) {
+  return UNANNOUNCED_CAVEATS[noun];
+}
+function getCaveatForKind(kind) {
+  if (!kind.includes(KIND_ELEMENTS_SEPARATOR)) return null;
+  return CAVEAT.undivided;
+}
+function getWordsForPinnedStanding(pinnedCase) {
+  const words = PINNED_PLACING_NOTES[pinnedCase];
+  return words;
+}
+function getWordsForPinnedScope(pinnedCase) {
+  const words = PINNED_SCOPE_NOTES[pinnedCase];
+  return words;
+}
+function getNoteForCaveat(caveat) {
+  const words = CAVEAT_NOTES[caveat];
+  return words;
+}
+function getWordsForBlowKey(key, translate) {
+  const words = PROC_WORD_BY_KEY.get(key) ?? DEFENCE_WORD_BY_KEY.get(key);
+  if (words !== void 0) {
+    return words;
+  }
+  const stated = getMargonemClientWordsForKey(key, translate);
+  if (stated !== null) return stated;
+  return key;
+}
+function getMargonemClientWordsForKey(key, translate) {
+  if (translate === null) return null;
+  const id = CLIENT_ID_BY_UNWORDED_KEY.get(key);
+  if (id === void 0) return null;
+  const label = translate(id);
+  if (label === null) return null;
+  if (label.length > CLIENT_LABEL_CHARACTERS_MAXIMUM) return null;
+  if (label.length === 0) return null;
+  return label;
+}
+function getWordsForLegendaryBonus(key) {
+  return LEGENDARY_BONUS_WORD_BY_KEY.get(key) ?? key;
+}
+function getSubWordsForBlowKey(key) {
+  return PROC_SUB_WORD_BY_KEY.get(key) ?? "";
+}
+function getWordsForDestroyed(statistic) {
+  const word = DESTROYED_WORD_BY_KEY.get(statistic);
+  if (word === void 0) return statistic;
+  return word.name;
+}
+function formatDestroyed(statistic, figure) {
+  const stated = formatFigure(figure);
+  const word = DESTROYED_WORD_BY_KEY.get(statistic);
+  if (word === void 0) return stated;
+  return `${stated} ${word.unit}`;
+}
+function getWordsForProfession(profession) {
+  const words = PROFESSION_WORD_BY_KEY.get(profession);
+  if (words === void 0) return profession;
+  return words;
+}
+function formatCardSubtitle(profession, level, sideRelation) {
+  const said = [];
+  if (profession !== null) said.push(getWordsForProfession(profession));
+  if (isLevelStated(level)) said.push(`(${formatWholeUngrouped(level)})`);
+  const stated = said.join(" ");
+  const side = SIDE_PART_WORDS[sideRelation];
+  if (side === null) return stated.length === 0 ? null : stated;
+  return stated.length === 0 ? side : `${stated} \xB7 ${side}`;
+}
+function isLevelStated(level) {
+  if (level === null) return false;
+  if (!Number.isSafeInteger(level)) return false;
+  return level > 0;
+}
+function getWordsForHealthSource(source) {
+  const words = HEALTH_SOURCE_WORD_BY_KEY.get(source);
+  if (words === void 0) return source;
+  return words;
+}
+function formatDamageKind(kind) {
+  const words = ELEMENT_WORD_BY_KEY.get(kind) ?? HEALTH_LOSS_WORD_BY_KEY.get(kind);
+  if (words !== void 0) return words;
+  if (!kind.includes(KIND_ELEMENTS_SEPARATOR)) return kind;
+  const elementWords = kind.split(KIND_ELEMENTS_SEPARATOR).map((element) => {
+    return ELEMENT_WORD_BY_KEY.get(element) ?? element;
+  });
+  const leadingWords = elementWords.slice(0, -1).join(", ");
+  const lastWord = elementWords[elementWords.length - 1] ?? "";
+  return `${leadingWords} ${PANEL_WORDS.eitherKind} ${lastWord}`;
+}
+function formatCountedNoun(count, noun) {
+  if (!Number.isSafeInteger(count)) return `${PANEL_WORDS.unknownHowMany} ${noun.many}`;
+  if (count < 0) return `${PANEL_WORDS.unknownHowMany} ${noun.many}`;
+  if (count === 1) return `1 ${noun.one}`;
+  const lastTwo = count % HUNDRED;
+  const lastDigit = count % TEN;
+  if (lastTwo >= TEEN_FLOOR) {
+    if (lastTwo <= TEEN_CEILING) return `${count} ${noun.many}`;
+  }
+  if (lastDigit >= FEW_FLOOR) {
+    if (lastDigit <= FEW_CEILING) return `${count} ${noun.few}`;
+  }
+  return `${count} ${noun.many}`;
+}
+function presentTooltipRows(tooltip, translate, statusBits) {
+  const rowsMaximum = statusBits.length + ROWS_BESIDE_THE_STATUSES;
+  const said = [];
+  {
+    if (!tooltip.hasJoinedInProgress) {
+      if (tooltip.turnsTaken > 0) {
+        said.push(`${TOOLTIP_WORDS.turnsTaken}: ${formatFigure(tooltip.turnsTaken)}`);
+      }
+    }
+  }
+  {
+    const given = tooltip.holytouchHealsReceived;
+    if (tooltip.hasSpentLastheal) {
+      const lastheal = getWordsForLegendaryBonus(LASTHEAL_KEY);
+      said.push(`${lastheal}: ${TOOLTIP_WORDS.spent}`);
+    }
+    if (given !== null) {
+      const heals = formatTooltipFraction(given, HOLYTOUCH_HEALS_STATED);
+      const holytouch = getWordsForLegendaryBonus(HOLYTOUCH_DECLARATION_KEY);
+      said.push(`${holytouch}: ${heals}`);
+    }
+  }
+  {
+    if (tooltip.provokedCount > 0) {
+      const counted = formatCountedNoun(tooltip.provokedCount, COUNTED_NOUN_WORDS.combatants);
+      said.push(`${TOOLTIP_WORDS.provokedCount}: ${counted}`);
+    }
+    const provoker = tooltip.provokedBy;
+    if (provoker !== null) {
+      const left = formatTurnsLeft(provoker.turnsElapsed, provoker.turnsStated);
+      said.push(`${TOOLTIP_WORDS.provokedBy}: ${provoker.name} (${left})`);
+    }
+  }
+  const words = {
+    translate,
+    statusBits,
+    rowsMaximum
+  };
+  addStatusRows(said, getLeadingStatuses(tooltip.statuses, statusBits), words);
+  addStatusRows(said, getTrailingStatuses(tooltip.statuses, statusBits), words);
+  const kept = said.filter((row) => !doesRowCarryMarkup(row));
+  if (kept.length === 0) return [];
+  return [
+    ADD_ON_NAME,
+    ...kept
+  ].slice(0, rowsMaximum);
+}
+function formatTooltipFraction(figure, stated) {
+  if (!Number.isSafeInteger(figure)) return PANEL_WORDS.unknown;
+  if (!Number.isSafeInteger(stated)) return PANEL_WORDS.unknown;
+  if (figure < 0) return PANEL_WORDS.unknown;
+  if (stated < figure) return PANEL_WORDS.unknown;
+  return `${formatWholeUngrouped(figure)}/${formatWholeUngrouped(stated)}`;
+}
+function addStatusRows(said, statuses, words) {
+  for (const status of statuses) {
+    if (said.length >= words.rowsMaximum) break;
+    const word = getWordsForStatusBit(status.bit, words.translate, words.statusBits);
+    const percent = status.percent === null ? "" : `: ${formatWholeUngrouped(status.percent)}%`;
+    said.push(`${word}${percent}`);
+  }
+}
+function getLeadingStatuses(statuses, statusBits) {
+  const leading = [];
+  for (const name of LEADING_STATUS_NAMES) {
+    for (const status of statuses) {
+      if (statusBits[status.bit] === name) leading.push(status);
+    }
+  }
+  return leading;
+}
+function getTrailingStatuses(statuses, statusBits) {
+  return statuses.filter((status) => {
+    const name = statusBits[status.bit];
+    if (name === void 0) return false;
+    return !LEADING_STATUS_NAMES.includes(name);
+  });
+}
+function doesRowCarryMarkup(row) {
+  if (row.includes(MARKUP_OPENER)) return true;
+  return row.includes(MARKUP_ENTITY);
+}
+function getWordsForStatusBit(bit, translate, statusBits) {
+  const key = statusBits[bit];
+  if (key === void 0) return PANEL_WORDS.unknown;
+  if (translate === null) return key;
+  const said = translate(key, STATUS_CATEGORY);
+  if (said === null) return key;
+  if (said.length === 0) return key;
+  if (said.length > CLIENT_LABEL_CHARACTERS_MAXIMUM) return key;
+  if (doesRowCarryMarkup(said)) return key;
+  return said;
+}
+function formatTurnsLeft(turnsElapsed, turnsStated) {
+  if (!Number.isSafeInteger(turnsElapsed)) return PANEL_WORDS.unknown;
+  if (!Number.isSafeInteger(turnsStated)) return PANEL_WORDS.unknown;
+  if (turnsElapsed < 0) return PANEL_WORDS.unknown;
+  if (turnsStated < turnsElapsed) return PANEL_WORDS.unknown;
+  return formatCountedNoun(turnsStated - turnsElapsed, COUNTED_NOUN_WORDS.turns);
+}
+function getWordsForChargedSkill(state) {
+  const words = CHARGED_SKILL_WORDS[state];
+  return words;
+}
+function formatChargedSkillSubtitle(name, state) {
+  const said = getWordsForChargedSkill(state);
+  if (said.length === 0) return name;
+  return `${name} ${HELPER_WORDS.castSeparator} ${said}`;
+}
+function getWordsForTurnState(state) {
+  const words = TURN_STATE_WORDS[state];
+  return words;
+}
+function getWordsForHelperAbsence(absence) {
+  const words = HELPER_ABSENCE_WORDS[absence];
+  return words;
+}
+function formatTurnOrdinal(ordinal) {
+  if (!Number.isSafeInteger(ordinal)) return PANEL_WORDS.unknown;
+  if (ordinal < 0) return PANEL_WORDS.unknown;
+  return `tura ${formatWholeUngrouped(ordinal)}`;
+}
+function getWordsForPin(isPinned) {
+  if (isPinned) return "Odepnij \u2014 b\u0119dzie mog\u0142a znikn\u0105\u0107";
+  return "Przypnij, \u017Ceby nie znikn\u0119\u0142a";
+}
+function getWordsForStorage(choice) {
+  const words = STORAGE_WORDS[choice];
+  return words;
+}
+function getWordsForStorageMeaning(choice) {
+  const words = STORAGE_MEANING_WORDS[choice];
+  return words;
+}
+function getWordsForWindow(window2) {
+  const words = WINDOW_WORDS[window2];
+  return words;
+}
+function getWordsForTypeStep(step) {
+  const words = TYPE_STEP_WORDS[step];
+  return words;
+}
+function formatKeptUnread(moment, place) {
+  const parts = [
+    formatShelfTime(moment, false),
+    place ?? ""
+  ];
+  return parts.filter((phrase) => phrase.length > 0).join(" \xB7 ");
+}
+function formatShelfTime(moment, isLive) {
+  if (isLive) return LIVE_FIGHT_WORDS.time;
+  if (moment === null) return "";
+  if (moment.hour > HOUR_MAXIMUM2) return "";
+  if (moment.minute > MINUTE_MAXIMUM2) return "";
+  if (moment.day < DAY_MINIMUM) return "";
+  if (moment.day > DAY_MAXIMUM2) return "";
+  const month = MONTH_WORDS[moment.month - MONTH_FIRST];
+  if (month === void 0) return "";
+  const day = formatTwoDigits(moment.day);
+  if (day === "") return "";
+  const hour = formatTwoDigits(moment.hour);
+  if (hour === "") return "";
+  const minute = formatTwoDigits(moment.minute);
+  if (minute === "") return "";
+  return `${day} ${month} ${hour}:${minute}`;
+}
+function formatTwoDigits(momentPart) {
+  if (!Number.isSafeInteger(momentPart)) return "";
+  if (momentPart < 0) return "";
+  return formatWholeUngrouped(momentPart).padStart(TWO_DIGITS, "0");
+}
+function formatShelfSize(counts) {
+  const countsStated = counts.filter((count) => count > 0);
+  if (countsStated.length === 0) return "";
+  return countsStated.map((count) => formatFigure(count)).join("\xD7");
+}
+function getWordsForShelfOutcome(outcome, isLive) {
+  if (outcome !== null) return getWordsForOutcome(outcome);
+  if (isLive) return LIVE_FIGHT_WORDS.outcome;
+  return "";
+}
+function getLetterForShelfOutcome(outcome) {
+  const letter = OUTCOME_LETTERS[outcome];
+  return letter;
+}
+function formatUses(uses) {
+  if (uses < 0) return PANEL_WORDS.unknown;
+  return `\xD7${formatFigure(uses)}`;
+}
+function formatNamesReachedByGap(names, charged) {
+  if (charged <= 0) return "";
+  if (names.length === charged) {
+    if (charged <= NAMED_ROWS_MAXIMUM) return ` (${names.join(", ")})`;
+  }
+  return ` (dotyczy ${formatGenitiveNoun(charged, COUNTED_NOUN_WORDS.combatants)})`;
+}
+function formatGenitiveNoun(count, noun) {
+  return `${formatWholeUngrouped(count)} ${noun.many}`;
+}
+function formatUnknownKeySuspicion(count, stated, whom) {
+  if (count <= 0) return "";
+  const said = formatOutOf(count, stated, COUNTED_NOUN_WORDS.messages);
+  return `Nie wiadomo, co znaczy\u0142a cz\u0119\u015B\u0107 tego, co powiedzia\u0142a gra \u2014 ${said} bez odczytu${whom}, wi\u0119c liczby mog\u0105 by\u0107 zani\u017Cone.`;
+}
+function formatOutOf(count, stated, noun) {
+  if (stated <= 1) return formatCountedNoun(count, noun);
+  if (stated < count) return formatCountedNoun(count, noun);
+  return `${formatWholeUngrouped(count)} z ${formatGenitiveNoun(stated, noun)}`;
+}
+function formatNoParameterSuspicion(count, stated, whom) {
+  if (count <= 0) return "";
+  const said = formatOutOf(count, stated, COUNTED_NOUN_WORDS.messages);
+  return `Cz\u0119\u015B\u0107 tego, co powiedzia\u0142a gra, nie nios\u0142a \u017Cadnej liczby \u2014 ${said} bez odczytu${whom}, wi\u0119c liczby mog\u0105 by\u0107 zani\u017Cone.`;
+}
+function formatGrammarRefusedSuspicion(count, stated) {
+  if (count <= 0) return "";
+  const said = formatOutOf(count, stated, COUNTED_NOUN_WORDS.messages);
+  return `Cz\u0119\u015Bci tego, co powiedzia\u0142a gra, nie da\u0142o si\u0119 roz\u0142o\u017Cy\u0107 na s\u0142owa \u2014 ${said} bez odczytu, wi\u0119c liczby mog\u0105 by\u0107 zani\u017Cone.`;
+}
+function formatLostMessageSuspicion(count, stated) {
+  if (count <= 0) return "";
+  const said = formatOutOf(count, stated, COUNTED_NOUN_WORDS.messages);
+  return `Cz\u0119\u015B\u0107 walki nie dotar\u0142a do panelu \u2014 ${said} bez odbioru, wi\u0119c wszystkie liczby mog\u0105 by\u0107 zani\u017Cone.`;
+}
+function formatJoinedInProgressSuspicion() {
+  return "Panel zacz\u0105\u0142 czyta\u0107 t\u0119 walk\u0119 ju\u017C w trakcie \u2014 nie widzia\u0142 jej pocz\u0105tku, wi\u0119c wszystkie liczby mog\u0105 by\u0107 zani\u017Cone.";
+}
+function formatUnplacedHealSuspicion(count, stated, whom) {
+  if (count <= 0) return "";
+  const said = formatOutOf(count, stated, COUNTED_NOUN_WORDS.heals);
+  return `Nie da si\u0119 rozdzieli\u0107 leczenia dru\u017Cyny \u2014 ${said} bez podzia\u0142u${whom}, wi\u0119c leczenie mo\u017Ce by\u0107 zani\u017Cone.`;
+}
+function formatUnknownKeyRowSuspicion(count) {
+  if (count <= 0) return "";
+  const said = formatCountedNoun(count, COUNTED_NOUN_WORDS.messages);
+  return `Nie wiadomo, co znaczy\u0142a cz\u0119\u015B\u0107 tego, co gra powiedzia\u0142a z jej udzia\u0142em \u2014 ${said} bez odczytu, wi\u0119c jej liczby mog\u0105 by\u0107 zani\u017Cone.`;
+}
+function formatNoParameterRowSuspicion(count) {
+  if (count <= 0) return "";
+  const said = formatCountedNoun(count, COUNTED_NOUN_WORDS.messages);
+  return `Cz\u0119\u015B\u0107 tego, co gra powiedzia\u0142a z jej udzia\u0142em, nie nios\u0142a \u017Cadnej liczby \u2014 ${said} bez odczytu, wi\u0119c jej liczby mog\u0105 by\u0107 zani\u017Cone.`;
+}
+function formatUnplacedHealRowSuspicion(count) {
+  if (count <= 0) return "";
+  const said = formatCountedNoun(count, COUNTED_NOUN_WORDS.heals);
+  return `Nie da si\u0119 rozdzieli\u0107 jej leczenia dru\u017Cyny \u2014 ${said} bez podzia\u0142u, wi\u0119c jej leczenie mo\u017Ce by\u0107 zani\u017Cone.`;
+}
+function formatUndrawn(region) {
+  return `Nie uda\u0142o si\u0119 narysowa\u0107 ${REGION_WORDS[region]}.`;
+}
+function formatWholeUngrouped(wholeNumber) {
+  if (Number.isSafeInteger(wholeNumber)) return formatInteger(wholeNumber);
+  if (!Number.isFinite(wholeNumber)) return PANEL_WORDS.unknown;
+  const rounded = Math.round(wholeNumber);
+  if (!Number.isSafeInteger(rounded)) return PANEL_WORDS.unknown;
+  return formatInteger(rounded);
+}
+function formatDefect(kind, region, count) {
+  let said;
+  if (kind === PANEL_DEFECT_KIND.region) {
+    said = region === null ? DEFECT_WORDS[kind] : `Panel nie narysowa\u0142 ${REGION_WORDS[region]}`;
+  } else {
+    said = DEFECT_WORDS[kind];
+  }
+  if (!Number.isSafeInteger(count)) return `${said}.`;
+  if (count <= 1) return `${said}.`;
+  return `${said} (${formatWholeUngrouped(count)}\xD7).`;
+}
+function formatSideCounts(sizes, unplaced) {
+  const counts = sizes.filter((size) => size > 0);
+  if (counts.length === 0) return PANEL_WORDS.noSides;
+  const counted = counts.map((count) => formatFigure(count)).join(" vs ");
+  if (unplaced <= 0) return counted;
+  return `${counted} +${formatFigure(unplaced)}`;
+}
+function formatTurns(taken, lost) {
+  const divider = `${THOUSAND_SEPARATOR}/${THOUSAND_SEPARATOR}`;
+  return `${formatFigure(taken)}${divider}${formatFigure(lost)}`;
+}
+function formatFigure(figure) {
+  const rounded = Math.round(figure);
+  if (!Number.isSafeInteger(rounded)) return PANEL_WORDS.unknown;
+  const digits = formatWholeUngrouped(rounded);
+  const sign = digits.startsWith(MINUS_SIGN) ? MINUS_SIGN : "";
+  const body = digits.slice(sign.length);
+  let spaced = "";
+  let start = body.length;
+  for (let group = 0; group < THOUSAND_GROUPS_MAXIMUM; group += 1) {
+    if (start <= THOUSAND_DIGITS) break;
+    const from = start - THOUSAND_DIGITS;
+    spaced = `${THOUSAND_SEPARATOR}${body.slice(from, start)}${spaced}`;
+    start = from;
+  }
+  return `${sign}${body.slice(0, start)}${spaced}`;
+}
+function formatSharesApportioned(amounts, whole) {
+  if (!Number.isFinite(whole)) return amounts.map(() => formatSharePoints(0, false));
+  if (whole <= 0) return amounts.map(() => formatSharePoints(0, false));
+  const shares = composeSharesInPoints(amounts.slice(0, SHARES_MAXIMUM), whole);
+  const pointsPaid = shares.reduce((sum, share) => sum + share.points, 0);
+  const exact = shares.reduce((sum, share) => sum + share.points + share.remainder, 0);
+  let left = Math.round(exact) - pointsPaid;
+  const unpaid = [];
+  for (const group of composeShareGroups(shares)) {
+    if (group.length > left) {
+      unpaid.push(group);
+      continue;
+    }
+    for (const share of group) share.points += 1;
+    left -= group.length;
+  }
+  for (const group of unpaid) {
+    for (const share of group) {
+      if (left <= 0) break;
+      share.points += 1;
+      left -= 1;
+    }
+  }
+  return shares.map((share) => formatSharePoints(share.points, share.amount > 0));
+}
+function formatSharePoints(points, isPresent) {
+  if (!Number.isSafeInteger(points)) return PANEL_WORDS.unknown;
+  if (points < 0) return PANEL_WORDS.unknown;
+  if (points === 0) {
+    if (isPresent) return SHARE_FLOOR;
+  }
+  return `${formatWholeUngrouped(points)}%`;
+}
+function composeSharesInPoints(amounts, whole) {
+  return amounts.map((amount, index) => {
+    const exact = amount / whole * HUNDRED;
+    const points = Math.floor(exact);
+    return {
+      index,
+      amount,
+      points,
+      remainder: exact - points
+    };
+  });
+}
+function composeShareGroups(shares) {
+  const byAmount = /* @__PURE__ */ new Map();
+  for (const share of shares) {
+    if (share.remainder <= 0) continue;
+    const group = byAmount.get(share.amount);
+    if (group === void 0) byAmount.set(share.amount, [
+      share
+    ]);
+    else group.push(share);
+  }
+  const groups = [
+    ...byAmount.values()
+  ];
+  groups.sort((leftGroup, rightGroup) => {
+    const leftHead = getShareGroupHead(leftGroup);
+    const rightHead = getShareGroupHead(rightGroup);
+    if (leftHead.remainder !== rightHead.remainder) {
+      return rightHead.remainder - leftHead.remainder;
+    }
+    return leftHead.index - rightHead.index;
+  });
+  return groups;
+}
+function getShareGroupHead(group) {
+  return group[0] ?? NOBODY_TO_PAY;
+}
+function formatShareRounded(share) {
+  if (!Number.isFinite(share)) return PANEL_WORDS.unknown;
+  const clamped = clampNumber(share, 0, 1);
+  return formatSharePoints(Math.round(clamped * HUNDRED), clamped > 0);
+}
+function formatPlace(mapName, x, y) {
+  const words = formatPlaceWords(mapName, x, y);
+  if (words === null) return null;
+  if (words.name === null) return words.tile;
+  if (words.tile === null) return words.name;
+  return `${words.name} ${words.tile}`;
+}
+function formatPlaceWords(mapName, x, y) {
+  let name;
+  if (mapName === null) {
+    name = null;
+  } else {
+    name = mapName.length > 0 ? mapName : null;
+  }
+  let tile;
+  if (x === null) {
+    tile = null;
+  } else if (y === null) {
+    tile = null;
+  } else {
+    tile = `(${formatWholeUngrouped(x)}, ${formatWholeUngrouped(y)})`;
+  }
+  if (name === null) {
+    if (tile === null) return null;
+  }
+  return {
+    name,
+    tile
+  };
+}
+
+// src/runtime/defect-ledger.ts
+var DEFECT_KIND = {
+  kept: "kept",
+  keeping: "keeping",
+  mount: "mount",
+  region: "region",
+  reading: "reading",
+  figures: "figures",
+  gesture: "gesture",
+  file: "file",
+  engine: "engine"
+};
+var COUNT_MAXIMUM = 1048576;
+var KINDS_COUNT = Object.values(DEFECT_KIND).length;
+var ROWS_MAXIMUM = KINDS_COUNT * (Object.values(PANEL_REGION).length + 1);
+function initDefectLedger(options) {
+  const countsByRowKey = /* @__PURE__ */ new Map();
+  const kindsWritten = /* @__PURE__ */ new Set();
+  return {
+    add(defect) {
+      const rowKey = defect.region === null ? defect.kind : `${defect.kind}/${defect.region}`;
+      const defectCount = countsByRowKey.get(rowKey);
+      if (defectCount !== void 0) {
+        if (defectCount.count < COUNT_MAXIMUM) defectCount.count += 1;
+        return;
+      }
+      const { kind, region, failure } = defect;
+      countsByRowKey.set(rowKey, {
+        kind,
+        region,
+        count: 1,
+        first: failure
+      });
+      assert(countsByRowKey.size <= ROWS_MAXIMUM, "a ledger holds a row per kind and region at most");
+      if (kindsWritten.has(kind)) return;
+      kindsWritten.add(kind);
+      options.console.writeBrandedLine(kind, failure);
+    },
+    getCounts() {
+      const rows = [
+        ...countsByRowKey.values()
+      ].map((defectCount) => ({
+        ...defectCount
+      }));
+      assert(rows.length <= ROWS_MAXIMUM, "and states no more rows than it holds");
+      return rows;
+    }
+  };
+}
+
+// libs/json-text.ts
+var JsonUnreadable = class extends Error {
+  name = "JsonUnreadable";
+  constructor(cause) {
+    super(void 0, {
+      cause
+    });
+  }
+};
+var JsonUnwritable = class extends Error {
+  name = "JsonUnwritable";
+  constructor(cause) {
+    super(void 0, {
+      cause
+    });
+  }
+};
+var INDENT_SPACES_MAXIMUM = 10;
+function parseJson(text) {
+  const parsed = attempt(() => {
+    const parsedText = JSON.parse(text);
+    if (parsedText === null) return parsedText;
+    if (typeof parsedText === "boolean") return parsedText;
+    if (typeof parsedText === "number") return parsedText;
+    if (typeof parsedText === "string") return parsedText;
+    if (Array.isArray(parsedText)) return parsedText;
+    assert(isRecord(parsedText), "JSON text parses into a value JSON has");
+    return parsedText;
+  });
+  if (parsed instanceof Caught) return new JsonUnreadable(parsed);
+  assert(text.length > 0, "text that parsed says something");
+  return parsed;
+}
+function encodeJson(encodable, indentSpaces) {
+  assert(Number.isSafeInteger(indentSpaces), "text is indented by a whole count of spaces");
+  assert(indentSpaces >= 0, "of none or more");
+  assert(indentSpaces <= INDENT_SPACES_MAXIMUM, "and no more than the platform writes");
+  const written = attempt(() => JSON.stringify(encodable, null, indentSpaces));
+  if (written instanceof Caught) return new JsonUnwritable(written);
+  if (written === void 0) return new JsonUnwritable(null);
+  assert(written.length > 0, "a value written as text says something");
+  return written;
+}
+
+// src/runtime/fight-file.ts
+var FileUnserializable = class extends Error {
+  name = "FileUnserializable";
+  constructor(cause) {
+    super(void 0, {
+      cause
+    });
+  }
+};
+var REPORT_KEY_BY_ROW_FIELD = {
+  sideHealsUnsized: "castsUnplaced",
+  healthRestoredByNobodyByKey: "healthRestoredByNobodyBySource",
+  healthRestoredByKey: "healthRestoredBySource",
+  healthRestoredWithoutSkillByKey: "healthRestoredWithoutSkillBySource",
+  damageTakenWithoutSkillByKey: "damageTakenWithoutSkillBySource",
+  damageDealtWithoutSkillByKey: "damageDealtWithoutSkillBySource",
+  damageDealtWithoutSkillByOpponentAndKey: "damageDealtWithoutSkillByOpponentAndSource",
+  healthGivenWithoutSkillByReceiverAndKey: "healthGivenWithoutSkillByReceiverAndSource"
+};
+var REPORT_KEY_BY_SKILL_FIELD = {
+  damageDealt: "dealt",
+  damageDealtByOpponent: "dealtByOpponent",
+  healthGiven: "restored",
+  healthGivenByReceiver: "restoredByOpponent"
+};
+var REPORT_KEY_BY_FIGHT_FIELD = {
+  damageDealtByNobody: "dealtByNobody",
+  damageTakenByNobody: "takenByNobody",
+  healthGivenByNobody: "givenByNobody",
+  healthRestoredToNobody: "restoredToNobody",
+  damageByNeitherEnd: "byNeitherEnd",
+  sideHealsUnsized: "castsUnplaced",
+  sideHealsStated: "castsStated"
+};
+var FILE_FORMAT_VERSION = 4;
+var FILE_FIELD = {
+  formatVersion: "formatVersion",
+  addOnVersion: "addOnVersion",
+  capturedAt: "capturedAt",
+  world: "world",
+  margonemClientBuild: "gameBuild",
+  userAgent: "userAgent",
+  report: "report",
+  droppedCalls: "droppedCalls",
+  isTruncated: "isTruncated",
+  calls: "calls",
+  index: "index",
+  payload: "payload",
+  messages: "messages",
+  combatantsBefore: "combatantsBefore",
+  combatantsAfter: "combatantsAfter"
+};
+var INDENT_SPACES = 2;
+var NOTHING_STATED = "none";
+function encodeFightFile(calls, subject, surroundings) {
+  assert(surroundings.world.length > 0, "a recording names the world it was taken on");
+  assert(surroundings.capturedAt.length > 0, "and the moment it was taken at");
+  assert(surroundings.margonemClientBuild !== "", "a build it could not read is absent, never empty");
+  assert(surroundings.userAgent !== "", "and so is a browser that said nothing of itself");
+  if (calls.droppedCalls !== null) {
+    assert(calls.droppedCalls >= 0, "a recording drops no fewer calls than none");
+  }
+  const written = encodeJson({
+    [FILE_FIELD.formatVersion]: FILE_FORMAT_VERSION,
+    [FILE_FIELD.addOnVersion]: surroundings.addOnVersion,
+    [FILE_FIELD.capturedAt]: surroundings.capturedAt,
+    [FILE_FIELD.world]: surroundings.world,
+    [FILE_FIELD.margonemClientBuild]: surroundings.margonemClientBuild,
+    [FILE_FIELD.userAgent]: surroundings.userAgent,
+    // Above the calls, which run to hundreds of kilobytes.
+    [FILE_FIELD.report]: subject === null ? null : encodeFightReport(subject),
+    [FILE_FIELD.droppedCalls]: calls.droppedCalls,
+    [FILE_FIELD.isTruncated]: calls.isTruncated,
+    [FILE_FIELD.calls]: calls.calls.map((call) => ({
+      [FILE_FIELD.index]: call.index,
+      [FILE_FIELD.payload]: call.payload,
+      [FILE_FIELD.messages]: call.messages,
+      [FILE_FIELD.combatantsBefore]: call.combatantsBefore,
+      [FILE_FIELD.combatantsAfter]: call.combatantsAfter
+    }))
+  }, INDENT_SPACES);
+  if (written instanceof Error) return new FileUnserializable(written);
+  return {
+    name: encodeFightFileName(surroundings),
+    text: written
+  };
+}
+function encodeFightFileName(surroundings) {
+  assert(surroundings.addOnVersion.length > 0, "a file is named for the build that wrote it");
+  const momentForName = surroundings.capturedAt.replaceAll(":", "-").replaceAll(".", "-");
+  assert(!momentForName.includes(":"), "and for a moment no file system objects to");
+  assert(!momentForName.includes("."), "nor one a file's own extension could be read out of");
+  const build = surroundings.margonemClientBuild ?? NOTHING_STATED;
+  const { world, addOnVersion } = surroundings;
+  return `margometer-${world}-${build}-${addOnVersion}-${momentForName}.json`;
+}
+function encodeFightReport(subject) {
+  assert(subject.payloadsApplied > 0, "a fight written into a report was built from something");
+  assert(subject.messagesLost >= 0, "and lost no fewer than none of what it was handed");
+  const statistics = subject.statistics;
+  return {
+    payloads: subject.payloadsApplied,
+    isOver: subject.isOver,
+    place: subject.place,
+    messagesLost: subject.messagesLost,
+    unreadMessagesUnknownKey: statistics.unreadMessagesUnknownKey,
+    unreadMessagesNoParameter: statistics.unreadMessagesNoParameter,
+    unreadMessagesGrammarRefused: statistics.unreadMessagesGrammarRefused,
+    [REPORT_KEY_BY_FIGHT_FIELD.sideHealsUnsized]: statistics.sideHealsUnsized,
+    [REPORT_KEY_BY_FIGHT_FIELD.sideHealsStated]: statistics.sideHealsStated,
+    [REPORT_KEY_BY_FIGHT_FIELD.damageDealtByNobody]: statistics.damageDealtByNobody,
+    [REPORT_KEY_BY_FIGHT_FIELD.damageTakenByNobody]: statistics.damageTakenByNobody,
+    [REPORT_KEY_BY_FIGHT_FIELD.healthGivenByNobody]: statistics.healthGivenByNobody,
+    [REPORT_KEY_BY_FIGHT_FIELD.healthRestoredToNobody]: statistics.healthRestoredToNobody,
+    [REPORT_KEY_BY_FIGHT_FIELD.damageByNeitherEnd]: statistics.damageByNeitherEnd,
+    roster: [
+      ...subject.roster.byId.values()
+    ],
+    combatants: encodeReportCombatants(statistics),
+    totals: encodeReportTotals(statistics.totals)
+  };
+}
+function encodeReportTotals(totals) {
+  assert(totals.damageDealtRaw >= 0, "the raw damage a report totals is never below nothing");
+  return {
+    damageDealt: totals.damageDealt,
+    damageTaken: totals.damageTaken,
+    damageDealtRaw: totals.damageDealtRaw,
+    damageDealtApplied: totals.damageDealtApplied,
+    damageTakenRaw: totals.damageTakenRaw,
+    damageTakenApplied: totals.damageTakenApplied,
+    damageDealtAbsorbed: totals.damageDealtAbsorbed,
+    damageTakenAbsorbed: totals.damageTakenAbsorbed,
+    damagePrevented: totals.damagePrevented,
+    healthRestored: totals.healthRestored,
+    healthGiven: totals.healthGiven
+  };
+}
+function encodeReportCombatants(statistics) {
+  const written = {};
+  for (const [id, figures] of statistics.byCombatantId) {
+    written[formatInteger(id)] = encodeReportRow(figures);
+  }
+  assert(Object.keys(written).length === statistics.byCombatantId.size, "a row per combatant");
+  return written;
+}
+function encodeReportRow(figures) {
+  assert(figures.damageDealtRaw >= 0, "the raw damage a row reports is never below nothing");
+  const cut = encodeReportCut;
+  const pair = encodeReportPairCut;
+  return {
+    unreadMessagesUnknownKey: figures.unreadMessagesUnknownKey,
+    unreadMessagesNoParameter: figures.unreadMessagesNoParameter,
+    [REPORT_KEY_BY_ROW_FIELD.sideHealsUnsized]: figures.sideHealsUnsized,
+    damageDealt: figures.damageDealt,
+    damageTaken: figures.damageTaken,
+    damageDealtRaw: figures.damageDealtRaw,
+    damageDealtApplied: figures.damageDealtApplied,
+    damageTakenRaw: figures.damageTakenRaw,
+    damageTakenApplied: figures.damageTakenApplied,
+    damageDealtAbsorbed: figures.damageDealtAbsorbed,
+    damageTakenAbsorbed: figures.damageTakenAbsorbed,
+    damagePrevented: figures.damagePrevented,
+    healthRestored: figures.healthRestored,
+    healthGiven: figures.healthGiven,
+    damageTakenFromNobody: figures.damageTakenFromNobody,
+    damageDealtToNobody: figures.damageDealtToNobody,
+    healthRestoredByNobody: figures.healthRestoredByNobody,
+    damageTakenFromNobodyByKind: cut(figures.damageTakenFromNobodyByKind),
+    damageDealtToNobodyByKind: cut(figures.damageDealtToNobodyByKind),
+    [REPORT_KEY_BY_ROW_FIELD.healthRestoredByNobodyByKey]: cut(figures.healthRestoredByNobodyByKey),
+    healthRestoredByGiver: cut(figures.healthRestoredByGiver),
+    healthGivenByReceiver: cut(figures.healthGivenByReceiver),
+    [REPORT_KEY_BY_ROW_FIELD.healthRestoredByKey]: cut(figures.healthRestoredByKey),
+    [REPORT_KEY_BY_ROW_FIELD.healthRestoredWithoutSkillByKey]: cut(figures.healthRestoredWithoutSkillByKey),
+    [REPORT_KEY_BY_ROW_FIELD.damageTakenWithoutSkillByKey]: cut(figures.damageTakenWithoutSkillByKey),
+    [REPORT_KEY_BY_ROW_FIELD.damageDealtWithoutSkillByKey]: cut(figures.damageDealtWithoutSkillByKey),
+    [REPORT_KEY_BY_ROW_FIELD.damageDealtWithoutSkillByOpponentAndKey]: pair(figures.damageDealtWithoutSkillByOpponentAndKey),
+    damageDealtWithoutSkillByOpponent: cut(figures.damageDealtWithoutSkillByOpponent),
+    damageTakenWithoutSkillByOpponent: cut(figures.damageTakenWithoutSkillByOpponent),
+    [REPORT_KEY_BY_ROW_FIELD.healthGivenWithoutSkillByReceiverAndKey]: pair(figures.healthGivenWithoutSkillByReceiverAndKey),
+    damageDealtByKind: cut(figures.damageDealtByKind),
+    damageTakenByKind: cut(figures.damageTakenByKind),
+    damageDealtByOpponent: cut(figures.damageDealtByOpponent),
+    damageTakenByOpponent: cut(figures.damageTakenByOpponent),
+    damageDealtByOpponentAndKind: pair(figures.damageDealtByOpponentAndKind),
+    damageTakenByOpponentAndKind: pair(figures.damageTakenByOpponentAndKind),
+    skills: encodeReportSkills(figures.skills),
+    blowsStruck: figures.blowsStruck,
+    blowsWithoutSkill: figures.blowsWithoutSkill,
+    turnsTaken: figures.turnsTaken,
+    turnsLost: figures.turnsLost,
+    blowsCritical: figures.blowsCritical,
+    damageDealtBlowLargest: figures.damageDealtBlowLargest,
+    damageTakenBlowLargest: figures.damageTakenBlowLargest,
+    procsWhenStriking: cut(figures.procsWhenStriking),
+    procsWhenStruck: cut(figures.procsWhenStruck),
+    damagePreventedByDefence: cut(figures.damagePreventedByDefence),
+    damageDealtAbsorbedByDefence: cut(figures.damageDealtAbsorbedByDefence),
+    damageTakenAbsorbedByDefence: cut(figures.damageTakenAbsorbedByDefence),
+    statisticsDestroyed: cut(figures.statisticsDestroyed)
+  };
+}
+function encodeReportCut(cut) {
+  const written = {};
+  for (const [key, amount] of cut) written[key] = amount;
+  assert(Object.keys(written).length === cut.size, "every cut is written down");
+  return written;
+}
+function encodeReportPairCut(cut) {
+  const written = {};
+  for (const [key, innerCut] of cut) written[key] = encodeReportCut(innerCut);
+  assert(Object.keys(written).length === cut.size, "every cut of a cut is written down");
+  return written;
+}
+function encodeReportSkills(skills) {
+  const written = {};
+  for (const [key, skill] of skills) {
+    assert(key.length > 0, "a skill is kept under the name it was announced by");
+    written[key] = {
+      name: skill.name,
+      uses: skill.uses,
+      [REPORT_KEY_BY_SKILL_FIELD.damageDealt]: skill.damageDealt,
+      blows: skill.blows,
+      [REPORT_KEY_BY_SKILL_FIELD.damageDealtByOpponent]: encodeReportCut(skill.damageDealtByOpponent),
+      [REPORT_KEY_BY_SKILL_FIELD.healthGiven]: skill.healthGiven,
+      [REPORT_KEY_BY_SKILL_FIELD.healthGivenByReceiver]: encodeReportCut(skill.healthGivenByReceiver)
+    };
+  }
+  assert(Object.keys(written).length === skills.size, "and every one of them is written down");
+  return written;
+}
+
+// src/runtime/fight-handover.ts
+var ShownFightAbsent = class extends Error {
+  name = "ShownFightAbsent";
+};
+var WORLD_UNKNOWN = "unknown";
+function writeShownFightFile(shownFight, liveHandover, ports, onLateFailure) {
+  assert(ports.addOnVersion.length > 0, "a file names the build that wrote it");
+  if (shownFight === null) return new ShownFightAbsent();
+  let handover;
+  if (shownFight.keptFight === null) {
+    const surroundings = readLiveFileSurroundings(ports);
+    if (surroundings instanceof Error) return surroundings;
+    const subject = composeFileSubject(shownFight.fightState, liveHandover.place);
+    handover = {
+      calls: liveHandover.capture,
+      subject,
+      surroundings
+    };
+  } else {
+    const { keptFight, fightState } = shownFight;
+    const payloadsReplayedCount = fightState.messagesByPayload.length;
+    assert(payloadsReplayedCount === keptFight.payloads.length, "a kept fight was replayed payload by payload");
+    const calls = keptFight.payloads.map((payload, index) => ({
+      index,
+      payload,
+      messages: fightState.messagesByPayload[index] ?? [],
+      combatantsBefore: null,
+      combatantsAfter: null
+    }));
+    const surroundings = readFileSurroundings(ports, keptFight.openedAt, keptFight.margonemClientBuild);
+    if (surroundings instanceof Error) return surroundings;
+    handover = {
+      calls: {
+        calls,
+        droppedCalls: null,
+        isTruncated: null
+      },
+      subject: composeFileSubject(fightState, keptFight.place),
+      surroundings
+    };
+  }
+  const encoded = encodeFightFile(handover.calls, handover.subject, handover.surroundings);
+  if (encoded instanceof Error) return encoded;
+  return ports.file.writeFile(encoded.name, encoded.text, onLateFailure);
+}
+function readLiveFileSurroundings(ports) {
+  const now = ports.clock.readNowMilliseconds();
+  if (now instanceof Error) return now;
+  let margonemClientBuild;
+  {
+    const buildId = ports.build.readBuildId();
+    if (buildId instanceof Error) margonemClientBuild = null;
+    else {
+      assert(buildId.length > 0, "a build the page stated says something");
+      margonemClientBuild = buildId;
+    }
+  }
+  return readFileSurroundings(ports, now, margonemClientBuild);
+}
+function readFileSurroundings(ports, atMilliseconds, margonemClientBuild) {
+  const capturedAt = ports.clock.readTimestampText(atMilliseconds);
+  if (capturedAt instanceof Error) return capturedAt;
+  const world = ports.surroundings.readWorld();
+  assert(world !== "", "a world the page named says something");
+  return {
+    world: world ?? WORLD_UNKNOWN,
+    margonemClientBuild,
+    capturedAt,
+    userAgent: ports.surroundings.readUserAgent(),
+    addOnVersion: ports.addOnVersion
+  };
+}
+function composeFileSubject(fightState, place) {
+  assert(fightState.view.payloadsApplied > 0, "a fight handed over was read from something");
+  return {
+    statistics: fightState.figures.statistics,
+    roster: fightState.view.roster,
+    place,
+    payloadsApplied: fightState.view.payloadsApplied,
+    messagesLost: fightState.view.messagesLost,
+    isOver: fightState.view.isOver
+  };
+}
+function writeLiveCallsFile(liveHandover, ports, onLateFailure) {
+  assert(liveHandover.capture.calls.length > 0, "a file of calls is written from some");
+  const surroundings = readLiveFileSurroundings(ports);
+  if (surroundings instanceof Error) return surroundings;
+  const encoded = encodeFightFile(liveHandover.capture, null, surroundings);
+  if (encoded instanceof Error) return encoded;
+  return ports.file.writeFile(encoded.name, encoded.text, onLateFailure);
+}
+
+// src/core/fight-figures.ts
+function tallyFightFigures(view) {
+  assert(view.payloadsApplied > 0, "figures are tallied from a fight that exists");
+  const sideHealByEvent = indexSideHeals(view.events, view.roster);
+  const statistics = tallyFightStatistics(view.events, sideHealByEvent);
+  assert(sideHealByEvent.size <= view.events.length, "a cast sized is an event of the fight");
+  return {
+    statistics,
+    sideHealByEvent,
+    payloadsApplied: view.payloadsApplied
+  };
+}
+function verifyFightFigures(figures) {
+  assert(figures.payloadsApplied > 0, "figures verified were tallied from a fight");
+  assert(figures.statistics.sideHealsStated >= figures.sideHealByEvent.size, "a cast sized was stated");
+  verifyFightStatistics(figures.statistics);
+}
+
+// src/ports/fight-capture.ts
+var CALLS_MAXIMUM = 2e3;
+var SHAPE_KEYS_MAXIMUM = 256;
+var SHAPE_KEYS_PAST_MAXIMUM = "+";
+function createFightCapture() {
+  return {
+    calls: [],
+    droppedCalls: 0,
+    isTruncated: false,
+    shapesSeen: /* @__PURE__ */ new Set(),
+    statesSeen: /* @__PURE__ */ new Set()
+  };
+}
+function prepareCapture(capture, call, isOpening) {
+  const callIndex = isOpening ? 0 : capture.calls.length;
+  assert(callIndex <= CALLS_MAXIMUM, "a recording stays inside its stated bound");
+  const shape = composeCaptureShapeKey(call.payload);
+  const state = composeCaptureStateKey(call.combatantsAfter);
+  let isKept;
+  if (isOpening) isKept = true;
+  else if (call.messages.length > 0) isKept = true;
+  else if (call.wasRefused) isKept = true;
+  else if (!capture.shapesSeen.has(shape)) isKept = true;
+  else isKept = !capture.statesSeen.has(state);
+  if (!isKept) return {
+    callIndex,
+    isOpening,
+    isPastCeiling: false,
+    kept: null
+  };
+  if (callIndex === CALLS_MAXIMUM) {
+    return {
+      callIndex,
+      isOpening,
+      isPastCeiling: true,
+      kept: null
+    };
+  }
+  const keptCall = {
+    index: callIndex,
+    payload: createCaptureCopy(call.payload),
+    messages: [
+      ...call.messages
+    ],
+    combatantsBefore: call.combatantsBefore === null ? null : [
+      ...call.combatantsBefore
+    ],
+    combatantsAfter: call.combatantsAfter === null ? null : [
+      ...call.combatantsAfter
+    ]
+  };
+  return {
+    callIndex,
+    isOpening,
+    isPastCeiling: false,
+    kept: {
+      call: keptCall,
+      shape,
+      state
+    }
+  };
+}
+function composeCaptureShapeKey(payload) {
+  if (!isRecord(payload)) return "";
+  const keys = Object.keys(payload).sort();
+  if (keys.length <= SHAPE_KEYS_MAXIMUM) return keys.join(",");
+  return [
+    ...keys.slice(0, SHAPE_KEYS_MAXIMUM),
+    SHAPE_KEYS_PAST_MAXIMUM
+  ].join(",");
+}
+function composeCaptureStateKey(combatants) {
+  const written = encodeJson(combatants, 0);
+  if (written instanceof Error) return "";
+  assert(written.length > 0, "a key that was written says something");
+  return written;
+}
+function createCaptureCopy(payload) {
+  const written = encodeJson(payload, 0);
+  if (written instanceof Error) return null;
+  const payloadCopy = parseJson(written);
+  assert(!(payloadCopy instanceof Error), "text this writer produced is text this reader takes back");
+  return payloadCopy;
+}
+function commitCapture(capture, prepared) {
+  if (prepared.isOpening) {
+    capture.calls = [];
+    capture.droppedCalls = 0;
+    capture.isTruncated = false;
+    capture.shapesSeen = /* @__PURE__ */ new Set();
+    capture.statesSeen = /* @__PURE__ */ new Set();
+  } else {
+    const callIndex = capture.calls.length;
+    assert(callIndex === prepared.callIndex, "a call lands on the recording it was read against");
+  }
+  if (prepared.isPastCeiling) capture.isTruncated = true;
+  const kept = prepared.kept;
+  if (kept === null) {
+    capture.droppedCalls += 1;
+    return;
+  }
+  assert(capture.calls.length < CALLS_MAXIMUM, "a call is kept only under the ceiling");
+  capture.calls.push(kept.call);
+  capture.shapesSeen.add(kept.shape);
+  capture.statesSeen.add(kept.state);
+}
+
+// src/runtime/shelf.ts
+var ShelfUnreadable = class extends Error {
+  name = "ShelfUnreadable";
+  constructor(options) {
+    super(void 0, options);
+  }
+};
+var ShelfUnwritable = class extends Error {
+  name = "ShelfUnwritable";
+  constructor(options) {
+    super(void 0, options);
+  }
+};
+var KeptFightsUnreadable = class extends Error {
+  name = "KeptFightsUnreadable";
+  count;
+  constructor(count) {
+    super();
+    this.count = count;
+  }
+};
+var ShelfVersionUnknown = class extends Error {
+  name = "ShelfVersionUnknown";
+  version;
+  constructor(version, options) {
+    super(void 0, options);
+    this.version = version;
+  }
+};
+var EverySlotPinned = class extends Error {
+  name = "EverySlotPinned";
+  maximum;
+  constructor(maximum, options) {
+    super(void 0, options);
+    this.maximum = maximum;
+  }
+};
+var RotationRefused = class extends Error {
+  name = "RotationRefused";
+  attempts;
+  constructor(attempts, options) {
+    super(void 0, options);
+    this.attempts = attempts;
+  }
+};
+var FightAlreadyKept = class extends Error {
+  name = "FightAlreadyKept";
+  openedAt;
+  constructor(openedAt, options) {
+    super(void 0, options);
+    this.openedAt = openedAt;
+  }
+};
+var KEPT_MAXIMUM = 20;
+var SHELF_VERSION = 3;
+var SHELF_KEY = STORE_KEY.fights;
+var SHELF_FIELDS = {
+  version: "version",
+  fights: "fights"
+};
+var FIGHT_FIELDS = {
+  openedAt: "openedAt",
+  payloads: "payloads",
+  place: "place",
+  readerId: "readerId",
+  margonemClientBuild: "gameBuild",
+  isPinned: "isPinned"
+};
+var PLACE_FIELDS2 = {
+  mapName: "mapName",
+  x: "x",
+  y: "y"
+};
+function openShelf(store) {
+  const stored = store.read(SHELF_KEY);
+  if (stored instanceof Error) return stored;
+  if (stored === null) return {
+    fights: [],
+    fightsUnreadable: 0
+  };
+  const parsed = parseJson(stored);
+  if (parsed instanceof Error) return new ShelfUnreadable({
+    cause: parsed
+  });
+  if (!isRecord(parsed)) return new ShelfUnreadable();
+  const version = getNumberField(parsed, SHELF_FIELDS, "version");
+  if (version instanceof Error) return new ShelfVersionUnknown(null, {
+    cause: version
+  });
+  if (version !== SHELF_VERSION) return new ShelfVersionUnknown(version);
+  const storedFights = getListField(parsed, SHELF_FIELDS, "fights", KEPT_MAXIMUM);
+  if (storedFights instanceof Error) return new ShelfUnreadable({
+    cause: storedFights
+  });
+  const fights = [];
+  for (const storedFight of storedFights ?? []) {
+    let fight;
+    readFight: {
+      if (!isRecord(storedFight)) {
+        fight = null;
+        break readFight;
+      }
+      const openedAt = getNumberField(storedFight, FIGHT_FIELDS, "openedAt");
+      if (openedAt instanceof Error) {
+        fight = null;
+        break readFight;
+      }
+      if (openedAt === null) {
+        fight = null;
+        break readFight;
+      }
+      if (!Number.isSafeInteger(openedAt)) {
+        fight = null;
+        break readFight;
+      }
+      if (openedAt < 0) {
+        fight = null;
+        break readFight;
+      }
+      if (fights.some((keptFight) => keptFight.openedAt === openedAt)) {
+        fight = null;
+        break readFight;
+      }
+      const payloads = getListField(storedFight, FIGHT_FIELDS, "payloads", CALLS_MAXIMUM);
+      if (payloads instanceof Error) {
+        fight = null;
+        break readFight;
+      }
+      if (payloads === null) {
+        fight = null;
+        break readFight;
+      }
+      if (payloads.length === 0) {
+        fight = null;
+        break readFight;
+      }
+      if (!payloads.every(isRecord)) {
+        fight = null;
+        break readFight;
+      }
+      const margonemClientBuild = getStatedTextField(storedFight, FIGHT_FIELDS, "margonemClientBuild");
+      let place;
+      readPlace: {
+        const stored2 = getRecordField(storedFight, FIGHT_FIELDS, "place");
+        if (stored2 instanceof Error) {
+          place = null;
+          break readPlace;
+        }
+        if (stored2 === null) {
+          place = null;
+          break readPlace;
+        }
+        const mapName = getStatedTextField(stored2, PLACE_FIELDS2, "mapName");
+        const x = getNumberField(stored2, PLACE_FIELDS2, "x");
+        const y = getNumberField(stored2, PLACE_FIELDS2, "y");
+        const statedPlace = {
+          mapName: mapName instanceof Error ? null : mapName,
+          x: x instanceof Error ? null : x,
+          y: y instanceof Error ? null : y
+        };
+        if (statedPlace.mapName !== null) {
+          place = statedPlace;
+          break readPlace;
+        }
+        if (statedPlace.x !== null) {
+          place = statedPlace;
+          break readPlace;
+        }
+        if (statedPlace.y === null) {
+          place = null;
+          break readPlace;
+        }
+        place = statedPlace;
+      }
+      let readerId;
+      readReaderId: {
+        const id = getNumberField(storedFight, FIGHT_FIELDS, "readerId");
+        if (id instanceof Error) {
+          readerId = null;
+          break readReaderId;
+        }
+        if (id === null) {
+          readerId = null;
+          break readReaderId;
+        }
+        if (!Number.isSafeInteger(id)) {
+          readerId = null;
+          break readReaderId;
+        }
+        if (id <= 0) {
+          readerId = null;
+          break readReaderId;
+        }
+        readerId = id;
+      }
+      fight = {
+        openedAt,
+        payloads: [
+          ...payloads
+        ],
+        place,
+        readerId,
+        margonemClientBuild: margonemClientBuild instanceof Error ? null : margonemClientBuild,
+        isPinned: storedFight[FIGHT_FIELDS.isPinned] === true
+      };
+    }
+    if (fight !== null) fights.push(fight);
+  }
+  assert(fights.length <= KEPT_MAXIMUM, "a shelf read back stays inside its stated bound");
+  const fightsUnreadable = (storedFights ?? []).length - fights.length;
+  assert(fightsUnreadable >= 0, "a fight read back is one the store held");
+  return {
+    fights,
+    fightsUnreadable
+  };
+}
+function isShelfSuperseded(failure) {
+  if (!(failure instanceof ShelfVersionUnknown)) return false;
+  assert(failure.version !== SHELF_VERSION, "a shelf of this version is read, not refused");
+  if (failure.version === null) return false;
+  return failure.version < SHELF_VERSION;
+}
+function writeKeptFight(store, shelf, fight) {
+  assert(fight.payloads.length > 0, "a fight kept was kept from something");
+  assert(fight.payloads.length <= CALLS_MAXIMUM, "and stays inside a recording's bound");
+  if (shelf.fights.some((keptFight) => keptFight.openedAt === fight.openedAt)) {
+    return new FightAlreadyKept(fight.openedAt);
+  }
+  assert(shelf.fights.length <= KEPT_MAXIMUM, "a fight is kept onto a shelf inside its bound");
+  const fightsAfter = [
+    ...shelf.fights,
+    fight
+  ];
+  const pinned = fightsAfter.filter((keptFight) => keptFight.isPinned).length;
+  if (pinned >= KEPT_MAXIMUM) {
+    if (fightsAfter.length > KEPT_MAXIMUM) return new EverySlotPinned(KEPT_MAXIMUM);
+  }
+  return writeShelf(store, fightsAfter);
+}
+function writeShelf(store, fights) {
+  let offered = rotateShelf(fights);
+  let refused = null;
+  for (let attempts = 1; attempts <= KEPT_MAXIMUM + 1; attempts += 1) {
+    const text = encodeJson({
+      version: SHELF_VERSION,
+      fights: offered.map(encodeKeptFight)
+    }, 0);
+    if (text instanceof Error) return new ShelfUnwritable({
+      cause: text
+    });
+    const written = store.write(SHELF_KEY, text);
+    if (!(written instanceof Error)) {
+      const keptOpenedAts = new Set(offered.map((keptFight) => keptFight.openedAt));
+      const droppedOpenedAts = fights.filter((keptFight) => !keptOpenedAts.has(keptFight.openedAt)).map((keptFight) => keptFight.openedAt);
+      assert(droppedOpenedAts.length + offered.length === fights.length, "every fight offered is kept or dropped");
+      return {
+        contents: {
+          fights: offered
+        },
+        droppedOpenedAt: droppedOpenedAts
+      };
+    }
+    if (written instanceof StoreUnavailable) return written;
+    refused = written;
+    const shorter = dropOldestUnpinned(offered);
+    if (shorter === null) return new RotationRefused(attempts, {
+      cause: refused
+    });
+    offered = shorter;
+  }
+  assert(offered.length === 0, "a shelf offered once per fight it holds has nothing left to drop");
+  return new RotationRefused(KEPT_MAXIMUM + 1, {
+    cause: refused
+  });
+}
+function encodeKeptFight(fight) {
+  assert(fight.payloads.length > 0, "a fight written was kept from something");
+  const encoded = {
+    [FIGHT_FIELDS.openedAt]: fight.openedAt,
+    [FIGHT_FIELDS.payloads]: fight.payloads,
+    [FIGHT_FIELDS.place]: fight.place,
+    [FIGHT_FIELDS.margonemClientBuild]: fight.margonemClientBuild,
+    [FIGHT_FIELDS.isPinned]: fight.isPinned
+  };
+  if (fight.readerId === null) return encoded;
+  assert(fight.readerId > 0, "an id written is one the page stated");
+  return {
+    ...encoded,
+    [FIGHT_FIELDS.readerId]: fight.readerId
+  };
+}
+function dropOldestUnpinned(fights) {
+  const fightIndex = fights.findIndex((keptFight) => !keptFight.isPinned);
+  if (fightIndex === -1) return null;
+  const remaining = [
+    ...fights
+  ];
+  remaining.splice(fightIndex, 1);
+  assert(remaining.length + 1 === fights.length, "dropping the oldest drops exactly one");
+  return remaining;
+}
+function writeKeptFightPin(store, shelf, openedAt, isPinned) {
+  assert(shelf.fights.some((keptFight) => keptFight.openedAt === openedAt), "a pin is asked of a fight the shelf keeps");
+  assert(shelf.fights.length <= KEPT_MAXIMUM, "on a shelf inside its bound");
+  const fightsAfter = shelf.fights.map((keptFight) => keptFight.openedAt === openedAt ? {
+    ...keptFight,
+    isPinned
+  } : keptFight);
+  return writeShelf(store, fightsAfter);
+}
+function writeShelfContents(store, shelf) {
+  assert(shelf.fights.length <= KEPT_MAXIMUM, "a shelf moved is inside its stated bound");
+  return writeShelf(store, shelf.fights);
+}
+function deleteShelf(store) {
+  return store.delete(SHELF_KEY);
+}
+function rotateShelf(fights) {
+  let rotated = [
+    ...fights
+  ];
+  for (let rotations = 0; rotations < fights.length; rotations += 1) {
+    if (rotated.length <= KEPT_MAXIMUM) break;
+    const shorter = dropOldestUnpinned(rotated);
+    if (shorter === null) break;
+    rotated = shorter;
+  }
+  assert(rotated.length <= fights.length, "a rotation never grows the shelf it was handed");
+  assert(rotated.length <= KEPT_MAXIMUM, "a rotation leaves the shelf inside its bound");
+  return rotated;
+}
+
+// src/runtime/fight-state.ts
+function tallyFightState(view) {
+  const figures = tallyFightFigures(view);
+  verifyFightFigures(figures);
+  assert(figures.payloadsApplied === view.payloadsApplied, "tallied off the view it was handed");
+  return {
+    view,
+    figures
+  };
+}
+function replayKeptFight(fight, tables, options) {
+  assert(fight.payloads.length > 0, "a fight kept was kept from something");
+  const replayed = replayFightPayloads(fight.payloads, tables, options);
+  assert(replayed !== null, "a payload replayed is a fight to stand on");
+  return replayed;
+}
+function replayFightPayloads(payloads, tables, options) {
+  assert(payloads.length <= CALLS_MAXIMUM, "a fight replayed is inside a recording's bound");
+  const session = createFightSession(options);
+  const messagesByPayload = [];
+  for (const payload of payloads) {
+    const record = readPayloadEnvelope(payload);
+    if (record instanceof Error) return record;
+    const prepared = preparePayload(session, record, tables);
+    if (prepared instanceof Error) return prepared;
+    commitPayload(session, prepared);
+    messagesByPayload.push(record.messages);
+  }
+  const view = composeFightView(session);
+  if (view === null) return null;
+  return {
+    ...tallyFightState(view),
+    messagesByPayload
+  };
+}
+function lookupShownFight(liveView, chosenFightOpenedAt, fights, keptFightStatesByOpenedAt) {
+  const keptFight = lookupShownKeptFight(liveView !== null, chosenFightOpenedAt, fights);
+  if (keptFight !== void 0) {
+    const keptFightState = keptFightStatesByOpenedAt.get(keptFight.openedAt);
+    assert(keptFightState !== void 0, "a fight on the shelf has its reading held");
+    if (keptFightState === null) return null;
+    return {
+      keptFight,
+      fightState: keptFightState
+    };
+  }
+  if (liveView === null) return null;
+  return {
+    keptFight: null,
+    fightState: tallyFightState(liveView)
+  };
+}
+function lookupShownKeptFight(hasLiveView, chosenFightOpenedAt, fights) {
+  assert(fights.length <= KEPT_MAXIMUM, "a shelf walked is inside its stated bound");
+  const chosen = chosenFightOpenedAt === null ? void 0 : fights.find((keptFight) => keptFight.openedAt === chosenFightOpenedAt);
+  return chosen ?? (hasLiveView ? void 0 : lookupNewestFight(fights));
+}
+function lookupNewestFight(fights) {
+  let newest;
+  for (const keptFight of fights) {
+    if (newest === void 0) newest = keptFight;
+    else if (keptFight.openedAt > newest.openedAt) newest = keptFight;
+  }
+  if (newest !== void 0) assert(fights.includes(newest), "the newest is one of the shelf's");
+  else assert(fights.length === 0, "only an empty shelf names no newest");
+  return newest;
+}
+
+// src/runtime/live-fight.ts
+var CaptureCallsExceeded = class extends Error {
+  name = "CaptureCallsExceeded";
+  maximum;
+  constructor(maximum) {
+    super();
+    this.maximum = maximum;
+  }
+};
+function initLiveFight(options) {
+  const liveFight = {
+    session: createFightSession(options.sessionOptions),
+    capture: createFightCapture(),
+    snapshotBefore: null,
+    place: null,
+    readerId: null,
+    openedAt: null,
+    openedAtRefusal: null,
+    payloadRefusal: null,
+    margonemEngineBattle: null
+  };
+  const listener = {
+    onBeforeCall() {
+      liveFight.snapshotBefore = executeLiveStep(options, DEFECT_KIND.file, null, () => readLiveMargonemEngineWarriors(liveFight, options));
+    },
+    onPayload(payload) {
+      const openingRead = attempt(() => isPayloadOpening(payload));
+      const isOpeningApart = openingRead instanceof Caught ? false : openingRead;
+      if (isOpeningApart) liveFight.payloadRefusal = null;
+      const { record, isOpening } = executeLiveReading(liveFight, options, DEFECT_KIND.reading, {
+        record: null,
+        isOpening: isOpeningApart
+      }, () => {
+        const payloadRecord = readPayloadEnvelope(payload);
+        if (!(payloadRecord instanceof Error)) {
+          return {
+            record: payloadRecord,
+            isOpening: payloadRecord.isInit
+          };
+        }
+        options.defects.add({
+          kind: DEFECT_KIND.reading,
+          region: null,
+          failure: payloadRecord
+        });
+        liveFight.payloadRefusal ??= payloadRecord;
+        return {
+          record: null,
+          isOpening: isOpeningApart
+        };
+      });
+      const snapshotAfter = executeLiveStep(options, DEFECT_KIND.file, null, () => readLiveMargonemEngineWarriors(liveFight, options));
+      const isCaptured = executeLiveReading(liveFight, options, DEFECT_KIND.file, false, () => {
+        const messages = record === null ? [] : record.messages;
+        const call = {
+          payload,
+          messages,
+          wasRefused: record === null,
+          combatantsBefore: liveFight.snapshotBefore,
+          combatantsAfter: snapshotAfter
+        };
+        const prepared = prepareCapture(liveFight.capture, call, isOpening);
+        commitCapture(liveFight.capture, prepared);
+        return true;
+      });
+      if (!isCaptured) {
+        if (isOpening) liveFight.capture = createFightCapture();
+      }
+      const committed = record === null ? null : executeLiveReading(liveFight, options, DEFECT_KIND.reading, null, () => {
+        const prepared = preparePayload(liveFight.session, record, options.tables);
+        if (prepared instanceof Error) {
+          options.defects.add({
+            kind: DEFECT_KIND.reading,
+            region: null,
+            failure: prepared
+          });
+          liveFight.payloadRefusal ??= prepared;
+          return null;
+        }
+        return commitPayload(liveFight.session, prepared);
+      });
+      if (committed === null) {
+        if (isOpening) liveFight.session = createFightSession(options.sessionOptions);
+      }
+      if (committed?.hasOpened === true) {
+        const now = options.clock.readNowMilliseconds();
+        if (now instanceof Caught) {
+          liveFight.openedAt = null;
+          liveFight.openedAtRefusal = now;
+        } else {
+          liveFight.openedAt = now;
+          liveFight.openedAtRefusal = null;
+        }
+        liveFight.place = null;
+        liveFight.readerId = null;
+        executeLiveStep(options, DEFECT_KIND.reading, void 0, () => {
+          liveFight.place = lookupMargonemValue(options.place.readPlace());
+          liveFight.readerId = lookupMargonemValue(options.hero.readHeroId());
+          options.onFightOpened();
+        });
+      }
+      if (committed?.hasClosed === true) {
+        executeLiveStep(options, DEFECT_KIND.keeping, void 0, () => {
+          const openedAt = liveFight.openedAt;
+          if (openedAt === null) {
+            const refusal = liveFight.openedAtRefusal;
+            assert(refusal !== null, "a fight opened with no moment kept why");
+            options.defects.add({
+              kind: DEFECT_KIND.keeping,
+              region: null,
+              failure: refusal
+            });
+            return;
+          }
+          if (liveFight.payloadRefusal !== null) {
+            options.defects.add({
+              kind: DEFECT_KIND.keeping,
+              region: null,
+              failure: liveFight.payloadRefusal
+            });
+            return;
+          }
+          if (liveFight.capture.isTruncated) {
+            options.defects.add({
+              kind: DEFECT_KIND.keeping,
+              region: null,
+              failure: new CaptureCallsExceeded(CALLS_MAXIMUM)
+            });
+            return;
+          }
+          const payloads = liveFight.capture.calls.map((call) => call.payload);
+          const fight = {
+            openedAt,
+            payloads,
+            place: liveFight.place,
+            readerId: liveFight.readerId,
+            margonemClientBuild: lookupMargonemValue(options.build.readBuildId()),
+            isPinned: false
+          };
+          options.keeper.keep(fight);
+        });
+        executeLiveStep(options, DEFECT_KIND.reading, void 0, () => options.onFightKept());
+      }
+      executeLiveStep(options, DEFECT_KIND.reading, void 0, () => options.markStale());
+    }
+  };
+  return {
+    live: liveFight,
+    listener
+  };
+}
+function executeLiveStep(options, kind, fallback, step) {
+  const ran = attempt(step);
+  if (!(ran instanceof Caught)) return ran;
+  options.defects.add({
+    kind,
+    region: null,
+    failure: ran
+  });
+  return fallback;
+}
+function executeLiveReading(liveFight, options, kind, fallback, step) {
+  const ran = attempt(step);
+  if (!(ran instanceof Caught)) return ran;
+  options.defects.add({
+    kind,
+    region: null,
+    failure: ran
+  });
+  liveFight.payloadRefusal ??= ran;
+  return fallback;
+}
+function readLiveMargonemEngineWarriors(liveFight, options) {
+  if (liveFight.margonemEngineBattle === null) {
+    const battle = options.battle.readBattle();
+    if (battle instanceof Error) {
+      options.defects.add({
+        kind: DEFECT_KIND.file,
+        region: null,
+        failure: battle
+      });
+      return null;
+    }
+    liveFight.margonemEngineBattle = battle;
+  }
+  const warriorSnapshot = liveFight.margonemEngineBattle.readWarriors();
+  if (!(warriorSnapshot instanceof Error)) return warriorSnapshot;
+  if (warriorSnapshot instanceof MargonemEngineWarriorsAbsent) return [];
+  options.defects.add({
+    kind: DEFECT_KIND.file,
+    region: null,
+    failure: warriorSnapshot
+  });
+  return null;
+}
+function lookupMargonemValue(margonemValue) {
+  if (margonemValue instanceof MargonemValueAbsent) return null;
+  if (margonemValue instanceof Caught) return null;
+  return margonemValue;
+}
+
+// src/runtime/carried-tooltip.ts
+function writeCarriedTooltips(view, tables, translate, tooltip) {
+  const fightStandings = replayAuraStandings(view, tables.statedSkills);
+  const figuresByCombatantAndBit = /* @__PURE__ */ new Map();
+  const carriedFigures = tallyCarriedFigures({
+    statuses: view.carriedStatuses,
+    casts: fightStandings.casts,
+    roster: view.roster,
+    turnsByCombatantId: view.turnsByCombatantId,
+    keyByStatusBit: tables.keyByStatusBit
+  });
+  for (const carriedFigure of carriedFigures) {
+    figuresByCombatantAndBit.set(`${carriedFigure.combatantId}/${carriedFigure.bit}`, carriedFigure);
+  }
+  const rowsByCombatantId = /* @__PURE__ */ new Map();
+  for (const combatantId of view.roster.byId.keys()) {
+    const tooltipContent = presentCarriedTooltip(combatantId, view, fightStandings, figuresByCombatantAndBit);
+    rowsByCombatantId.set(combatantId, presentTooltipRows(tooltipContent, translate, tables.statusBits));
+  }
+  assert(rowsByCombatantId.size <= COMBATANTS_MAXIMUM, "a block per fighter the roster holds, and no more");
+  return tooltip.writeRows(rowsByCombatantId);
+}
+function presentCarriedTooltip(combatantId, view, fightStandings, figuresByCombatantAndBit) {
+  const legendary = view.legendaryStandings.find((legendaryStanding) => legendaryStanding.combatantId === combatantId);
+  const provoked = fightStandings.provocations.find((provocation) => provocation.provokedId === combatantId);
+  const caster = provoked === void 0 ? void 0 : view.roster.byId.get(provoked.casterId);
+  const statuses = view.carriedStatuses.filter((carriedStatus) => carriedStatus.combatantId === combatantId);
+  return {
+    turnsTaken: view.turnsByCombatantId.get(combatantId) ?? 0,
+    provokedBy: provoked === void 0 ? null : {
+      name: caster?.name ?? PANEL_WORDS.withoutActor,
+      turnsElapsed: provoked.turnsElapsed,
+      turnsStated: provoked.turnsStated
+    },
+    provokedCount: fightStandings.provocations.filter((provocation) => provocation.casterId === combatantId).length,
+    statuses: statuses.map((carriedStatus) => {
+      const statusKey = `${carriedStatus.combatantId}/${carriedStatus.bit}`;
+      const carriedFigure = figuresByCombatantAndBit.get(statusKey);
+      return {
+        bit: carriedStatus.bit,
+        percent: carriedFigure?.percent ?? null
+      };
+    }),
+    holytouchHealsReceived: legendary?.holytouchHealsReceived ?? null,
+    hasSpentLastheal: legendary?.hasSpentLastheal ?? false,
+    hasJoinedInProgress: view.hasJoinedInProgress
+  };
+}
+
+// libs/vocabulary.ts
+function isOneOf(words, candidate) {
+  assert(words.length > 0, "a vocabulary holds at least one word");
+  if (typeof candidate !== "string") return false;
+  return words.includes(candidate);
+}
+
+// src/ui/panel-choice.ts
+var STORAGE_CHOICE = {
+  local: "local",
+  session: "session",
+  memory: "memory"
+};
+var PANEL_WINDOW = {
+  meter: "meter",
+  helper: "helper"
+};
+var TYPE_STEP = {
+  small: "small",
+  medium: "medium",
+  large: "large"
+};
+var STORAGE_CHOICES = Object.values(STORAGE_CHOICE);
+var PANEL_WINDOWS = Object.values(PANEL_WINDOW);
+var TYPE_STEPS = Object.values(TYPE_STEP);
+var TYPE_STEP_DEFAULT = TYPE_STEP.medium;
+
+// src/runtime/settings.ts
+var SETTING_KEY = {
+  storage: "storage",
+  typeStep: "type-step",
+  meterPosition: "meter-position",
+  meterFolded: "meter-folded",
+  helperPosition: "helper-position",
+  helperFolded: "helper-folded",
+  meterSize: "meter-size",
+  helperSize: "helper-size"
+};
+var SettingUnreadable = class extends Error {
+  name = "SettingUnreadable";
+  key;
+  constructor(key, options) {
+    super(void 0, options);
+    this.key = key;
+  }
+};
+var SettingTooLong = class extends Error {
+  name = "SettingTooLong";
+  key;
+  constructor(key) {
+    super();
+    this.key = key;
+  }
+};
+var STORE_KEY_BY_SETTING = {
+  [SETTING_KEY.storage]: STORE_KEY.storage,
+  [SETTING_KEY.typeStep]: STORE_KEY.typeStep,
+  [SETTING_KEY.meterPosition]: STORE_KEY.meterPosition,
+  [SETTING_KEY.meterFolded]: STORE_KEY.meterFolded,
+  [SETTING_KEY.helperPosition]: STORE_KEY.helperPosition,
+  [SETTING_KEY.helperFolded]: STORE_KEY.helperFolded,
+  [SETTING_KEY.meterSize]: STORE_KEY.meterSize,
+  [SETTING_KEY.helperSize]: STORE_KEY.helperSize
+};
+var FOLD_SETTING_BY_WINDOW = {
+  [PANEL_WINDOW.meter]: SETTING_KEY.meterFolded,
+  [PANEL_WINDOW.helper]: SETTING_KEY.helperFolded
+};
+var POSITION_SETTING_BY_WINDOW = {
+  [PANEL_WINDOW.meter]: SETTING_KEY.meterPosition,
+  [PANEL_WINDOW.helper]: SETTING_KEY.helperPosition
+};
+var SIZE_SETTING_BY_WINDOW = {
+  [PANEL_WINDOW.meter]: SETTING_KEY.meterSize,
+  [PANEL_WINDOW.helper]: SETTING_KEY.helperSize
+};
+var STORAGE_DEFAULT = STORAGE_CHOICE.local;
+var FOLDED = "1";
+var UNFOLDED = "";
+var PAIR_LENGTH_MAXIMUM = 4096;
+var POSITION_FIELDS = {
+  left: "left",
+  top: "top"
+};
+var SIZE_FIELDS = {
+  width: "width",
+  height: "height"
+};
+function readStorageChoice(store) {
+  const storedText = store.read(STORE_KEY_BY_SETTING[SETTING_KEY.storage]);
+  if (storedText instanceof Error) return storedText;
+  if (storedText === null) return STORAGE_DEFAULT;
+  if (!isOneOf(STORAGE_CHOICES, storedText)) return new SettingUnreadable(SETTING_KEY.storage);
+  return storedText;
+}
+function writeStorageChoice(store, choice) {
+  return store.write(STORE_KEY_BY_SETTING[SETTING_KEY.storage], choice);
+}
+function readTypeStep(store) {
+  const storedText = store.read(STORE_KEY_BY_SETTING[SETTING_KEY.typeStep]);
+  if (storedText instanceof Error) return storedText;
+  if (storedText === null) return TYPE_STEP_DEFAULT;
+  if (!isOneOf(TYPE_STEPS, storedText)) return new SettingUnreadable(SETTING_KEY.typeStep);
+  return storedText;
+}
+function writeTypeStep(store, step) {
+  return store.write(STORE_KEY_BY_SETTING[SETTING_KEY.typeStep], step);
+}
+function readWindowCollapsed(store, panelWindow) {
+  const key = FOLD_SETTING_BY_WINDOW[panelWindow];
+  const storedText = store.read(STORE_KEY_BY_SETTING[key]);
+  if (storedText instanceof Error) return storedText;
+  if (storedText === null) return false;
+  if (storedText === FOLDED) return true;
+  if (storedText === UNFOLDED) return false;
+  return new SettingUnreadable(key);
+}
+function writeWindowCollapsed(store, panelWindow, isCollapsed) {
+  const key = FOLD_SETTING_BY_WINDOW[panelWindow];
+  return store.write(STORE_KEY_BY_SETTING[key], isCollapsed ? FOLDED : UNFOLDED);
+}
+function readWindowPosition(store, panelWindow) {
+  const key = POSITION_SETTING_BY_WINDOW[panelWindow];
+  const storedText = store.read(STORE_KEY_BY_SETTING[key]);
+  if (storedText instanceof Error) return storedText;
+  if (storedText === null) return null;
+  if (storedText.length > PAIR_LENGTH_MAXIMUM) return new SettingTooLong(key);
+  const pair = parseWholePair(storedText, key, POSITION_FIELDS, [
+    "left",
+    "top"
+  ]);
+  if (pair instanceof Error) return pair;
+  return {
+    left: pair[0],
+    top: pair[1]
+  };
+}
+function parseWholePair(text, key, fields, names) {
+  const parsed = parseJson(text);
+  if (parsed instanceof Error) return new SettingUnreadable(key, {
+    cause: parsed
+  });
+  if (!isRecord(parsed)) return new SettingUnreadable(key);
+  const firstNumber = getNumberField(parsed, fields, names[0]);
+  const secondNumber = getNumberField(parsed, fields, names[1]);
+  if (firstNumber instanceof Error) return new SettingUnreadable(key, {
+    cause: firstNumber
+  });
+  if (secondNumber instanceof Error) return new SettingUnreadable(key, {
+    cause: secondNumber
+  });
+  if (firstNumber === null) return new SettingUnreadable(key);
+  if (secondNumber === null) return new SettingUnreadable(key);
+  if (!Number.isSafeInteger(firstNumber)) return new SettingUnreadable(key);
+  if (!Number.isSafeInteger(secondNumber)) return new SettingUnreadable(key);
+  return [
+    firstNumber,
+    secondNumber
+  ];
+}
+function writeWindowPosition(store, panelWindow, position) {
+  const key = POSITION_SETTING_BY_WINDOW[panelWindow];
+  const text = encodeWholePair(POSITION_FIELDS, [
+    "left",
+    "top"
+  ], [
+    position.left,
+    position.top
+  ]);
+  return store.write(STORE_KEY_BY_SETTING[key], text);
+}
+function encodeWholePair(fields, names, numbers) {
+  const firstKey = fields[names[0]];
+  const secondKey = fields[names[1]];
+  assert(firstKey !== secondKey, "a pair is written under two names");
+  const firstNumber = formatInteger(numbers[0]);
+  const secondNumber = formatInteger(numbers[1]);
+  return `{"${firstKey}":${firstNumber},"${secondKey}":${secondNumber}}`;
+}
+function readWindowSize(store, panelWindow) {
+  const key = SIZE_SETTING_BY_WINDOW[panelWindow];
+  const storedText = store.read(STORE_KEY_BY_SETTING[key]);
+  if (storedText instanceof Error) return storedText;
+  if (storedText === null) return null;
+  if (storedText.length > PAIR_LENGTH_MAXIMUM) return new SettingTooLong(key);
+  const pair = parseWholePair(storedText, key, SIZE_FIELDS, [
+    "width",
+    "height"
+  ]);
+  if (pair instanceof Error) return pair;
+  const [width, height] = pair;
+  if (width < 1) return new SettingUnreadable(key);
+  if (height < 1) return new SettingUnreadable(key);
+  return {
+    width,
+    height
+  };
+}
+function writeWindowSize(store, panelWindow, size) {
+  assert(size.width > 0, "a window made narrower than nothing is our bug");
+  assert(size.height > 0, "and so is one made shorter than nothing");
+  const key = SIZE_SETTING_BY_WINDOW[panelWindow];
+  const text = encodeWholePair(SIZE_FIELDS, [
+    "width",
+    "height"
+  ], [
+    size.width,
+    size.height
+  ]);
+  return store.write(STORE_KEY_BY_SETTING[key], text);
+}
+function deleteWindowSize(store, panelWindow) {
+  return store.delete(STORE_KEY_BY_SETTING[SIZE_SETTING_BY_WINDOW[panelWindow]]);
+}
+
+// src/runtime/shelf-keeper.ts
+var SHELF_ANSWERS_MAXIMUM = 4;
+function initShelfKeeper(options) {
+  let store;
+  {
+    const chosen = options.initShelfStore(options.choice);
+    if (chosen instanceof StoreUnavailable) {
+      options.defects.add({
+        kind: DEFECT_KIND.kept,
+        region: null,
+        failure: chosen
+      });
+      store = initMemoryStore();
+    } else store = chosen;
+  }
+  const opened = openShelf(store);
+  if (opened instanceof Error) {
+    options.defects.add({
+      kind: DEFECT_KIND.kept,
+      region: null,
+      failure: opened
+    });
+    if (!isShelfSuperseded(opened)) store = initMemoryStore();
+  } else if (opened.fightsUnreadable > 0) {
+    const failure = new KeptFightsUnreadable(opened.fightsUnreadable);
+    options.defects.add({
+      kind: DEFECT_KIND.kept,
+      region: null,
+      failure
+    });
+  }
+  const state = {
+    options,
+    store,
+    choice: options.choice,
+    fights: opened instanceof Error ? [] : opened.fights,
+    answers: {
+      isEverySlotPinned: false,
+      hasStoreRefused: false,
+      hasStoreMadeRoom: false,
+      hasChoiceRefused: false,
+      hasMoveRefused: false,
+      hasPinRefused: false
+    },
+    fightStatesByOpenedAt: /* @__PURE__ */ new Map()
+  };
+  assert(state.fights.length <= KEPT_MAXIMUM, "a shelf opened is inside its stated bound");
+  executeShelvedFightReplays(state);
+  return {
+    getFights: () => state.fights,
+    getChoice: () => state.choice,
+    getAnswers: () => ({
+      ...state.answers
+    }),
+    getKeptFightStates: () => state.fightStatesByOpenedAt,
+    // Keep a fight, and hold what the store answered.
+    keep: (fight) => {
+      const fightsAfter = [
+        ...state.fights,
+        fight
+      ];
+      const written = writeKeptFight(state.store, {
+        fights: state.fights
+      }, fight);
+      state.answers.isEverySlotPinned = false;
+      if (!(written instanceof Error)) {
+        setShelfWritten(state, written.contents, rotateShelf(fightsAfter).length);
+        executeShelvedFightReplays(state);
+        return;
+      }
+      if (written instanceof EverySlotPinned) {
+        state.answers.isEverySlotPinned = true;
+        return;
+      }
+      if (written instanceof FightAlreadyKept) {
+        state.options.defects.add({
+          kind: DEFECT_KIND.keeping,
+          region: null,
+          failure: written
+        });
+        return;
+      }
+      {
+        const asked = rotateShelf(fightsAfter);
+        assert(asked.length <= KEPT_MAXIMUM, "what a reader asked for is inside the bound");
+        state.answers.hasStoreRefused = true;
+        state.answers.hasStoreMadeRoom = false;
+        state.fights = asked;
+      }
+      executeShelvedFightReplays(state);
+    },
+    // Pin a fight, or take its pin off.
+    pin: (openedAt) => {
+      const fight = state.fights.find((keptFight) => keptFight.openedAt === openedAt);
+      if (fight === void 0) return;
+      const fightsAfter = state.fights.map((keptFight) => keptFight.openedAt === openedAt ? {
+        ...keptFight,
+        isPinned: !keptFight.isPinned
+      } : keptFight);
+      assert(fightsAfter.length === state.fights.length, "a pin moves no fight on or off the shelf");
+      const written = writeKeptFightPin(state.store, {
+        fights: state.fights
+      }, openedAt, !fight.isPinned);
+      if (written instanceof Error) {
+        state.answers.hasPinRefused = true;
+        state.fights = fightsAfter;
+      } else setShelfWritten(state, written.contents, fightsAfter.length);
+      executeShelvedFightReplays(state);
+    },
+    // Move the shelf to the store chosen. The fights go first, the answer second, and the place
+    // they came from is emptied last: a store that refuses them, or a browser that will not
+    // keep the answer, leaves the reader's fights where the next page will still look.
+    moveShelf: (storageChoice) => {
+      if (storageChoice === state.choice) {
+        state.answers.hasChoiceRefused = false;
+        state.answers.hasMoveRefused = false;
+        return;
+      }
+      state.answers.hasChoiceRefused = false;
+      const targetStore = state.options.initShelfStore(storageChoice);
+      if (targetStore instanceof StoreUnavailable) {
+        state.answers.hasMoveRefused = true;
+        return;
+      }
+      const written = writeShelfContents(targetStore, {
+        fights: state.fights
+      });
+      state.answers.hasMoveRefused = written instanceof Error;
+      if (written instanceof Error) return;
+      const answered = writeStorageChoice(state.options.settings, storageChoice);
+      state.answers.hasChoiceRefused = answered instanceof Error;
+      if (answered instanceof Error) return;
+      const deleted = deleteShelf(state.store);
+      if (deleted instanceof Error) {
+        state.options.defects.add({
+          kind: DEFECT_KIND.kept,
+          region: null,
+          failure: deleted
+        });
+      }
+      const offered = state.fights.length;
+      assert(written.contents.fights.length <= offered, "a shelf moved grows by nothing");
+      state.choice = storageChoice;
+      state.store = targetStore;
+      setShelfWritten(state, written.contents, offered);
+      executeShelvedFightReplays(state);
+    }
+  };
+}
+function executeShelvedFightReplays(state) {
+  assert(state.fights.length <= KEPT_MAXIMUM, "a shelf replayed is inside its stated bound");
+  for (const openedAt of [
+    ...state.fightStatesByOpenedAt.keys()
+  ]) {
+    if (state.fights.some((keptFight) => keptFight.openedAt === openedAt)) continue;
+    state.fightStatesByOpenedAt.delete(openedAt);
+  }
+  const { tables, sessionOptions, defects } = state.options;
+  for (const fight of state.fights) {
+    if (state.fightStatesByOpenedAt.has(fight.openedAt)) continue;
+    const ran = attempt(() => replayKeptFight(fight, tables, sessionOptions));
+    let fightState = null;
+    if (ran instanceof Error) {
+      defects.add({
+        kind: DEFECT_KIND.kept,
+        region: null,
+        failure: ran
+      });
+    } else fightState = ran;
+    if (fightState !== null) {
+      const payloadsReplayedCount = fightState.messagesByPayload.length;
+      assert(payloadsReplayedCount === fight.payloads.length, "a kept fight is replayed payload by payload");
+    }
+    state.fightStatesByOpenedAt.set(fight.openedAt, fightState);
+  }
+  assert(state.fightStatesByOpenedAt.size <= state.fights.length, "a reading is held for a fight on the shelf, and for nothing else");
+}
+function setShelfWritten(state, contents, offered) {
+  assert(contents.fights.length <= offered, "a store never keeps more than it was offered");
+  assert(offered <= KEPT_MAXIMUM, "and was offered a shelf inside its bound");
+  state.answers.hasStoreRefused = false;
+  state.answers.hasStoreMadeRoom = contents.fights.length < offered;
+  state.answers.hasPinRefused = false;
+  state.fights = contents.fights;
+}
+
+// src/ui/ranked-order.ts
+function calculateRankedOrder(oneFigure, otherFigure, oneText, otherText) {
+  const isOneStated = Number.isFinite(oneFigure);
+  const isOtherStated = Number.isFinite(otherFigure);
+  if (isOneStated) {
+    if (!isOtherStated) return -1;
+    if (otherFigure !== oneFigure) return otherFigure - oneFigure;
+  } else {
+    if (isOtherStated) return 1;
+  }
+  if (oneText === otherText) return 0;
+  return oneText < otherText ? -1 : 1;
+}
+
+// src/ui/panel-screen.ts
+var PANEL_METRIC = {
+  damageDealt: "damageDealt",
+  damageTaken: "damageTaken",
+  healthGiven: "healthGiven",
+  healthRestored: "healthRestored"
+};
+var PANEL_NOUN = {
+  damage: "damage",
+  healing: "healing"
+};
+var PANEL_DIRECTION = {
+  given: "given",
+  received: "received"
+};
+var SIDE_CHOICE = {
+  everyone: "everyone",
+  reader: "reader",
+  opposing: "opposing"
+};
+var SCREEN_ORDER = Object.values(PANEL_METRIC);
+var SCREEN_AXES = {
+  damageDealt: {
+    noun: PANEL_NOUN.damage,
+    direction: PANEL_DIRECTION.given
+  },
+  damageTaken: {
+    noun: PANEL_NOUN.damage,
+    direction: PANEL_DIRECTION.received
+  },
+  healthGiven: {
+    noun: PANEL_NOUN.healing,
+    direction: PANEL_DIRECTION.given
+  },
+  healthRestored: {
+    noun: PANEL_NOUN.healing,
+    direction: PANEL_DIRECTION.received
+  }
+};
+var SCREEN_BY_AXES = {
+  damage: {
+    given: PANEL_METRIC.damageDealt,
+    received: PANEL_METRIC.damageTaken
+  },
+  healing: {
+    given: PANEL_METRIC.healthGiven,
+    received: PANEL_METRIC.healthRestored
+  }
+};
+var OPENED_PART = {
+  skill: "skill",
+  source: "source",
+  element: "element",
+  plain: "plain"
+};
+var SIDE_CHOICES = Object.values(SIDE_CHOICE);
+var OPTIONS_LIST_NAME = "options";
+var SHELF_LIST_NAME = "shelf";
+var OPPONENT_WORDS = {
+  damageDealt: PANEL_WORDS.dealtTo,
+  damageTaken: PANEL_WORDS.takenFrom,
+  healthGiven: PANEL_WORDS.dealtTo,
+  healthRestored: PANEL_WORDS.takenFrom
+};
+var KIND_WORDS = {
+  damageDealt: PANEL_WORDS.damageKind,
+  damageTaken: PANEL_WORDS.damageKind,
+  healthGiven: PANEL_WORDS.healthSource,
+  healthRestored: PANEL_WORDS.healthSource
+};
+function createScreenState(isMeterCollapsed, isHelperCollapsed, typeStep, windowSizes) {
+  const state = {
+    metric: PANEL_METRIC.damageDealt,
+    side: SIDE_CHOICE.everyone,
+    isOnShelf: false,
+    isOnOptions: false,
+    openedCombatantId: null,
+    openUnnamedEnd: null,
+    pairCombatantId: null,
+    openPart: null,
+    chosenFightOpenedAt: null,
+    isMeterCollapsed,
+    isHelperCollapsed,
+    typeStep,
+    windowSizes
+  };
+  return state;
+}
+function composeListName(screen, fightId) {
+  if (screen.isOnOptions) return OPTIONS_LIST_NAME;
+  if (screen.isOnShelf) return SHELF_LIST_NAME;
+  const partName = screen.openPart === null ? "" : composeNameForPart(screen.openPart);
+  const name = [
+    screen.metric,
+    screen.side,
+    `${fightId}`,
+    `${screen.openedCombatantId}`,
+    `${screen.openUnnamedEnd}`,
+    `${screen.pairCombatantId}`,
+    partName
+  ].join("|");
+  return name;
+}
+function composeNameForPart(openedPart) {
+  if (openedPart.kind === OPENED_PART.skill) return `${OPENED_PART.skill}:${openedPart.name}`;
+  if (openedPart.kind === OPENED_PART.source) return `${OPENED_PART.source}:${openedPart.source}`;
+  if (openedPart.kind === OPENED_PART.plain) return `${OPENED_PART.plain}:`;
+  return `${OPENED_PART.element}:${openedPart.element}`;
+}
+function getWordsForOpponentCut(metric) {
+  return OPPONENT_WORDS[metric];
+}
+function getWordsForKindCut(metric) {
+  return KIND_WORDS[metric];
+}
+function getNounForMetric(metric) {
+  return SCREEN_AXES[metric].noun;
+}
+function getDirectionForMetric(metric) {
+  return SCREEN_AXES[metric].direction;
+}
+function getWordsForMetric(metric) {
+  const axes = SCREEN_AXES[metric];
+  return `${getWordsForNoun(axes.noun)} ${getDirectionWordsForMetric(metric)}`;
+}
+function presentNounStrips(metricShown) {
+  const strips = Object.values(PANEL_NOUN).map((noun) => ({
+    name: getScreenAfterNoun(noun, metricShown),
+    words: getWordsForNoun(noun),
+    isCurrent: noun === SCREEN_AXES[metricShown].noun
+  }));
+  return strips;
+}
+function getScreenAfterNoun(noun, metricShown) {
+  return SCREEN_BY_AXES[noun][SCREEN_AXES[metricShown].direction];
+}
+function presentDirectionStrips(metricShown) {
+  const strips = getScreensForNoun(SCREEN_AXES[metricShown].noun).map((screen) => ({
+    name: screen,
+    words: getDirectionWordsForMetric(screen),
+    isCurrent: screen === metricShown
+  }));
+  return strips;
+}
+function getScreensForNoun(noun) {
+  const screens = SCREEN_ORDER.filter((screen) => SCREEN_AXES[screen].noun === noun);
+  return screens;
+}
+function presentSideStrips(sideShown) {
+  const strips = SIDE_CHOICES.map((choice) => ({
+    name: choice,
+    words: getWordsForSide(choice),
+    isCurrent: choice === sideShown
+  }));
+  return strips;
+}
+
+// src/ui/panel-content.ts
+var UNNAMED_END = {
+  actor: "actor",
+  target: "target"
+};
+var PINNED_PLACING = {
+  apart: "apart",
+  cut: "cut"
+};
+var PINNED_CASE = {
+  dealtWithNoActor: "dealtWithNoActor",
+  givenWithNoActor: "givenWithNoActor",
+  takenWithNoActor: "takenWithNoActor",
+  takenWithNoTarget: "takenWithNoTarget",
+  restoredWithNoActor: "restoredWithNoActor"
+};
+var HALF_NAMED_FIELD = {
+  damageTakenFromNobody: "damageTakenFromNobody",
+  damageDealtToNobody: "damageDealtToNobody",
+  healthRestoredByNobody: "healthRestoredByNobody"
+};
+var HALF_NAMED_TOTAL_FIELD = {
+  damageDealtByNobody: "damageDealtByNobody",
+  damageTakenByNobody: "damageTakenByNobody",
+  healthGivenByNobody: "healthGivenByNobody",
+  healthRestoredToNobody: "healthRestoredToNobody"
+};
+var HALF_NAMED_KIND_FIELD = {
+  damageTakenFromNobodyByKind: "damageTakenFromNobodyByKind",
+  damageDealtToNobodyByKind: "damageDealtToNobodyByKind",
+  healthRestoredByNobodyByKey: "healthRestoredByNobodyByKey"
+};
+var HALF_NAMED_OPENED = {
+  person: "person",
+  element: "element"
+};
+var SIDE_RELATION = {
+  reader: "reader",
+  opposing: "opposing",
+  nobody: "nobody"
+};
+var ROWS_MAXIMUM2 = COMBATANTS_MAXIMUM;
+var CUT_PARTS_MAXIMUM = CUT_MAXIMUM;
+var SKILLS_MAXIMUM2 = SKILLS_MAXIMUM;
+var RANKING_ROWS = 11;
+var SIDE_ROWS = 10;
+var PINNED_SHAPES = {
+  dealtWithNoActor: {
+    metric: PANEL_METRIC.damageDealt,
+    end: UNNAMED_END.actor,
+    placing: PINNED_PLACING.apart,
+    field: HALF_NAMED_FIELD.damageTakenFromNobody,
+    kinds: HALF_NAMED_KIND_FIELD.damageTakenFromNobodyByKind
+  },
+  givenWithNoActor: {
+    metric: PANEL_METRIC.healthGiven,
+    end: UNNAMED_END.actor,
+    placing: PINNED_PLACING.apart,
+    field: HALF_NAMED_FIELD.healthRestoredByNobody,
+    kinds: HALF_NAMED_KIND_FIELD.healthRestoredByNobodyByKey
+  },
+  takenWithNoActor: {
+    metric: PANEL_METRIC.damageTaken,
+    end: UNNAMED_END.actor,
+    placing: PINNED_PLACING.cut,
+    field: HALF_NAMED_FIELD.damageTakenFromNobody,
+    kinds: HALF_NAMED_KIND_FIELD.damageTakenFromNobodyByKind
+  },
+  takenWithNoTarget: {
+    metric: PANEL_METRIC.damageTaken,
+    end: UNNAMED_END.target,
+    placing: PINNED_PLACING.apart,
+    field: HALF_NAMED_FIELD.damageDealtToNobody,
+    kinds: HALF_NAMED_KIND_FIELD.damageDealtToNobodyByKind
+  },
+  restoredWithNoActor: {
+    metric: PANEL_METRIC.healthRestored,
+    end: UNNAMED_END.actor,
+    placing: PINNED_PLACING.cut,
+    field: HALF_NAMED_FIELD.healthRestoredByNobody,
+    kinds: HALF_NAMED_KIND_FIELD.healthRestoredByNobodyByKey
+  }
+};
+var PINNED_CASES = Object.values(PINNED_CASE);
+var HALF_NAMED_TOTAL_FIELD_BY_METRIC = {
+  damageDealt: HALF_NAMED_TOTAL_FIELD.damageDealtByNobody,
+  damageTaken: HALF_NAMED_TOTAL_FIELD.damageTakenByNobody,
+  healthGiven: HALF_NAMED_TOTAL_FIELD.healthGivenByNobody,
+  healthRestored: HALF_NAMED_TOTAL_FIELD.healthRestoredToNobody
+};
+var OPENED_UNNAMED_CASES = {
+  damageDealt: PINNED_CASE.takenWithNoTarget,
+  damageTaken: PINNED_CASE.takenWithNoActor,
+  healthGiven: null,
+  healthRestored: PINNED_CASE.restoredWithNoActor
+};
+var SUSPICIONS_MAXIMUM = 6;
+var ROW_SUSPICIONS_MAXIMUM = 3;
+function getEndForPinned(pinnedCase) {
+  return PINNED_SHAPES[pinnedCase].end;
+}
+function getMetricForPinned(pinnedCase) {
+  return PINNED_SHAPES[pinnedCase].metric;
+}
+function lookupPinnedCase(metric, end) {
+  const pinnedCases = PINNED_CASES.filter((pinnedCase) => {
+    const shape = PINNED_SHAPES[pinnedCase];
+    if (shape.metric !== metric) return false;
+    return shape.end === end;
+  });
+  return pinnedCases[0] ?? null;
+}
+function formatRowSuspicions(detail, metric) {
+  const said = [
+    formatUnknownKeyRowSuspicion(detail.unreadMessagesUnknownKey),
+    formatNoParameterRowSuspicion(detail.unreadMessagesNoParameter)
+  ];
+  if (getNounForMetric(metric) === PANEL_NOUN.healing) {
+    said.push(formatUnplacedHealRowSuspicion(detail.sideHealsUnsized));
+  }
+  return said.filter((sentence) => sentence.length > 0).slice(0, ROW_SUSPICIONS_MAXIMUM);
+}
+function isRowSuspect(detail, metric) {
+  if (detail.unreadMessagesUnknownKey > 0) return true;
+  if (detail.unreadMessagesNoParameter > 0) return true;
+  if (getNounForMetric(metric) !== PANEL_NOUN.healing) return false;
+  return detail.sideHealsUnsized > 0;
+}
+function presentUnnamedLevel(statistics, roster, pinnedCase, choice, readerSide) {
+  const { parts, sideListed } = composeHalfNamedListing(statistics, roster, pinnedCase, choice, readerSide);
+  const total = tallyPinnedFigure(statistics, pinnedCase, parts, sideListed);
+  if (total <= 0) return null;
+  const neither = getNeitherEndForPinned(statistics, pinnedCase, sideListed);
+  const largest = calculateLargestFigure([
+    ...parts.map((halfNamedPart) => halfNamedPart.figure),
+    neither
+  ]);
+  const shares = formatSharesApportioned([
+    ...parts.map((halfNamedPart) => halfNamedPart.figure),
+    neither
+  ], total);
+  return {
+    case: pinnedCase,
+    end: getEndForPinned(pinnedCase),
+    total,
+    rows: composeHalfNamedRows(statistics, roster, parts, shares, largest),
+    kinds: composeHalfNamedKinds(statistics, pinnedCase, parts, neither, total),
+    neitherEnd: neither <= 0 ? null : {
+      figure: neither,
+      fill: calculateBarFill(neither, largest),
+      shareText: shares[parts.length] ?? ""
+    }
+  };
+}
+function composeHalfNamedListing(statistics, roster, pinnedCase, choice, readerSide) {
+  const metric = getMetricForPinned(pinnedCase);
+  const listed = composeRowsBeforeShares(statistics, roster, metric).filter((row) => isSideListed(row.side, choice, readerSide));
+  const sideListed = getSideRelationListed(choice, readerSide);
+  return {
+    parts: composeHalfNamedParts(statistics, roster, pinnedCase, listed, sideListed, readerSide),
+    sideListed
+  };
+}
+function composeRowsBeforeShares(statistics, roster, metric) {
+  const rows = [];
+  const seen = /* @__PURE__ */ new Set();
+  for (const [combatantId, figures] of statistics.byCombatantId) {
+    seen.add(combatantId);
+    const combatant = roster.byId.get(combatantId);
+    rows.push({
+      combatantId,
+      name: combatant?.name ?? null,
+      side: combatant?.side ?? null,
+      profession: combatant?.profession ?? null,
+      figure: getFigureForMetric(figures, metric)
+    });
+  }
+  for (const combatant of roster.byId.values()) {
+    if (seen.has(combatant.id)) continue;
+    rows.push({
+      combatantId: combatant.id,
+      name: combatant.name,
+      side: combatant.side,
+      profession: combatant.profession,
+      figure: 0
+    });
+  }
+  return rows;
+}
+function getFigureForMetric(figures, metric) {
+  const figure = figures[metric];
+  return figure;
+}
+function isSideListed(side, choice, readerSide) {
+  if (choice === SIDE_CHOICE.everyone) return true;
+  if (readerSide === null) return true;
+  if (side === null) return false;
+  if (choice === SIDE_CHOICE.reader) return side === readerSide;
+  return side !== readerSide;
+}
+function getSideRelationListed(choice, readerSide) {
+  if (choice === SIDE_CHOICE.everyone) return null;
+  if (readerSide === null) return null;
+  if (choice === SIDE_CHOICE.reader) return SIDE_RELATION.reader;
+  return SIDE_RELATION.opposing;
+}
+function composeHalfNamedParts(statistics, roster, pinnedCase, rows, sideListed, readerSide) {
+  const shape = PINNED_SHAPES[pinnedCase];
+  const listed = new Set(rows.map((unsharedRow) => unsharedRow.combatantId));
+  const halfNamedParts = [];
+  for (const [combatantId, figures] of statistics.byCombatantId) {
+    const figure = figures[shape.field];
+    if (figure <= 0) continue;
+    const sideRelation = getSideRelation(roster.byId.get(combatantId)?.side ?? null, readerSide);
+    if (!isPinnedPersonKept(shape, sideRelation, listed.has(combatantId), sideListed)) continue;
+    halfNamedParts.push({
+      combatantId,
+      figure
+    });
+  }
+  return halfNamedParts;
+}
+function isPinnedPersonKept(shape, sideRelation, isListed, sideListed) {
+  if (shape.placing === PINNED_PLACING.cut) return isListed;
+  if (sideListed === null) return true;
+  return getSideRelationCharged(sideRelation, shape.metric) === sideListed;
+}
+function getSideRelationCharged(sideRelation, metric) {
+  if (sideRelation === SIDE_RELATION.nobody) return sideRelation;
+  if (metric === PANEL_METRIC.healthGiven) return sideRelation;
+  if (metric === PANEL_METRIC.healthRestored) return sideRelation;
+  return sideRelation === SIDE_RELATION.reader ? SIDE_RELATION.opposing : SIDE_RELATION.reader;
+}
+function tallyPinnedFigure(statistics, pinnedCase, parts, sideListed) {
+  let total = 0;
+  for (const halfNamedPart of parts) total += halfNamedPart.figure;
+  total += getNeitherEndForPinned(statistics, pinnedCase, sideListed);
+  return total;
+}
+function getNeitherEndForPinned(statistics, pinnedCase, sideListed) {
+  const shape = PINNED_SHAPES[pinnedCase];
+  if (sideListed !== null) return 0;
+  if (shape.placing === PINNED_PLACING.cut) return 0;
+  if (getNounForMetric(shape.metric) === PANEL_NOUN.healing) return 0;
+  return statistics.damageByNeitherEnd;
+}
+function calculateLargestFigure(figures) {
+  let largest = 0;
+  for (const figure of figures) {
+    if (figure > largest) largest = figure;
+  }
+  return largest;
+}
+function composeHalfNamedRows(statistics, roster, parts, shares, largest) {
+  const rows = parts.map((halfNamedPart, partIndex) => {
+    const combatant = roster.byId.get(halfNamedPart.combatantId);
+    return {
+      combatantId: halfNamedPart.combatantId,
+      name: combatant?.name ?? null,
+      side: combatant?.side ?? null,
+      profession: combatant?.profession ?? null,
+      figure: halfNamedPart.figure,
+      fill: calculateBarFill(halfNamedPart.figure, largest),
+      shareText: shares[partIndex] ?? "",
+      detail: composeRowDetailFor(statistics, roster, halfNamedPart.combatantId)
+    };
+  });
+  rows.sort((leftRow, rightRow) => calculateRankedOrder(leftRow.figure, rightRow.figure, leftRow.name ?? "", rightRow.name ?? ""));
+  return rows;
+}
+function calculateBarFill(figure, largest) {
+  if (largest <= 0) return 0;
+  return figure / largest;
+}
+function composeRowDetailFor(statistics, roster, combatantId) {
+  return composeRowDetail(statistics.byCombatantId.get(combatantId) ?? createCombatantFigures(), roster.byId.get(combatantId)?.level ?? null, wasAnyTurnLost(statistics), statistics.legendaryBonuses.byHolderId.get(combatantId) ?? /* @__PURE__ */ new Map(), statistics.legendaryBonuses.byReachedId.get(combatantId) ?? /* @__PURE__ */ new Map());
+}
+function composeRowDetail(figures, level, wasTurnLostRead, legendaryBonuses, legendaryBonusesReached) {
+  return {
+    level,
+    damageDealt: figures.damageDealt,
+    damageTaken: figures.damageTaken,
+    damageDealtRaw: figures.damageDealtRaw,
+    damageTakenRaw: figures.damageTakenRaw,
+    healthGiven: figures.healthGiven,
+    healthRestored: figures.healthRestored,
+    damagePrevented: figures.damagePrevented,
+    blowsStruck: figures.blowsStruck,
+    blowsWithoutSkill: figures.blowsWithoutSkill,
+    skillUses: tallySkillUses(figures),
+    turnsTaken: figures.turnsTaken,
+    turnsLost: figures.turnsLost,
+    wasTurnLostRead,
+    damageDealtToNobody: figures.damageDealtToNobody,
+    damageTakenFromNobody: figures.damageTakenFromNobody,
+    healthRestoredByNobody: figures.healthRestoredByNobody,
+    blowsCritical: figures.blowsCritical,
+    procsWhenStriking: composeCutParts(figures.procsWhenStriking),
+    procsWhenStruck: composeCutParts(figures.procsWhenStruck),
+    damagePreventedByDefence: composeCutParts(figures.damagePreventedByDefence),
+    damageDealtAbsorbedByDefence: composeCutParts(figures.damageDealtAbsorbedByDefence),
+    damageTakenAbsorbedByDefence: composeCutParts(figures.damageTakenAbsorbedByDefence),
+    statisticsDestroyed: composeCutParts(figures.statisticsDestroyed),
+    legendaryBonuses: composeCutParts(legendaryBonuses),
+    legendaryBonusesReached: composeCutParts(legendaryBonusesReached),
+    unreadMessagesUnknownKey: figures.unreadMessagesUnknownKey,
+    unreadMessagesNoParameter: figures.unreadMessagesNoParameter,
+    sideHealsUnsized: figures.sideHealsUnsized
+  };
+}
+function tallySkillUses(figures) {
+  let uses = 0;
+  for (const skill of figures.skills.values()) {
+    uses += skill.uses;
+  }
+  return uses;
+}
+function composeCutParts(cut) {
+  const parts = [];
+  for (const [key, figure] of cut) {
+    if (figure > 0) parts.push({
+      key,
+      figure
+    });
+  }
+  parts.sort((leftPart, rightPart) => calculateRankedOrder(leftPart.figure, rightPart.figure, leftPart.key, rightPart.key));
+  return parts.slice(0, CUT_PARTS_MAXIMUM);
+}
+function wasAnyTurnLost(statistics) {
+  let walked = 0;
+  for (const figures of statistics.byCombatantId.values()) {
+    if (figures.turnsLost > 0) return true;
+    walked += 1;
+    if (walked >= ROWS_MAXIMUM2) break;
+  }
+  return false;
+}
+function composeHalfNamedKinds(statistics, pinnedCase, parts, neither, total) {
+  const shape = PINNED_SHAPES[pinnedCase];
+  const folded = /* @__PURE__ */ new Map();
+  let rest = 0;
+  for (const halfNamedPart of parts) {
+    const figures = statistics.byCombatantId.get(halfNamedPart.combatantId);
+    if (figures === void 0) continue;
+    rest += addFoldedCut(folded, figures[shape.kinds]);
+  }
+  if (neither > 0) rest += addFoldedCut(folded, statistics.damageByNeitherEndByKind);
+  return composeElementCut(folded, total, rest, (element) => {
+    return getHalfNamedByKind(statistics, shape.kinds, parts, element).length > 0;
+  });
+}
+function addFoldedCut(folded, cut) {
+  let rest = 0;
+  for (const [key, figure] of cut) {
+    if (folded.has(key)) {
+      folded.set(key, (folded.get(key) ?? 0) + figure);
+      continue;
+    }
+    if (folded.size >= CUT_PARTS_MAXIMUM) {
+      rest += figure;
+      continue;
+    }
+    folded.set(key, figure);
+  }
+  return rest;
+}
+function composeElementCut(cut, total, rest, doesOpen) {
+  const stated = [];
+  let partsTotal = rest;
+  for (const [element, figure] of cut) {
+    partsTotal += figure;
+    if (figure > 0) stated.push({
+      element,
+      figure
+    });
+  }
+  stated.sort((leftRow, rightRow) => calculateRankedOrder(leftRow.figure, rightRow.figure, leftRow.element, rightRow.element));
+  const unnamed = total - partsTotal;
+  const figures = stated.map((elementRow) => elementRow.figure);
+  if (rest > 0) figures.push(rest);
+  if (unnamed > 0) figures.push(unnamed);
+  const shares = formatSharesApportioned(figures, total);
+  const largest = calculateLargestFigure(figures);
+  const closing = stated.length + (rest > 0 ? 1 : 0);
+  return {
+    rows: stated.map((elementRow, rowIndex) => ({
+      ...elementRow,
+      doesOpenPart: doesOpen(elementRow.element),
+      fill: calculateBarFill(elementRow.figure, largest),
+      shareText: shares[rowIndex] ?? ""
+    })),
+    rest: rest > 0 ? {
+      figure: rest,
+      fill: calculateBarFill(rest, largest),
+      shareText: shares[stated.length] ?? ""
+    } : null,
+    noKind: unnamed > 0 ? {
+      figure: unnamed,
+      fill: calculateBarFill(unnamed, largest),
+      shareText: shares[closing] ?? ""
+    } : null
+  };
+}
+function getHalfNamedByKind(statistics, kinds, parts, element) {
+  const halfNamedParts = [];
+  for (const halfNamedPart of parts) {
+    const figures = statistics.byCombatantId.get(halfNamedPart.combatantId);
+    if (figures === void 0) continue;
+    const figure = figures[kinds].get(element) ?? 0;
+    if (figure <= 0) continue;
+    halfNamedParts.push({
+      combatantId: halfNamedPart.combatantId,
+      figure
+    });
+  }
+  return halfNamedParts;
+}
+function presentUnnamedCutLevel(statistics, roster, pinnedCase, choice, readerSide, opened) {
+  const { parts, sideListed } = composeHalfNamedListing(statistics, roster, pinnedCase, choice, readerSide);
+  if (opened.kind === HALF_NAMED_OPENED.person) {
+    return composeHalfNamedForPerson(statistics, roster, pinnedCase, parts, opened.combatantId);
+  }
+  return composeHalfNamedForKind(statistics, roster, pinnedCase, {
+    parts,
+    sideListed
+  }, opened);
+}
+function composeHalfNamedForPerson(statistics, roster, pinnedCase, parts, combatantId) {
+  const personPart = parts.find((halfNamedPart) => halfNamedPart.combatantId === combatantId);
+  if (personPart === void 0) return null;
+  const figures = statistics.byCombatantId.get(combatantId);
+  if (figures === void 0) return null;
+  const [row] = composeHalfNamedRows(statistics, roster, [
+    personPart
+  ], [
+    formatShareRounded(1)
+  ], personPart.figure);
+  if (row === void 0) return null;
+  return {
+    opened: HALF_NAMED_OPENED.person,
+    case: pinnedCase,
+    row,
+    total: personPart.figure,
+    kinds: composeElementCut(figures[PINNED_SHAPES[pinnedCase].kinds], personPart.figure, 0, () => false)
+  };
+}
+function composeHalfNamedForKind(statistics, roster, pinnedCase, listing, opened) {
+  const shape = PINNED_SHAPES[pinnedCase];
+  const carriers = getHalfNamedByKind(statistics, shape.kinds, listing.parts, opened.element);
+  if (carriers.length === 0) return null;
+  const neitherEndPinned = getNeitherEndForPinned(statistics, pinnedCase, listing.sideListed);
+  const neither = neitherEndPinned <= 0 ? 0 : statistics.damageByNeitherEndByKind.get(opened.element) ?? 0;
+  let total = neither;
+  for (const carrier of carriers) total += carrier.figure;
+  if (total <= 0) return null;
+  const figures = [
+    ...carriers.map((carrier) => carrier.figure),
+    neither
+  ];
+  const shares = formatSharesApportioned(figures, total);
+  const largest = calculateLargestFigure(figures);
+  return {
+    opened: HALF_NAMED_OPENED.element,
+    case: pinnedCase,
+    element: opened.element,
+    end: shape.end,
+    total,
+    rows: composeHalfNamedRows(statistics, roster, carriers, shares, largest),
+    neitherEnd: neither <= 0 ? null : {
+      figure: neither,
+      fill: calculateBarFill(neither, largest),
+      shareText: shares[carriers.length] ?? ""
+    }
+  };
+}
+function presentUnnamedPairLevel(statistics, roster, metric, combatantId) {
+  const pinnedCase = OPENED_UNNAMED_CASES[metric];
+  if (pinnedCase === null) return null;
+  const figures = statistics.byCombatantId.get(combatantId);
+  if (figures === void 0) return null;
+  const shape = PINNED_SHAPES[pinnedCase];
+  const figure = figures[shape.field];
+  if (figure <= 0) return null;
+  const [row] = composeHalfNamedRows(statistics, roster, [
+    {
+      combatantId,
+      figure
+    }
+  ], [
+    formatShareRounded(1)
+  ], figure);
+  if (row === void 0) return null;
+  return {
+    opened: HALF_NAMED_OPENED.person,
+    case: pinnedCase,
+    row,
+    total: figure,
+    kinds: composeElementCut(figures[shape.kinds], figure, 0, () => false)
+  };
+}
+function getOutcomeForReaderSide(outcome, roster, readerSide) {
+  if (outcome.isFled) return OUTCOME_RESULT.fled;
+  if (outcome.isDrawn) return OUTCOME_RESULT.drawn;
+  if (readerSide === null) return null;
+  if (isReaderSideNamed(roster, readerSide, outcome.wonNames)) return OUTCOME_RESULT.won;
+  if (isReaderSideNamed(roster, readerSide, outcome.lostNames)) return OUTCOME_RESULT.lost;
+  return null;
+}
+function isReaderSideNamed(roster, readerSide, names) {
+  for (const name of names) {
+    const combatantId = lookupCombatantIdByName(roster, name);
+    if (combatantId === null) continue;
+    if (roster.byId.get(combatantId)?.side === readerSide) return true;
+  }
+  return false;
+}
+function presentScreen(statistics, roster, metric, choice, readerSide, suspicions) {
+  const sideRows = composeRowsBeforeShares(statistics, roster, metric).filter((row) => isSideListed(row.side, choice, readerSide));
+  sideRows.sort(calculateRowOrderByFigureThenId);
+  const listed = sideRows.slice(0, ROWS_MAXIMUM2);
+  const total = tallyListedTotal(statistics, listed, metric, choice);
+  const pinned = composePinnedFigures(statistics, roster, listed, metric, choice, readerSide);
+  const sides = composePanelSides(statistics, roster, metric, readerSide);
+  const sideListed = getSideRelationListed(choice, readerSide);
+  const pinnedApart = pinned.filter((pinnedFigure) => pinnedFigure.placing === PINNED_PLACING.apart);
+  const figurePlaced = pinnedApart.reduce((sum, pinnedFigure) => sum + pinnedFigure.figure, total);
+  const screenTotal = calculateCountedTotal(statistics, sides, metric, sideListed);
+  const outside = Math.max(screenTotal - figurePlaced, 0);
+  const whole = figurePlaced + outside;
+  const shared = [
+    ...listed.map((row) => row.figure),
+    ...pinnedApart.map((pinnedFigure) => pinnedFigure.figure)
+  ];
+  if (outside > 0) shared.push(outside);
+  const shares = formatSharesApportioned(shared, whole);
+  const largest = calculateLargestFigure([
+    ...shared,
+    ...pinned.map((pinnedFigure) => pinnedFigure.figure)
+  ]);
+  const rows = listed.map((row, rowIndex) => ({
+    ...row,
+    fill: calculateBarFill(row.figure, largest),
+    shareText: shares[rowIndex] ?? "",
+    detail: composeRowDetailFor(statistics, roster, row.combatantId)
+  }));
+  let hasFiguresDisagreed;
+  if (screenTotal < figurePlaced) {
+    hasFiguresDisagreed = true;
+  } else {
+    hasFiguresDisagreed = pinned.some((pinnedFigure) => hasPinnedTotalDisagreed(statistics, pinnedFigure.case, pinnedFigure.figure, sideListed));
+  }
+  return {
+    rows,
+    hasFiguresDisagreed,
+    outcome: getFightOutcomeForReaderSide(statistics, roster, readerSide),
+    ...composeHeadcount(statistics, roster, readerSide),
+    total,
+    pinned: composePinnedRows(pinned, shares.slice(listed.length), whole, largest),
+    outsideRanking: outside > 0 ? {
+      figure: outside,
+      fill: calculateBarFill(outside, largest),
+      shareText: shares[shared.length - 1] ?? ""
+    } : null,
+    suspicions: formatScreenSuspicions(statistics, roster, metric, suspicions),
+    sides,
+    // Read off what the list is, and never off what was pressed: with no seat to read from
+    // every list is everybody, whatever the strip last answered, and a shorter window would
+    // be the height of a side nothing narrowed to.
+    rowsVisibleCount: sideListed === null ? RANKING_ROWS : SIDE_ROWS
+  };
+}
+function calculateRowOrderByFigureThenId(leftRow, rightRow) {
+  if (leftRow.figure !== rightRow.figure) return rightRow.figure - leftRow.figure;
+  return leftRow.combatantId - rightRow.combatantId;
+}
+function tallyListedTotal(statistics, rows, metric, choice) {
+  if (choice === SIDE_CHOICE.everyone) return getFigureForMetric(statistics.totals, metric);
+  let total = 0;
+  for (const row of rows) total += row.figure;
+  return total;
+}
+function composePinnedFigures(statistics, roster, rows, metric, choice, readerSide) {
+  const sideListed = getSideRelationListed(choice, readerSide);
+  const pinnedFigures = [];
+  const pinned = PINNED_CASES.filter((pinnedCase) => PINNED_SHAPES[pinnedCase].metric === metric);
+  for (const pinnedCase of pinned) {
+    const parts = composeHalfNamedParts(statistics, roster, pinnedCase, rows, sideListed, readerSide);
+    const figure = tallyPinnedFigure(statistics, pinnedCase, parts, sideListed);
+    if (figure <= 0) continue;
+    const shape = PINNED_SHAPES[pinnedCase];
+    const neither = getNeitherEndForPinned(statistics, pinnedCase, sideListed);
+    pinnedFigures.push({
+      case: pinnedCase,
+      end: shape.end,
+      placing: shape.placing,
+      figure,
+      kinds: composeHalfNamedKinds(statistics, pinnedCase, parts, neither, figure)
+    });
+  }
+  return pinnedFigures;
+}
+function composePanelSides(statistics, roster, metric, readerSide) {
+  if (readerSide === null) return null;
+  const totals = {
+    reader: 0,
+    opposing: 0,
+    nobody: 0
+  };
+  const apartCase = lookupApartCase(metric);
+  const apartField = apartCase === null ? null : PINNED_SHAPES[apartCase].field;
+  for (const [combatantId, figures] of statistics.byCombatantId) {
+    const sideRelation = getSideRelation(roster.byId.get(combatantId)?.side ?? null, readerSide);
+    totals[sideRelation] += getFigureForMetric(figures, metric);
+    if (apartField !== null) {
+      totals[getSideRelationCharged(sideRelation, metric)] += figures[apartField];
+    }
+  }
+  if (apartCase !== null) totals.nobody += getNeitherEndForPinned(statistics, apartCase, null);
+  return totals;
+}
+function lookupApartCase(metric) {
+  const apartCases = PINNED_CASES.filter((pinnedCase) => {
+    const shape = PINNED_SHAPES[pinnedCase];
+    if (shape.metric !== metric) return false;
+    return shape.placing === PINNED_PLACING.apart;
+  });
+  return apartCases[0] ?? null;
+}
+function calculateCountedTotal(statistics, sides, metric, sideListed) {
+  if (sideListed === null) {
+    return getFigureForMetric(statistics.totals, metric) + statistics[HALF_NAMED_TOTAL_FIELD_BY_METRIC[metric]];
+  }
+  if (sides === null) return 0;
+  if (sideListed === SIDE_RELATION.reader) return sides.reader;
+  if (sideListed === SIDE_RELATION.opposing) return sides.opposing;
+  return sides.nobody;
+}
+function hasPinnedTotalDisagreed(statistics, pinnedCase, total, sideListed) {
+  if (sideListed !== null) return false;
+  const shape = PINNED_SHAPES[pinnedCase];
+  if (shape.placing === PINNED_PLACING.cut) return false;
+  return total !== statistics[HALF_NAMED_TOTAL_FIELD_BY_METRIC[shape.metric]];
+}
+function getFightOutcomeForReaderSide(statistics, roster, readerSide) {
+  if (statistics.outcome === null) return null;
+  return getOutcomeForReaderSide(statistics.outcome, roster, readerSide);
+}
+function composePinnedRows(pinned, apartShares, whole, largest) {
+  let taken = 0;
+  return pinned.map((pinnedFigure) => {
+    const shareText = pinnedFigure.placing === PINNED_PLACING.apart ? apartShares[taken++] ?? "" : formatShareRounded(whole === 0 ? 0 : pinnedFigure.figure / whole);
+    return {
+      ...pinnedFigure,
+      fill: calculateBarFill(pinnedFigure.figure, largest),
+      shareText
+    };
+  });
+}
+function formatScreenSuspicions(statistics, roster, metric, suspicions) {
+  const said = formatFightSuspicions(statistics, roster, suspicions);
+  if (getNounForMetric(metric) === PANEL_NOUN.healing) {
+    said.push(formatUnplacedHealSuspicion(statistics.sideHealsUnsized, statistics.sideHealsStated, formatRowsReachedByGap(statistics, roster, (figures) => figures.sideHealsUnsized)));
+  }
+  return said.filter((sentence) => sentence.length > 0).slice(0, SUSPICIONS_MAXIMUM);
+}
+function formatRowsReachedByGap(statistics, roster, getCount) {
+  const names = [];
+  let charged = 0;
+  for (const [combatantId, figures] of statistics.byCombatantId) {
+    if (charged >= COMBATANTS_MAXIMUM) break;
+    if (getCount(figures) <= 0) continue;
+    charged += 1;
+    const combatant = roster.byId.get(combatantId);
+    if (combatant === void 0) continue;
+    if (names.length >= NAMED_ROWS_MAXIMUM) continue;
+    names.push(combatant.name);
+  }
+  return formatNamesReachedByGap(names, charged);
+}
+function formatFightSuspicions(statistics, roster, suspicions) {
+  const { messagesRead, messagesLost } = suspicions;
+  const said = [];
+  if (suspicions.hasJoinedInProgress) said.push(formatJoinedInProgressSuspicion());
+  said.push(formatLostMessageSuspicion(messagesLost, messagesRead + messagesLost));
+  said.push(formatUnknownKeySuspicion(statistics.unreadMessagesUnknownKey, messagesRead, formatRowsReachedByGap(statistics, roster, (figures) => figures.unreadMessagesUnknownKey)));
+  said.push(formatNoParameterSuspicion(statistics.unreadMessagesNoParameter, messagesRead, formatRowsReachedByGap(statistics, roster, (figures) => figures.unreadMessagesNoParameter)));
+  said.push(formatGrammarRefusedSuspicion(statistics.unreadMessagesGrammarRefused, messagesRead));
+  return said.filter((sentence) => sentence.length > 0);
+}
+function composeHeadcount(statistics, roster, readerSide) {
+  const countBySide = /* @__PURE__ */ new Map();
+  let unplaced = 0;
+  const everybody = /* @__PURE__ */ new Set([
+    ...statistics.byCombatantId.keys(),
+    ...roster.byId.keys()
+  ]);
+  for (const combatantId of everybody) {
+    const side = roster.byId.get(combatantId)?.side ?? null;
+    if (side === null) unplaced += 1;
+    else countBySide.set(side, (countBySide.get(side) ?? 0) + 1);
+  }
+  const sides = [
+    ...countBySide
+  ].sort(([leftSide], [rightSide]) => {
+    if (readerSide === leftSide) return -1;
+    if (readerSide === rightSide) return 1;
+    return leftSide - rightSide;
+  });
+  const sizes = sides.map(([, count]) => count);
+  return {
+    sizes,
+    unplaced
+  };
+}
+function getSideRelation(side, readerSide) {
+  if (side === null) return SIDE_RELATION.nobody;
+  if (readerSide === null) return SIDE_RELATION.nobody;
+  return side === readerSide ? SIDE_RELATION.reader : SIDE_RELATION.opposing;
+}
+function getTextForNamedPart(openedPart) {
+  if (openedPart.kind === OPENED_PART.skill) return openedPart.name;
+  if (openedPart.kind === OPENED_PART.source) return openedPart.source;
+  if (openedPart.kind === OPENED_PART.element) return openedPart.element;
+  return "";
+}
+function presentPartLevel(statistics, roster, metric, combatantId, openedPart) {
+  const figures = statistics.byCombatantId.get(combatantId);
+  if (figures === void 0) return null;
+  const cut = composePeopleForPart(statistics, figures, metric, combatantId, openedPart);
+  if (cut === null) return null;
+  const total = tallyPartTotal(figures, metric, openedPart, cut);
+  const byOtherEnd = composeOpponentCut(cut, statistics, roster, {
+    figure: total,
+    unnamedOpened: null
+  }, () => false);
+  return {
+    part: openedPart,
+    total,
+    byOtherEnd,
+    hasFiguresDisagreed: byOtherEnd.hasFiguresDisagreed
+  };
+}
+function composePeopleForPart(statistics, figures, metric, combatantId, openedPart) {
+  if (openedPart.kind === OPENED_PART.skill) {
+    return composePeopleForSkill(statistics, figures, metric, combatantId, openedPart.name);
+  }
+  if (openedPart.kind === OPENED_PART.plain) {
+    if (getNounForMetric(metric) !== PANEL_NOUN.damage) return null;
+    const cut = getDirectionForMetric(metric) === PANEL_DIRECTION.given ? figures.damageDealtWithoutSkillByOpponent : figures.damageTakenWithoutSkillByOpponent;
+    return composeCutWithoutZeros(cut);
+  }
+  if (openedPart.kind === OPENED_PART.source) {
+    if (metric !== PANEL_METRIC.healthGiven) return null;
+    return composePeopleForKey(figures.healthGivenWithoutSkillByReceiverAndKey, openedPart.source);
+  }
+  if (metric === PANEL_METRIC.damageDealt) {
+    return composePeopleForKey(figures.damageDealtByOpponentAndKind, openedPart.element);
+  }
+  if (metric === PANEL_METRIC.damageTaken) {
+    return composePeopleForKey(figures.damageTakenByOpponentAndKind, openedPart.element);
+  }
+  return null;
+}
+function composePeopleForSkill(statistics, figures, metric, combatantId, name) {
+  const isDamage = getNounForMetric(metric) === PANEL_NOUN.damage;
+  if (getDirectionForMetric(metric) === PANEL_DIRECTION.given) {
+    const skill = figures.skills.get(name);
+    if (skill === void 0) return null;
+    return composeCutWithoutZeros(isDamage ? skill.damageDealtByOpponent : skill.healthGivenByReceiver);
+  }
+  const reached = /* @__PURE__ */ new Map();
+  for (const [otherId, otherFigures] of statistics.byCombatantId) {
+    for (const skill of otherFigures.skills.values()) {
+      if (skill.name !== name) continue;
+      const cut = isDamage ? skill.damageDealtByOpponent : skill.healthGivenByReceiver;
+      const figure = cut.get(`${combatantId}`) ?? 0;
+      if (figure > 0) reached.set(`${otherId}`, (reached.get(`${otherId}`) ?? 0) + figure);
+    }
+  }
+  return reached.size === 0 ? null : reached;
+}
+function composeCutWithoutZeros(cut) {
+  const stated = /* @__PURE__ */ new Map();
+  for (const [otherEnd, figure] of cut) {
+    if (figure > 0) stated.set(otherEnd, figure);
+  }
+  return stated.size === 0 ? null : stated;
+}
+function composePeopleForKey(pairs, named) {
+  const reached = /* @__PURE__ */ new Map();
+  for (const [otherEnd, cut] of pairs) {
+    const figure = cut.get(named) ?? 0;
+    if (figure > 0) reached.set(otherEnd, figure);
+  }
+  return reached.size === 0 ? null : reached;
+}
+function tallyPartTotal(figures, metric, openedPart, cut) {
+  if (openedPart.kind === OPENED_PART.element) {
+    return getCutsForMetric(figures, metric).byElement?.get(openedPart.element) ?? tallyCut(cut);
+  }
+  if (openedPart.kind === OPENED_PART.skill) {
+    if (getDirectionForMetric(metric) === PANEL_DIRECTION.given) {
+      const skill = figures.skills.get(openedPart.name);
+      if (skill === void 0) return tallyCut(cut);
+      return getNounForMetric(metric) === PANEL_NOUN.damage ? skill.damageDealt : skill.healthGiven;
+    }
+  }
+  return tallyCut(cut);
+}
+function getCutsForMetric(figures, metric) {
+  if (metric === PANEL_METRIC.damageDealt) {
+    return {
+      byOtherEnd: figures.damageDealtByOpponent,
+      byElement: figures.damageDealtByKind
+    };
+  }
+  if (metric === PANEL_METRIC.damageTaken) {
+    return {
+      byOtherEnd: figures.damageTakenByOpponent,
+      byElement: figures.damageTakenByKind
+    };
+  }
+  if (metric === PANEL_METRIC.healthGiven) {
+    return {
+      byOtherEnd: figures.healthGivenByReceiver,
+      byElement: null
+    };
+  }
+  return {
+    byOtherEnd: figures.healthRestoredByGiver,
+    byElement: figures.healthRestoredByKey
+  };
+}
+function tallyCut(cut) {
+  let total = 0;
+  for (const figure of cut.values()) total += figure;
+  return total;
+}
+function composeOpponentCut(cut, statistics, roster, totals, doesOpen) {
+  const total = totals.figure;
+  const stated = [];
+  let partsTotal = 0;
+  let hasKeyUnparsed = false;
+  for (const [named, figure] of cut) {
+    const otherId = parseInteger(named);
+    if (otherId === null) {
+      hasKeyUnparsed = true;
+      continue;
+    }
+    partsTotal += figure;
+    const combatant = roster.byId.get(otherId);
+    stated.push({
+      combatantId: otherId,
+      name: combatant?.name ?? null,
+      side: combatant?.side ?? null,
+      profession: combatant?.profession ?? null,
+      figure
+    });
+  }
+  stated.sort(calculateRowOrderByFigureThenId);
+  const unnamed = total - partsTotal;
+  let hasFiguresDisagreed;
+  if (unnamed < 0) {
+    hasFiguresDisagreed = true;
+  } else {
+    hasFiguresDisagreed = hasKeyUnparsed;
+  }
+  const figures = stated.map((unsharedRow) => unsharedRow.figure);
+  if (unnamed > 0) figures.push(unnamed);
+  const shares = formatSharesApportioned(figures, total);
+  const largest = calculateLargestFigure(figures);
+  const keptKinds = totals.unnamedOpened?.total === unnamed ? totals.unnamedOpened.kinds : null;
+  return {
+    rows: stated.map((row, rowIndex) => ({
+      ...row,
+      fill: calculateBarFill(row.figure, largest),
+      shareText: shares[rowIndex] ?? "",
+      doesOpenPair: doesOpen(row.combatantId),
+      detail: composeRowDetailFor(statistics, roster, row.combatantId)
+    })),
+    halfNamed: unnamed > 0 ? {
+      figure: unnamed,
+      fill: calculateBarFill(unnamed, largest),
+      shareText: shares[stated.length] ?? "",
+      doesOpenPair: keptKinds !== null,
+      kinds: keptKinds
+    } : null,
+    hasFiguresDisagreed
+  };
+}
+function presentPairLevel(statistics, roster, metric, combatantId, otherId) {
+  const figures = statistics.byCombatantId.get(combatantId);
+  if (figures === void 0) return null;
+  const total = tallyPairTotal(figures, metric, otherId);
+  if (total === null) return null;
+  const kinds = getPairKinds(figures, metric, otherId);
+  const otherCombatant = roster.byId.get(otherId);
+  const parts = composePairParts(statistics, metric, combatantId, otherId, total);
+  return {
+    combatantId,
+    otherId,
+    otherName: otherCombatant?.name ?? null,
+    otherProfession: otherCombatant?.profession ?? null,
+    total,
+    parts: parts.rows,
+    hasFiguresDisagreed: parts.hasFiguresDisagreed,
+    // Nothing on the last rung opens: the protocol states no further cut of a pair.
+    byElement: kinds === null ? {
+      rows: [],
+      rest: null,
+      noKind: null
+    } : composeElementCut(kinds, total, 0, () => false)
+  };
+}
+function tallyPairTotal(figures, metric, otherId) {
+  if (getNounForMetric(metric) === PANEL_NOUN.damage) {
+    const kinds = getPairKinds(figures, metric, otherId);
+    return kinds === null ? null : tallyCut(kinds);
+  }
+  if (metric === PANEL_METRIC.healthGiven) {
+    return figures.healthGivenByReceiver.get(`${otherId}`) ?? null;
+  }
+  return figures.healthRestoredByGiver.get(`${otherId}`) ?? null;
+}
+function getPairKinds(figures, metric, otherId) {
+  if (metric === PANEL_METRIC.damageDealt) {
+    return figures.damageDealtByOpponentAndKind.get(`${otherId}`) ?? null;
+  }
+  if (metric === PANEL_METRIC.damageTaken) {
+    return figures.damageTakenByOpponentAndKind.get(`${otherId}`) ?? null;
+  }
+  return null;
+}
+function composePairParts(statistics, metric, combatantId, otherId, total) {
+  const stated = composePairPartFigures(statistics, metric, combatantId, otherId);
+  stated.sort((leftPart, rightPart) => calculateRankedOrder(leftPart.figure, rightPart.figure, getTextForNamedPart(leftPart.part), getTextForNamedPart(rightPart.part)));
+  const partsTotal = tallyUnsharedPairParts(stated);
+  const closingFigure = total - partsTotal;
+  const closingFigureClamped = Math.max(closingFigure, 0);
+  const statedFigures = stated.map((pairPart) => pairPart.figure);
+  const figures = closingFigure === 0 ? statedFigures : [
+    ...statedFigures,
+    closingFigureClamped
+  ];
+  const shares = formatSharesApportioned(figures, total);
+  const largest = calculateLargestFigure(figures);
+  const rows = stated.map((pairPart, partIndex) => ({
+    part: pairPart.part,
+    figure: pairPart.figure,
+    fill: calculateBarFill(pairPart.figure, largest),
+    shareText: shares[partIndex] ?? ""
+  }));
+  if (closingFigure === 0) return {
+    rows,
+    hasFiguresDisagreed: false
+  };
+  rows.splice(calculatePlaceForClosing(stated, closingFigureClamped) - 1, 0, {
+    part: {
+      kind: OPENED_PART.plain
+    },
+    figure: closingFigureClamped,
+    fill: calculateBarFill(closingFigureClamped, largest),
+    shareText: shares[stated.length] ?? ""
+  });
+  return {
+    rows,
+    hasFiguresDisagreed: closingFigure < 0
+  };
+}
+function composePairPartFigures(statistics, metric, combatantId, otherId) {
+  const end = getPairGivingEnd(statistics, metric, combatantId, otherId);
+  if (end.figures === void 0) return [];
+  const isDamage = getNounForMetric(metric) === PANEL_NOUN.damage;
+  const stated = [];
+  for (const skill of end.figures.skills.values()) {
+    const figure = isDamage ? skill.damageDealtByOpponent.get(end.subject) ?? 0 : skill.healthGivenByReceiver.get(end.subject) ?? 0;
+    if (figure > 0) {
+      stated.push({
+        part: {
+          kind: OPENED_PART.skill,
+          name: skill.name
+        },
+        figure
+      });
+    }
+  }
+  if (isDamage) {
+    const cut2 = end.figures.damageDealtWithoutSkillByOpponentAndKey.get(end.subject);
+    if (cut2 === void 0) return stated;
+    for (const [source, figure] of cut2) {
+      if (figure <= 0) continue;
+      stated.push({
+        part: {
+          kind: OPENED_PART.source,
+          source
+        },
+        figure
+      });
+    }
+    return stated;
+  }
+  const cut = end.figures.healthGivenWithoutSkillByReceiverAndKey.get(end.subject);
+  if (cut === void 0) return stated;
+  for (const [source, figure] of cut) {
+    if (figure > 0) stated.push({
+      part: {
+        kind: OPENED_PART.source,
+        source
+      },
+      figure
+    });
+  }
+  return stated;
+}
+function getPairGivingEnd(statistics, metric, combatantId, otherId) {
+  if (getDirectionForMetric(metric) === PANEL_DIRECTION.received) {
+    return {
+      figures: statistics.byCombatantId.get(otherId),
+      subject: `${combatantId}`
+    };
+  }
+  return {
+    figures: statistics.byCombatantId.get(combatantId),
+    subject: `${otherId}`
+  };
+}
+function tallyUnsharedPairParts(parts) {
+  let total = 0;
+  for (const pairPart of parts) {
+    total += pairPart.figure;
+  }
+  return total;
+}
+function calculatePlaceForClosing(stated, figure) {
+  let bigger = 0;
+  for (const row of stated) {
+    if (row.figure <= figure) continue;
+    bigger += 1;
+  }
+  return bigger + 1;
+}
+function presentOpenedLevel(statistics, roster, metric, combatantId) {
+  const combatant = roster.byId.get(combatantId);
+  const figures = statistics.byCombatantId.get(combatantId) ?? (combatant === void 0 ? void 0 : createCombatantFigures());
+  if (figures === void 0) return null;
+  const cuts = getCutsForMetric(figures, metric);
+  const total = getFigureForMetric(figures, metric);
+  const unnamedOpened = presentUnnamedPairLevel(statistics, roster, metric, combatantId);
+  const byOtherEnd = composeOpponentCut(cuts.byOtherEnd, statistics, roster, {
+    figure: total,
+    unnamedOpened
+  }, (otherId) => tallyPairTotal(figures, metric, otherId) !== null);
+  const byElement = cuts.byElement === null ? {
+    rows: [],
+    rest: null,
+    noKind: null
+  } : composeElementCut(cuts.byElement, total, 0, (element) => composePeopleForPart(statistics, figures, metric, combatantId, {
+    kind: OPENED_PART.element,
+    element
+  }) !== null);
+  const bySkill = composeSkillCut(statistics, figures, metric, total, combatantId);
+  return {
+    combatantId,
+    name: combatant?.name ?? null,
+    profession: combatant?.profession ?? null,
+    byOtherEnd,
+    bySkill,
+    byElement,
+    total,
+    hasFiguresDisagreed: bySkill.hasFiguresDisagreed || byOtherEnd.hasFiguresDisagreed
+  };
+}
+function composeSkillCut(statistics, figures, metric, total, combatantId) {
+  const folded = composeSkillRows(statistics, figures, metric, combatantId);
+  const stated = folded.rows;
+  stated.sort(calculateSkillRowOrder);
+  const partsTotal = stated.reduce((sum, skillRow) => sum + skillRow.figure, folded.rest);
+  const closingFigure = total - partsTotal;
+  const isCounted = metric === PANEL_METRIC.damageDealt;
+  let hasClosing;
+  if (closingFigure > 0) {
+    hasClosing = true;
+  } else if (isCounted) {
+    hasClosing = figures.blowsWithoutSkill > 0;
+  } else {
+    hasClosing = false;
+  }
+  const hasRest = folded.rest > 0;
+  const closingFigureClamped = Math.max(closingFigure, 0);
+  const figuresOnScreen = stated.map((skillRow) => skillRow.figure);
+  if (hasRest) figuresOnScreen.push(folded.rest);
+  if (hasClosing) figuresOnScreen.push(closingFigureClamped);
+  const shares = formatSharesApportioned(figuresOnScreen, total);
+  const largest = calculateLargestFigure(figuresOnScreen);
+  return {
+    rows: stated.map((skillRow, rowIndex) => ({
+      ...skillRow,
+      fill: calculateBarFill(skillRow.figure, largest),
+      shareText: shares[rowIndex] ?? ""
+    })),
+    // ⚠️ **Last, because it is the only row of the section left holding no place.** What a
+    // bound would not draw is never folded into the row below it (`develop ADR 0055`).
+    rest: hasRest ? composeRestRow(folded.rest, largest, shares[stated.length] ?? "") : null,
+    closing: hasClosing ? composeClosingRow({
+      blows: isCounted ? figures.blowsWithoutSkill : null,
+      doesOpenPart: composePeopleForPart(statistics, figures, metric, combatantId, {
+        kind: OPENED_PART.plain
+      }) !== null,
+      figure: closingFigureClamped,
+      largest,
+      stated,
+      shareText: shares[stated.length + (hasRest ? 1 : 0)] ?? ""
+    }) : null,
+    hasFiguresDisagreed: closingFigure < 0
+  };
+}
+function composeSkillRows(statistics, figures, metric, combatantId) {
+  const stated = composeSkillRowsStated(statistics, figures, metric, combatantId);
+  const rows = stated.parts.map((unsharedPart) => ({
+    ...unsharedPart,
+    doesOpenPart: composePeopleForPart(statistics, figures, metric, combatantId, unsharedPart.part) !== null
+  }));
+  return {
+    rows,
+    rest: stated.rest
+  };
+}
+function composeSkillRowsStated(statistics, figures, metric, combatantId) {
+  if (metric === PANEL_METRIC.healthRestored) {
+    const named = composeSkillRowsReceived(statistics, combatantId, (skill) => skill.healthGivenByReceiver);
+    return composeFoldsJoined(named, composeSourceRows(figures.healthRestoredWithoutSkillByKey));
+  }
+  if (metric === PANEL_METRIC.damageTaken) {
+    const named = composeSkillRowsReceived(statistics, combatantId, (skill) => skill.damageDealtByOpponent);
+    return composeFoldsJoined(named, composeSourceRows(figures.damageTakenWithoutSkillByKey));
+  }
+  const own = [
+    ...figures.skills.values()
+  ];
+  if (metric === PANEL_METRIC.healthGiven) {
+    const given = tallyGivenSourceCut(figures);
+    return composeFoldsJoined({
+      parts: own.filter((skill) => skill.healthGiven > 0).map((skill) => ({
+        part: {
+          kind: OPENED_PART.skill,
+          name: skill.name
+        },
+        uses: skill.uses,
+        figure: skill.healthGiven
+      })),
+      // What the fold could not key travels with the section it was folded for, so the two
+      // bounds on one path come to one row rather than to a shortfall nobody drew.
+      rest: given.rest
+    }, composeSourceRows(given.cut));
+  }
+  return composeFoldsJoined({
+    parts: own.filter((skill) => {
+      if (skill.damageDealt > 0) return true;
+      return skill.blows > 0;
+    }).map((skill) => ({
+      part: {
+        kind: OPENED_PART.skill,
+        name: skill.name
+      },
+      uses: skill.uses,
+      figure: skill.damageDealt
+    })),
+    rest: 0
+  }, composeSourceRows(figures.damageDealtWithoutSkillByKey));
+}
+function composeSkillRowsReceived(statistics, combatantId, getCut) {
+  const byName = /* @__PURE__ */ new Map();
+  let rest = 0;
+  for (const combatantFigures of statistics.byCombatantId.values()) {
+    for (const skill of combatantFigures.skills.values()) {
+      const figure = getCut(skill).get(`${combatantId}`) ?? 0;
+      if (figure <= 0) continue;
+      if (byName.has(skill.name)) {
+        byName.set(skill.name, (byName.get(skill.name) ?? 0) + figure);
+        continue;
+      }
+      if (byName.size >= SKILLS_MAXIMUM2) {
+        rest += figure;
+        continue;
+      }
+      byName.set(skill.name, figure);
+    }
+  }
+  const parts = [
+    ...byName
+  ].map(([name, figure]) => ({
+    part: {
+      kind: OPENED_PART.skill,
+      name
+    },
+    uses: null,
+    figure
+  }));
+  return {
+    parts,
+    rest
+  };
+}
+function composeFoldsJoined(skillFold, sourceFold) {
+  return {
+    parts: [
+      ...skillFold.parts,
+      ...sourceFold.parts
+    ],
+    rest: skillFold.rest + sourceFold.rest
+  };
+}
+function composeSourceRows(cut) {
+  const stated = [];
+  let rest = 0;
+  for (const [source, figure] of cut) {
+    if (figure <= 0) continue;
+    if (stated.length < CUT_PARTS_MAXIMUM) {
+      stated.push({
+        part: {
+          kind: OPENED_PART.source,
+          source
+        },
+        uses: null,
+        figure
+      });
+      continue;
+    }
+    rest += figure;
+  }
+  return {
+    parts: stated,
+    rest
+  };
+}
+function tallyGivenSourceCut(figures) {
+  const folded = /* @__PURE__ */ new Map();
+  let rest = 0;
+  for (const cut of figures.healthGivenWithoutSkillByReceiverAndKey.values()) {
+    rest += addFoldedCut(folded, cut);
+  }
+  return {
+    cut: folded,
+    rest
+  };
+}
+function calculateSkillRowOrder(leftSkill, rightSkill) {
+  return calculateRankedOrder(leftSkill.figure, rightSkill.figure, getTextForNamedPart(leftSkill.part), getTextForNamedPart(rightSkill.part));
+}
+function composeRestRow(figure, largest, shareText) {
+  return {
+    blows: null,
+    figure,
+    fill: calculateBarFill(figure, largest),
+    shareText
+  };
+}
+function composeClosingRow(said) {
+  return {
+    blows: said.blows,
+    rank: calculatePlaceForClosing(said.stated, said.figure),
+    doesOpenPart: said.doesOpenPart,
+    figure: said.figure,
+    fill: calculateBarFill(said.figure, said.largest),
+    shareText: said.shareText
+  };
+}
+
+// src/ui/panel-palette.ts
+var SIGNAL = {
+  ours: [
+    0,
+    208,
+    131
+  ],
+  theirs: [
+    255,
+    134,
+    133
+  ],
+  suspect: [
+    237,
+    156,
+    0
+  ],
+  caveat: [
+    107,
+    181,
+    255
+  ],
+  defect: [
+    237,
+    120,
+    255
+  ],
+  unknown: [
+    146,
+    153,
+    160
+  ]
+};
+var HEX_BASE = 16;
+var PALETTE_COLOURS = [
+  [
+    21,
+    124,
+    208
+  ],
+  [
+    63,
+    142,
+    43
+  ],
+  [
+    187,
+    74,
+    127
+  ],
+  [
+    157,
+    111,
+    0
+  ],
+  [
+    0,
+    142,
+    113
+  ],
+  [
+    194,
+    80,
+    43
+  ]
+];
+var PALETTE_COLOUR_BY_PROFESSION = /* @__PURE__ */ new Map([
+  [
+    "m",
+    PALETTE_COLOURS[0]
+  ],
+  [
+    "h",
+    PALETTE_COLOURS[1]
+  ],
+  [
+    "p",
+    PALETTE_COLOURS[2]
+  ],
+  [
+    "t",
+    PALETTE_COLOURS[3]
+  ],
+  [
+    "b",
+    PALETTE_COLOURS[4]
+  ],
+  [
+    "w",
+    PALETTE_COLOURS[5]
+  ]
+]);
+function lookupColourForProfession(profession) {
+  if (profession === null) return SIGNAL.unknown;
+  return PALETTE_COLOUR_BY_PROFESSION.get(profession) ?? SIGNAL.unknown;
+}
+function formatColour(colour) {
+  return `#${colour.map((channel) => channel.toString(HEX_BASE).padStart(2, "0")).join("")}`;
+}
+
+// src/ui/panel-helper.ts
+var STANDING_TURN_STATE = {
+  held: "held",
+  unread: "unread",
+  afterFight: "afterFight",
+  onAuto: "onAuto"
+};
+var HELPER_ABSENCE = {
+  noFightYet: "noFightYet",
+  betweenFights: "betweenFights",
+  fightUnread: "fightUnread"
+};
+var PROVOKED_MAXIMUM = COMBATANTS_MAXIMUM;
+var CHARGED_ROWS_MAXIMUM = CHARGED_SKILLS_MAXIMUM;
+var CHARGED_PIPS_MAXIMUM = 8;
+function presentHelper(provocations, chargedSkills, roster, readerSide, turn) {
+  const provocationsBounded = provocations.slice(0, PROVOKED_MAXIMUM);
+  const now = getStandingTurnNow(turn);
+  const holder = now === null ? void 0 : roster.byId.get(now.combatantId);
+  return {
+    turnState: getStandingTurnState(turn, holder !== void 0),
+    turnOrdinal: now?.ordinal ?? null,
+    turnHolder: holder === void 0 ? null : {
+      name: holder.name,
+      colour: lookupColourForProfession(holder.profession),
+      sideRelation: getSideRelation(holder.side, readerSide)
+    },
+    provocations: presentStandingProvocations(provocationsBounded, roster, readerSide),
+    chargedSkills: presentStandingChargedSkills(chargedSkills, roster, readerSide),
+    hasFiguresDisagreed: hasHelperFiguresDisagreed(provocations, chargedSkills)
+  };
+}
+function hasHelperFiguresDisagreed(provocations, chargedSkills) {
+  if (provocations.length > PROVOKED_MAXIMUM) return true;
+  if (chargedSkills.length > CHARGED_ROWS_MAXIMUM) return true;
+  return chargedSkills.some((standing) => isChargedSkillUndrawable(standing));
+}
+function isChargedSkillUndrawable(standing) {
+  if (standing.skillName.length === 0) return true;
+  return standing.turnsStated > CHARGED_PIPS_MAXIMUM;
+}
+function getStandingTurnNow(turn) {
+  if (turn.isOnAuto) return null;
+  if (turn.isOver) return null;
+  return turn.statement;
+}
+function getStandingTurnState(turn, hasHolder) {
+  if (turn.isOnAuto) return STANDING_TURN_STATE.onAuto;
+  if (turn.isOver) return STANDING_TURN_STATE.afterFight;
+  if (hasHolder) return STANDING_TURN_STATE.held;
+  return STANDING_TURN_STATE.unread;
+}
+function presentStandingProvocations(provocations, roster, readerSide) {
+  const byCast = /* @__PURE__ */ new Map();
+  for (const standing of provocations) {
+    const caster = roster.byId.get(standing.casterId);
+    const key = `${standing.casterId}/${standing.skillId}`;
+    const group = byCast.get(key) ?? {
+      casterId: standing.casterId,
+      casterName: caster?.name ?? PANEL_WORDS.withoutActor,
+      skillId: standing.skillId,
+      skillName: standing.skillName,
+      casterColour: lookupColourForProfession(caster?.profession ?? null),
+      casterSideRelation: getSideRelation(caster?.side ?? null, readerSide),
+      provoked: []
+    };
+    group.provoked.push(presentStandingProvoked(standing, roster, readerSide));
+    byCast.set(key, group);
+  }
+  return [
+    ...byCast.values()
+  ];
+}
+function presentStandingProvoked(standing, roster, readerSide) {
+  const provoked = roster.byId.get(standing.provokedId);
+  return {
+    provokedId: standing.provokedId,
+    name: provoked?.name ?? PANEL_WORDS.withoutTarget,
+    colour: lookupColourForProfession(provoked?.profession ?? null),
+    sideRelation: getSideRelation(provoked?.side ?? null, readerSide),
+    turnsElapsed: standing.turnsElapsed,
+    turnsStated: standing.turnsStated
+  };
+}
+function presentStandingChargedSkills(standings, roster, readerSide) {
+  const composed = [];
+  for (const standing of standings) {
+    if (composed.length >= CHARGED_ROWS_MAXIMUM) break;
+    if (standing.skillName.length === 0) continue;
+    composed.push(presentStandingChargedSkill(standing, roster, readerSide));
+  }
+  return composed;
+}
+function presentStandingChargedSkill(standing, roster, readerSide) {
+  const combatant = roster.byId.get(standing.combatantId);
+  return {
+    combatantId: standing.combatantId,
+    name: combatant?.name ?? PANEL_WORDS.withoutActor,
+    skillName: standing.skillName,
+    turnsElapsed: standing.turnsElapsed,
+    turnsStated: standing.turnsStated,
+    state: standing.state,
+    colour: getColourForCharge(standing.state, combatant?.profession ?? null),
+    sideRelation: getSideRelation(combatant?.side ?? null, readerSide)
+  };
+}
+function getColourForCharge(state, profession) {
+  if (state !== CHARGED_SKILL_STATE.charging) return SIGNAL.unknown;
+  return lookupColourForProfession(profession);
+}
+
+// src/runtime/panel-frame.ts
+var FIGURES_CUT = {
+  screen: "screen",
+  drill: "drill",
+  pair: "pair",
+  part: "part",
+  helper: "helper"
+};
+var FiguresDisagreed = class extends Error {
+  name = "FiguresDisagreed";
+  cut;
+  constructor(cut) {
+    super();
+    this.cut = cut;
+  }
+};
+var MargonemEngineTooltipRefused = class extends Error {
+  name = "MargonemEngineTooltipRefused";
+  refused;
+  constructor(refused) {
+    super();
+    this.refused = refused;
+  }
+};
+function renderFrame(parts) {
+  assert(parts.keeper.getFights().length <= KEPT_MAXIMUM, "a frame draws a shelf inside its bound");
+  const tooltips = attempt(() => {
+    const view = composeFightView(parts.live.session);
+    if (view === null) return;
+    const written = writeCarriedTooltips(view, parts.tables, parts.translate, parts.tooltip);
+    if (written instanceof Error) addRegionDefect(parts, written);
+    else if (written.refused > 0) {
+      addRegionDefect(parts, new MargonemEngineTooltipRefused(written.refused));
+    } else assert(written.refused === 0, "a frame whose blocks all landed marks nothing");
+  });
+  if (tooltips instanceof Error) addRegionDefect(parts, tooltips);
+  {
+    const isShelfEmpty = parts.keeper.getFights().length === 0;
+    const helperRead = attempt(() => presentHelperForFrame(parts.live, parts.tables, isShelfEmpty));
+    let helper;
+    if (helperRead instanceof Error) {
+      parts.defects.add({
+        kind: DEFECT_KIND.reading,
+        region: null,
+        failure: helperRead
+      });
+      helper = HELPER_ABSENCE.fightUnread;
+    } else {
+      helper = helperRead;
+      if (isHelperFiguresDisagreed(helperRead)) {
+        parts.defects.add({
+          kind: DEFECT_KIND.figures,
+          region: null,
+          failure: new FiguresDisagreed(FIGURES_CUT.helper)
+        });
+      }
+    }
+    addUndrawnDefects(parts.defects, parts.view.renderHelper(helper, parts.screen.isHelperCollapsed));
+  }
+  const defects = getPanelDefects(parts.defects);
+  const rendered = attempt(() => {
+    const { screen, keeper, live: liveFight } = parts;
+    const liveView = composeFightView(liveFight.session);
+    const shownFight = lookupShownFight(liveView, screen.chosenFightOpenedAt, keeper.getFights(), keeper.getKeptFightStates());
+    if (shownFight === null) {
+      const unreadKeptFight = lookupShownKeptFight(liveView !== null, screen.chosenFightOpenedAt, keeper.getFights());
+      const keptUnread = unreadKeptFight === void 0 ? null : {
+        at: parts.clock.readMoment(unreadKeptFight.openedAt),
+        place: formatFightPlace(unreadKeptFight.place)
+      };
+      const waiting2 = {
+        isMeterCollapsed: screen.isMeterCollapsed,
+        defects,
+        hasFightToSave: false
+      };
+      const renderedWaiting = parts.view.renderWaiting({
+        ...waiting2,
+        isFightUnread: false,
+        keptUnread,
+        options: presentOptions(parts),
+        typeStep: screen.typeStep,
+        windowSizes: screen.windowSizes
+      });
+      addUndrawnDefects(parts.defects, renderedWaiting);
+      return;
+    }
+    assert(shownFight.fightState.view.payloadsApplied > 0, "a fight stood on was read from something");
+    let liveFightState;
+    if (shownFight.keptFight === null) liveFightState = shownFight.fightState;
+    else if (liveView === null) liveFightState = null;
+    else {
+      const tallied = attempt(() => tallyFightState(liveView));
+      if (tallied instanceof Error) {
+        parts.defects.add({
+          kind: DEFECT_KIND.reading,
+          region: null,
+          failure: tallied
+        });
+        liveFightState = null;
+      } else liveFightState = tallied;
+    }
+    const shownScreen = presentFrameScreen(parts, shownFight, liveFightState, defects);
+    {
+      const ledger = parts.defects;
+      const addFiguresDisagreed = (cut) => {
+        ledger.add({
+          kind: DEFECT_KIND.figures,
+          region: null,
+          failure: new FiguresDisagreed(cut)
+        });
+      };
+      if (shownScreen.ranking.hasFiguresDisagreed) addFiguresDisagreed(FIGURES_CUT.screen);
+      if (shownScreen.opened?.hasFiguresDisagreed === true) {
+        addFiguresDisagreed(FIGURES_CUT.drill);
+      }
+      if (shownScreen.pair?.hasFiguresDisagreed === true) {
+        addFiguresDisagreed(FIGURES_CUT.pair);
+      }
+      if (shownScreen.part?.hasFiguresDisagreed === true) {
+        addFiguresDisagreed(FIGURES_CUT.part);
+      }
+    }
+    addUndrawnDefects(parts.defects, parts.view.render(shownScreen));
+  });
+  if (!(rendered instanceof Error)) return;
+  parts.defects.add({
+    kind: DEFECT_KIND.reading,
+    region: null,
+    failure: rendered
+  });
+  const hasFightToSave = parts.live.capture.calls.length > 0 || parts.keeper.getFights().length > 0;
+  const waiting = {
+    isMeterCollapsed: parts.screen.isMeterCollapsed,
+    defects: getPanelDefects(parts.defects),
+    hasFightToSave,
+    isFightUnread: true,
+    keptUnread: null,
+    options: presentOptions(parts),
+    typeStep: parts.screen.typeStep,
+    windowSizes: parts.screen.windowSizes
+  };
+  assert(waiting.defects.length > 0, "a panel that could not be drawn says why");
+  addUndrawnDefects(parts.defects, parts.view.renderWaiting(waiting));
+}
+function addRegionDefect(parts, failure) {
+  parts.defects.add({
+    kind: DEFECT_KIND.region,
+    region: null,
+    failure
+  });
+}
+function presentHelperForFrame(liveFight, tables, isShelfEmpty) {
+  const view = composeFightView(liveFight.session);
+  if (view === null) {
+    return isShelfEmpty ? HELPER_ABSENCE.noFightYet : HELPER_ABSENCE.betweenFights;
+  }
+  const standings = replayAuraStandings(view, tables.statedSkills);
+  assert(standings.provocations.length <= COMBATANTS_MAXIMUM, "a shout holds people of this fight");
+  const turn = {
+    statement: view.turnStatement,
+    isOver: view.isOver,
+    isOnAuto: view.isOnAuto
+  };
+  return presentHelper(standings.provocations, view.chargedSkills, view.roster, view.readerSide, turn);
+}
+function isHelperFiguresDisagreed(helper) {
+  if (typeof helper === "string") return false;
+  return helper.hasFiguresDisagreed;
+}
+function addUndrawnDefects(defects, report) {
+  for (const failure of report.undrawn) {
+    defects.add({
+      kind: DEFECT_KIND.region,
+      region: failure.region,
+      failure
+    });
+  }
+}
+function formatFightPlace(place) {
+  if (place === null) return null;
+  return formatPlace(place.mapName, place.x, place.y);
+}
+function presentFrameScreen(parts, shownFight, liveFightState, defects) {
+  const { screen, keeper, live: liveFight } = parts;
+  const { view, figures } = shownFight.fightState;
+  const ranking = presentScreen(figures.statistics, view.roster, screen.metric, screen.side, view.readerSide, getFightSuspicions(view));
+  const openedLevels = presentOpenedLevels(shownFight.fightState, screen);
+  const chosenFightOpenedAt = screen.chosenFightOpenedAt ?? shownFight.keptFight?.openedAt ?? null;
+  if (shownFight.keptFight !== null) {
+    assert(chosenFightOpenedAt !== null, "a kept fight on screen is one named");
+  }
+  assert(ranking.rows.length <= COMBATANTS_MAXIMUM, "a ranking holds the fight's cast at most");
+  const liveRow = liveFightState === null ? null : {
+    fightState: liveFightState,
+    place: liveFight.place,
+    readerId: liveFight.readerId,
+    openedAt: liveFight.openedAt
+  };
+  return {
+    ranking,
+    listName: composeListName(screen, chosenFightOpenedAt ?? liveFight.openedAt),
+    metric: screen.metric,
+    side: screen.side,
+    readerSide: view.readerSide,
+    // A fight already over numbers nobody's turn, and one read off the shelf has passed.
+    turnHolderId: view.isOver ? null : view.turnStatement?.combatantId ?? null,
+    shelf: presentShelfRows(parts, liveRow, chosenFightOpenedAt),
+    options: presentOptions(parts),
+    typeStep: screen.typeStep,
+    windowSizes: screen.windowSizes,
+    hasFightToSave: true,
+    shelfAnswers: presentShelfAnswers(keeper.getAnswers()),
+    defects,
+    isOnShelf: screen.isOnShelf,
+    ...openedLevels,
+    fightPlace: formatFightPlaceWords(shownFight.keptFight === null ? liveFight.place : shownFight.keptFight.place),
+    card: presentFightCardContent(parts, {
+      sizes: ranking.sizes,
+      unplaced: ranking.unplaced,
+      outcome: ranking.outcome,
+      isLive: shownFight.keptFight === null,
+      openedAt: shownFight.keptFight?.openedAt ?? liveFight.openedAt,
+      place: shownFight.keptFight === null ? liveFight.place : shownFight.keptFight.place,
+      readerId: shownFight.keptFight === null ? liveFight.readerId : shownFight.keptFight.readerId,
+      roster: view.roster,
+      suspicions: composeSuspicionsOfReading(shownFight.fightState)
+    }),
+    isMeterCollapsed: screen.isMeterCollapsed
+  };
+}
+function formatFightPlaceWords(place) {
+  if (place === null) return null;
+  return formatPlaceWords(place.mapName, place.x, place.y);
+}
+function presentFightCardContent(parts, source) {
+  assert(source.unplaced >= 0, "a card counts nobody fewer than none unplaced");
+  return {
+    sizes: source.sizes,
+    unplaced: source.unplaced,
+    outcome: source.outcome,
+    isLive: source.isLive,
+    at: source.openedAt === null ? null : parts.clock.readMoment(source.openedAt),
+    place: formatFightPlace(source.place),
+    world: parts.world,
+    reader: lookupFightReader(source.roster, source.readerId),
+    suspicions: source.suspicions,
+    isUnread: false
+  };
+}
+function lookupFightReader(roster, readerId) {
+  if (readerId === null) return null;
+  const combatant = roster.byId.get(readerId);
+  if (combatant === void 0) return null;
+  assert(combatant.id === readerId, "a combatant found by an id is the one it names");
+  return {
+    name: combatant.name,
+    profession: combatant.profession,
+    level: combatant.level
+  };
+}
+function composeSuspicionsOfReading(fightState) {
+  const { view, figures } = fightState;
+  return formatFightSuspicions(figures.statistics, view.roster, getFightSuspicions(view));
+}
+function getFightSuspicions(view) {
+  assert(view.messagesLost >= 0, "a reading lost no fewer than none of what it was handed");
+  assert(view.messagesRead >= 0, "and read no fewer than none");
+  return {
+    messagesLost: view.messagesLost,
+    hasJoinedInProgress: view.hasJoinedInProgress,
+    messagesRead: view.messagesRead
+  };
+}
+function presentShelfRows(parts, liveRow, chosenFightOpenedAt) {
+  const keptFights = parts.keeper.getFights();
+  const keptFightStatesByOpenedAt = parts.keeper.getKeptFightStates();
+  const rows = [];
+  const alsoKept = liveRow === null ? void 0 : keptFights.find((keptFight) => keptFight.openedAt === liveRow.openedAt);
+  if (liveRow !== null) {
+    const { sizes, unplaced } = presentShelfHeadcount(liveRow.fightState);
+    const outcome = getOutcomeOfReading(liveRow.fightState);
+    const liveOpenedAt = liveRow.openedAt;
+    rows.push({
+      openedAt: liveOpenedAt,
+      at: liveOpenedAt === null ? null : parts.clock.readMoment(liveOpenedAt),
+      sizes,
+      place: formatFightPlace(liveRow.place),
+      outcome,
+      isLive: true,
+      // Nothing chosen is the live fight: a kept row's moment is never the live one's.
+      isChosen: chosenFightOpenedAt === null,
+      isPinned: alsoKept?.isPinned ?? false,
+      isPinnable: alsoKept !== void 0,
+      card: presentFightCardContent(parts, {
+        sizes,
+        unplaced,
+        outcome,
+        isLive: true,
+        openedAt: liveRow.openedAt,
+        place: liveRow.place,
+        readerId: liveRow.readerId,
+        roster: liveRow.fightState.view.roster,
+        suspicions: composeSuspicionsOfReading(liveRow.fightState)
+      })
+    });
+  }
+  const keptFightsNewestFirst = [
+    ...keptFights
+  ].sort((leftFight, rightFight) => rightFight.openedAt - leftFight.openedAt);
+  for (const keptFight of keptFightsNewestFirst) {
+    if (keptFight.openedAt === alsoKept?.openedAt) continue;
+    const fightState = keptFightStatesByOpenedAt.get(keptFight.openedAt);
+    assert(fightState !== void 0, "a kept fight's reading is held while it is kept");
+    if (fightState === null) {
+      rows.push(presentUnreadShelfRow(parts, keptFight, chosenFightOpenedAt));
+    } else {
+      rows.push(presentKeptShelfRow(parts, keptFight, fightState, chosenFightOpenedAt));
+    }
+  }
+  assert(rows.length <= KEPT_MAXIMUM + 1, "a row per kept fight, and one for the live one");
+  assert(rows.filter((shelfRow) => shelfRow.isLive).length <= 1, "and one live fight at most");
+  return rows;
+}
+function presentShelfHeadcount(fightState) {
+  const { roster, readerSide } = fightState.view;
+  const headcount = composeHeadcount(fightState.figures.statistics, roster, readerSide);
+  const counted = headcount.sizes.reduce((sum, count) => sum + count, 0);
+  assert(headcount.sizes.every((count) => count > 0), "a side on the shelf holds somebody");
+  assert(counted === roster.byId.size, "everybody the roster seats, once");
+  return headcount;
+}
+function presentUnreadShelfRow(parts, fight, chosenFightOpenedAt) {
+  assert(fight.payloads.length > 0, "a kept row was kept from something, read or not");
+  const moment = parts.clock.readMoment(fight.openedAt);
+  const place = formatFightPlace(fight.place);
+  return {
+    openedAt: fight.openedAt,
+    at: moment,
+    sizes: [],
+    place,
+    outcome: null,
+    isLive: false,
+    isChosen: chosenFightOpenedAt === fight.openedAt,
+    isPinned: fight.isPinned,
+    isPinnable: true,
+    card: {
+      sizes: [],
+      unplaced: 0,
+      outcome: null,
+      isLive: false,
+      at: moment,
+      place,
+      world: parts.world,
+      reader: null,
+      suspicions: [],
+      isUnread: true
+    }
+  };
+}
+function getOutcomeOfReading(fightState) {
+  const outcome = fightState.figures.statistics.outcome;
+  if (outcome === null) return null;
+  return getOutcomeForReaderSide(outcome, fightState.view.roster, fightState.view.readerSide);
+}
+function presentKeptShelfRow(parts, fight, fightState, chosenFightOpenedAt) {
+  assert(fightState.view.payloadsApplied > 0, "a kept row states a fight read from something");
+  assert(fight.payloads.length > 0, "and kept from something");
+  const { sizes, unplaced } = presentShelfHeadcount(fightState);
+  const outcome = getOutcomeOfReading(fightState);
+  return {
+    openedAt: fight.openedAt,
+    at: parts.clock.readMoment(fight.openedAt),
+    sizes,
+    place: formatFightPlace(fight.place),
+    outcome,
+    isLive: false,
+    isChosen: chosenFightOpenedAt === fight.openedAt,
+    isPinned: fight.isPinned,
+    isPinnable: true,
+    card: presentFightCardContent(parts, {
+      sizes,
+      unplaced,
+      outcome,
+      isLive: false,
+      openedAt: fight.openedAt,
+      place: fight.place,
+      readerId: fight.readerId,
+      roster: fightState.view.roster,
+      suspicions: composeSuspicionsOfReading(fightState)
+    })
+  };
+}
+function presentOptions(parts) {
+  if (!parts.screen.isOnOptions) return null;
+  return {
+    storage: parts.keeper.getChoice(),
+    answers: presentShelfAnswers(parts.keeper.getAnswers())
+  };
+}
+function presentShelfAnswers(shelfAnswers) {
+  const answers = [];
+  if (shelfAnswers.isEverySlotPinned) answers.push(EVERY_SLOT_PINNED_ANSWER);
+  if (shelfAnswers.hasStoreRefused) answers.push(STORE_REFUSED_ANSWER);
+  if (shelfAnswers.hasStoreMadeRoom) answers.push(STORE_MADE_ROOM_ANSWER);
+  if (shelfAnswers.hasChoiceRefused) answers.push(CHOICE_REFUSED_ANSWER);
+  if (shelfAnswers.hasMoveRefused) answers.push(MOVE_REFUSED_ANSWER);
+  if (shelfAnswers.hasPinRefused) answers.push(PIN_REFUSED_ANSWER);
+  if (shelfAnswers.hasStoreRefused) {
+    assert(!shelfAnswers.hasStoreMadeRoom, "a store refused, or made room");
+  }
+  if (shelfAnswers.hasMoveRefused) {
+    assert(!shelfAnswers.hasChoiceRefused, "a move is refused, or its choice is");
+  }
+  assert(answers.length <= SHELF_ANSWERS_MAXIMUM, "a shelf states only answers that hold together");
+  return answers;
+}
+function getPanelDefects(defects) {
+  return defects.getCounts().map(({ kind, region, count }) => ({
+    kind,
+    region,
+    count
+  }));
+}
+function presentOpenedLevels(fightState, screen) {
+  const statistics = fightState.figures.statistics;
+  const roster = fightState.view.roster;
+  if (screen.openedCombatantId === null) {
+    const unnamed = lookupUnnamedLevel(fightState, screen);
+    const unnamedCut2 = lookupUnnamedCutLevel(fightState, screen);
+    return {
+      opened: null,
+      pair: null,
+      part: null,
+      unnamed,
+      unnamedCut: unnamedCut2
+    };
+  }
+  const opened = presentOpenedLevel(statistics, roster, screen.metric, screen.openedCombatantId);
+  if (opened === null) {
+    return {
+      opened: null,
+      pair: null,
+      part: null,
+      unnamed: null,
+      unnamedCut: null
+    };
+  }
+  assert(opened.combatantId === screen.openedCombatantId, "the row drawn open is the row opened");
+  const pair = screen.pairCombatantId === null ? null : presentPairLevel(statistics, roster, screen.metric, opened.combatantId, screen.pairCombatantId);
+  const partLevel = screen.openPart === null ? null : presentPartLevel(statistics, roster, screen.metric, opened.combatantId, screen.openPart);
+  const unnamedCut = lookupUnnamedPairLevel(fightState, screen, opened);
+  return {
+    opened,
+    pair,
+    part: partLevel,
+    unnamed: null,
+    unnamedCut
+  };
+}
+function lookupUnnamedPairLevel(fightState, screen, drill) {
+  assert(screen.openedCombatantId === drill.combatantId, "the rung is under the row drawn open");
+  if (screen.openUnnamedEnd === null) return null;
+  const unnamed = drill.byOtherEnd.halfNamed;
+  if (unnamed === null) return null;
+  if (!unnamed.doesOpenPair) return null;
+  const { statistics } = fightState.figures;
+  const { roster } = fightState.view;
+  const unnamedPair = presentUnnamedPairLevel(statistics, roster, screen.metric, drill.combatantId);
+  if (unnamedPair === null) return null;
+  return getEndForPinned(unnamedPair.case) === screen.openUnnamedEnd ? unnamedPair : null;
+}
+function lookupUnnamedLevel(fightState, screen) {
+  if (screen.openUnnamedEnd === null) return null;
+  const pinnedCase = lookupPinnedCase(screen.metric, screen.openUnnamedEnd);
+  if (pinnedCase === null) return null;
+  const { statistics } = fightState.figures;
+  const { roster, readerSide } = fightState.view;
+  return presentUnnamedLevel(statistics, roster, pinnedCase, screen.side, readerSide);
+}
+function lookupUnnamedCutLevel(fightState, screen) {
+  if (screen.openUnnamedEnd === null) return null;
+  const pinnedCase = lookupPinnedCase(screen.metric, screen.openUnnamedEnd);
+  if (pinnedCase === null) return null;
+  const halfNamedOpened = lookupUnnamedCutPress(screen);
+  if (halfNamedOpened === null) return null;
+  const { statistics } = fightState.figures;
+  const { roster, readerSide } = fightState.view;
+  return presentUnnamedCutLevel(statistics, roster, pinnedCase, screen.side, readerSide, halfNamedOpened);
+}
+function lookupUnnamedCutPress(screen) {
+  assert(screen.openUnnamedEnd !== null, "a pinned row's rung is asked of an open pinned row");
+  assert(screen.openedCombatantId === null, "a person's row and a pinned row are never open at once");
+  if (screen.openPart !== null) {
+    if (screen.openPart.kind !== OPENED_PART.element) return null;
+    return {
+      kind: HALF_NAMED_OPENED.element,
+      element: screen.openPart.element
+    };
+  }
+  if (screen.pairCombatantId === null) return null;
+  return {
+    kind: HALF_NAMED_OPENED.person,
+    combatantId: screen.pairCombatantId
+  };
+}
+
+// src/ui/panel-document.ts
+var STYLE_ATTRIBUTE = "style";
+var EVENT_TYPE = {
+  press: "pointerdown",
+  back: "contextmenu",
+  move: "pointermove",
+  leave: "pointerout",
+  release: "pointerup",
+  cancel: "pointercancel"
+};
+
+// src/ui/panel-intent.ts
+var PANEL_MARK = {
+  fold: "data-fold",
+  save: "data-save",
+  shelf: "data-shelf",
+  options: "data-options",
+  screen: "data-screen",
+  side: "data-side",
+  row: "data-row",
+  back: "data-back",
+  /** One per kind of part, so what a row opens is read off an attribute rather than parsed. */
+  skill: "data-skill",
+  source: "data-source",
+  kind: "data-kind",
+  /** The row closing a damage section, which opens onto the other end of those blows. */
+  plain: "data-plain",
+  fight: "data-fight",
+  pin: "data-pin",
+  /** Which end a pinned row leaves out, which is the whole of what opening it asks for. */
+  unnamed: "data-unnamed",
+  storage: "data-storage",
+  typeStep: "data-type-step",
+  /** Which window a reset gives back to its type, named as `PANEL_WINDOW` names it. */
+  resetSize: "data-reset-size",
+  /** The helper's own fold: one mark over both would put away the window being watched. */
+  helperFold: "data-helper-fold"
+};
+var PANEL_INTENT = {
+  metric: "metric",
+  side: "side",
+  openRow: "open-row",
+  openUnnamed: "open-unnamed",
+  openPart: "open-part",
+  close: "close",
+  fold: "fold",
+  move: "move",
+  resize: "resize",
+  resetSize: "reset-size",
+  saveFile: "save-file",
+  storage: "storage",
+  typeStep: "type-step",
+  shelf: "shelf",
+  options: "options",
+  showKept: "show-kept",
+  showLive: "show-live",
+  pin: "pin"
+};
+var MarkValueUnknown = class extends Error {
+  name = "MarkValueUnknown";
+  mark;
+  constructor(mark) {
+    super();
+    this.mark = mark;
+  }
+};
+var PLAIN_MARK = "closing";
+var LIVE_FIGHT_MARK = "live";
+var UNNAMED_ENDS = Object.values(UNNAMED_END);
+function readPanelIntent(target) {
+  if (typeof target.getAttribute !== "function") return null;
+  {
+    const metric = target.getAttribute(PANEL_MARK.screen);
+    if (metric !== null) {
+      if (!isOneOf(SCREEN_ORDER, metric)) return new MarkValueUnknown(PANEL_MARK.screen);
+      return {
+        kind: PANEL_INTENT.metric,
+        metric
+      };
+    }
+    const side = target.getAttribute(PANEL_MARK.side);
+    if (side !== null) {
+      if (!isOneOf(SIDE_CHOICES, side)) return new MarkValueUnknown(PANEL_MARK.side);
+      return {
+        kind: PANEL_INTENT.side,
+        side
+      };
+    }
+    const row = target.getAttribute(PANEL_MARK.row);
+    if (row !== null) {
+      const combatantId = parseInteger(row);
+      if (combatantId === null) return new MarkValueUnknown(PANEL_MARK.row);
+      return {
+        kind: PANEL_INTENT.openRow,
+        combatantId
+      };
+    }
+    const end = target.getAttribute(PANEL_MARK.unnamed);
+    if (end !== null) {
+      if (!isOneOf(UNNAMED_ENDS, end)) return new MarkValueUnknown(PANEL_MARK.unnamed);
+      return {
+        kind: PANEL_INTENT.openUnnamed,
+        end
+      };
+    }
+  }
+  {
+    const name = target.getAttribute(PANEL_MARK.skill);
+    if (name !== null) return createOpenPartIntent({
+      kind: OPENED_PART.skill,
+      name
+    });
+    const source = target.getAttribute(PANEL_MARK.source);
+    if (source !== null) return createOpenPartIntent({
+      kind: OPENED_PART.source,
+      source
+    });
+    if (target.getAttribute(PANEL_MARK.plain) !== null) {
+      return createOpenPartIntent({
+        kind: OPENED_PART.plain
+      });
+    }
+    const element = target.getAttribute(PANEL_MARK.kind);
+    if (element !== null) {
+      return createOpenPartIntent({
+        kind: OPENED_PART.element,
+        element
+      });
+    }
+  }
+  {
+    const fight = target.getAttribute(PANEL_MARK.fight);
+    if (fight !== null) {
+      if (fight === LIVE_FIGHT_MARK) return {
+        kind: PANEL_INTENT.showLive
+      };
+      const openedAt = parseInteger(fight);
+      if (openedAt === null) return new MarkValueUnknown(PANEL_MARK.fight);
+      return {
+        kind: PANEL_INTENT.showKept,
+        openedAt
+      };
+    }
+    const pinned = target.getAttribute(PANEL_MARK.pin);
+    if (pinned !== null) {
+      const openedAt = parseInteger(pinned);
+      if (openedAt === null) return new MarkValueUnknown(PANEL_MARK.pin);
+      return {
+        kind: PANEL_INTENT.pin,
+        openedAt
+      };
+    }
+  }
+  {
+    const choice = target.getAttribute(PANEL_MARK.storage);
+    if (choice !== null) {
+      if (!isOneOf(STORAGE_CHOICES, choice)) return new MarkValueUnknown(PANEL_MARK.storage);
+      return {
+        kind: PANEL_INTENT.storage,
+        choice
+      };
+    }
+    const step = target.getAttribute(PANEL_MARK.typeStep);
+    if (step !== null) {
+      if (!isOneOf(TYPE_STEPS, step)) return new MarkValueUnknown(PANEL_MARK.typeStep);
+      return {
+        kind: PANEL_INTENT.typeStep,
+        step
+      };
+    }
+    const window2 = target.getAttribute(PANEL_MARK.resetSize);
+    if (window2 !== null) {
+      if (!isOneOf(PANEL_WINDOWS, window2)) return new MarkValueUnknown(PANEL_MARK.resetSize);
+      return {
+        kind: PANEL_INTENT.resetSize,
+        window: window2
+      };
+    }
+  }
+  {
+    if (target.getAttribute(PANEL_MARK.helperFold) !== null) {
+      return {
+        kind: PANEL_INTENT.fold,
+        window: PANEL_WINDOW.helper
+      };
+    }
+    if (target.getAttribute(PANEL_MARK.save) !== null) return {
+      kind: PANEL_INTENT.saveFile
+    };
+    if (target.getAttribute(PANEL_MARK.shelf) !== null) return {
+      kind: PANEL_INTENT.shelf
+    };
+    if (target.getAttribute(PANEL_MARK.options) !== null) return {
+      kind: PANEL_INTENT.options
+    };
+    if (target.getAttribute(PANEL_MARK.fold) !== null) {
+      return {
+        kind: PANEL_INTENT.fold,
+        window: PANEL_WINDOW.meter
+      };
+    }
+    if (target.getAttribute(PANEL_MARK.back) !== null) return {
+      kind: PANEL_INTENT.close
+    };
+  }
+  return null;
+}
+function createOpenPartIntent(openedPart) {
+  return {
+    kind: PANEL_INTENT.openPart,
+    part: openedPart
+  };
+}
+function isPanelIntentSame(pressed, released) {
+  return composeNameForIntent(pressed) === composeNameForIntent(released);
+}
+function composeNameForIntent(intent) {
+  if (intent.kind === PANEL_INTENT.metric) return `${intent.kind}:${intent.metric}`;
+  if (intent.kind === PANEL_INTENT.side) return `${intent.kind}:${intent.side}`;
+  if (intent.kind === PANEL_INTENT.openRow) return `${intent.kind}:${intent.combatantId}`;
+  if (intent.kind === PANEL_INTENT.openUnnamed) return `${intent.kind}:${intent.end}`;
+  if (intent.kind === PANEL_INTENT.openPart) {
+    return `${intent.kind}:${composeNameForPart(intent.part)}`;
+  }
+  if (intent.kind === PANEL_INTENT.fold) return `${intent.kind}:${intent.window}`;
+  if (intent.kind === PANEL_INTENT.move) {
+    const position = intent.position;
+    return `${intent.kind}:${intent.window}:${position.left}:${position.top}`;
+  }
+  if (intent.kind === PANEL_INTENT.resize) {
+    const size = intent.size;
+    return `${intent.kind}:${intent.window}:${size.width}:${size.height}`;
+  }
+  if (intent.kind === PANEL_INTENT.resetSize) return `${intent.kind}:${intent.window}`;
+  if (intent.kind === PANEL_INTENT.storage) return `${intent.kind}:${intent.choice}`;
+  if (intent.kind === PANEL_INTENT.typeStep) return `${intent.kind}:${intent.step}`;
+  if (intent.kind === PANEL_INTENT.showKept) return `${intent.kind}:${intent.openedAt}`;
+  if (intent.kind === PANEL_INTENT.pin) return `${intent.kind}:${intent.openedAt}`;
+  return intent.kind;
+}
+
+// src/ui/view-failure.ts
+var PANEL_LISTENER = {
+  press: "press",
+  click: "click",
+  back: "back",
+  hover: "hover",
+  leave: "leave",
+  grab: "grab",
+  drag: "drag",
+  release: "release",
+  cancel: "cancel",
+  capture: "capture"
+};
+var RegionUndrawn = class extends Error {
+  name = "RegionUndrawn";
+  region;
+  constructor(region, cause) {
+    super(void 0, {
+      cause
+    });
+    this.region = region;
+  }
+};
+var GestureDropped = class extends Error {
+  name = "GestureDropped";
+  listener;
+  constructor(listener, cause) {
+    super(void 0, {
+      cause
+    });
+    this.listener = listener;
+  }
+};
+var WindowUnplaced = class extends Error {
+  name = "WindowUnplaced";
+  window;
+  constructor(window2, cause) {
+    super(void 0, {
+      cause
+    });
+    this.window = window2;
+  }
+};
+var CardRefused = class extends Error {
+  name = "CardRefused";
+  key;
+  constructor(key) {
+    super();
+    this.key = key;
+  }
+};
+var CardLinesExceeded = class extends Error {
+  name = "CardLinesExceeded";
+  lines;
+  maximum;
+  constructor(lines, maximum) {
+    super();
+    this.lines = lines;
+    this.maximum = maximum;
+  }
+};
+function addViewFailureGuarded(failure, onFailure) {
+  void attempt(() => onFailure(failure));
+}
+
+// src/ui/panel-listener.ts
+function addGuardedListener(root, type, listener, handle, onFailure) {
+  root.addEventListener(type, (event) => {
+    const handled = attempt(() => handle(event));
+    if (!(handled instanceof Error)) return;
+    addViewFailureGuarded(new GestureDropped(listener, handled), onFailure);
+  });
+}
+
+// src/ui/panel-look.ts
+var BAR_ICON = {
+  options: "options",
+  shelf: "shelf",
+  save: "save",
+  fold: "fold",
+  unfold: "unfold"
+};
+var SURFACE = {
+  panel: [
+    15,
+    22,
+    29
+  ],
+  raised: [
+    23,
+    30,
+    37
+  ],
+  track: [
+    27,
+    35,
+    42
+  ],
+  border: [
+    35,
+    43,
+    51
+  ]
+};
+var TEXT = {
+  plain: [
+    227,
+    231,
+    234
+  ],
+  quiet: [
+    151,
+    159,
+    168
+  ],
+  inkDark: [
+    13,
+    19,
+    25
+  ],
+  inkLight: [
+    255,
+    255,
+    255
+  ]
+};
+var CLASS = {
+  title: "MargoMeter-titlebar",
+  control: "titlebar-button",
+  /** The first control on the bar, which pushes every control after it to the far end. */
+  controlLead: "titlebar-lead",
+  frame: "MargoMeter-body",
+  folded: "folded",
+  meter: "meter",
+  slot: "slot",
+  header: "header",
+  headerLine: "header-line",
+  headerPlace: "header-place",
+  headerPlaceName: "header-place-name",
+  headerPlaceTile: "header-place-tile",
+  headerOutcome: "header-outcome",
+  /** The ink of the side that took the fight, on the header's word and on a shelf row's letter. */
+  outcomeWon: "outcome-won",
+  outcomeLost: "outcome-lost",
+  strips: "strips",
+  stripsGap: "strips-gap",
+  strip: "strip",
+  stripCurrent: "selected",
+  crumb: "crumb",
+  crumbBack: "crumb-back",
+  crumbHere: "crumb-here",
+  /** One question of the options: a heading, then its answers in the shape they need. */
+  optionsQuestion: "options-question",
+  optionsHeading: "options-heading",
+  optionsSteps: "options-steps",
+  options: "options",
+  optionsStep: "options-step",
+  optionsWindow: "options-window",
+  optionsWindowName: "options-window-name",
+  optionsWindowState: "options-window-state",
+  optionsWindowOwn: "options-window-own",
+  optionsReset: "options-reset",
+  optionsAnswer: "options-answer",
+  optionsMeaning: "options-meaning",
+  optionsVersion: "options-version",
+  list: "list",
+  listWaiting: "list-waiting",
+  section: "section-heading",
+  sectionWords: "section-words",
+  row: "row",
+  rowDrillable: "drillable",
+  rowLeaf: "leaf",
+  rowRank: "row-rank",
+  rowTime: "row-time",
+  rowName: "row-name",
+  rowSize: "row-size",
+  rowChosen: "chosen",
+  rowApart: "apart",
+  rowPin: "row-pin",
+  rowPinSet: "pinned",
+  rowValue: "row-value",
+  rowOutcome: "row-outcome",
+  /** A kept fight that no longer reads: its row opens nothing and says so in its last cell. */
+  rowUnread: "unread",
+  rowShare: "row-share",
+  rowSuspect: "row-suspect",
+  rowCaveat: "row-caveat",
+  rowTurn: "row-turn",
+  rowSide: "row-side",
+  bar: "bar",
+  barCap: "bar-cap",
+  /** Worn by every cell that carries a figure, wherever in the panel it stands. */
+  figure: "figure",
+  pinned: "pinned-region",
+  /** The section under the pinned rows: what the screen's own count holds and no row does. */
+  outside: "outside-region",
+  empty: "empty",
+  undrawn: "undrawn",
+  suspicions: "suspicions",
+  suspicion: "suspicion",
+  defects: "defects",
+  defect: "defect",
+  sides: "MargoMeter-sides",
+  sidesLine: "sides",
+  sidesLabel: "sides-label",
+  sidesSpare: "sides-spare",
+  sidesTrack: "sides-track",
+  sidesOurs: "sides-ours",
+  sidesTheirs: "sides-theirs",
+  sidesNobody: "sides-nobody",
+  card: "MargoMeter-card",
+  cardHidden: "card-hidden",
+  /** A card too tall for the window in one column, drawn in two (ADR 0033). */
+  cardWide: "card-wide",
+  cardColumns: "card-columns",
+  cardColumn: "card-column",
+  cardName: "card-name",
+  cardSubtitle: "card-subtitle",
+  cardGroup: "card-group",
+  cardHeading: "card-heading",
+  cardLine: "card-line",
+  cardStrong: "card-strong",
+  cardSub: "card-sub",
+  cardLabel: "card-label",
+  cardCaveat: "card-caveat",
+  cardValue: "card-value",
+  /** A sentence rather than a column, so the placement counts it as wrapping. */
+  cardNote: "card-note",
+  cardSuspect: "card-suspect",
+  cardDefect: "card-defect",
+  /** How the fight a card is about went, after its headcount. */
+  cardOutcome: "card-outcome",
+  /** The sentence's own, and never `cardCaveat` — that one is the glyph cell beside a figure. */
+  cardCaveatNote: "card-caveat-note",
+  /** The helper: its own bar, its own body, and the rows under each heading. */
+  helper: "MargoMeter-helper",
+  helperBar: "helper-bar",
+  helperBody: "helper-body",
+  helperFolded: "helper-folded",
+  /** A row nested under the one above it, whoever stands in either. */
+  helperUnder: "helper-under",
+  /** The shout a holder is holding somebody with, drawn on their row (`develop ADR 0097`). */
+  helperCast: "helper-cast",
+  /** The row that carries one, which is the only row where the name gives way last. */
+  helperHolding: "helper-holding",
+  helperPips: "helper-pips",
+  helperPip: "helper-pip",
+  helperPipLit: "helper-pip-lit",
+  /** The corner a window is sized by, in either window (ADR 0013). */
+  sizeGrip: "size-grip"
+};
+var TARGET_PIXELS_MINIMUM = 24;
+var SPACE_PIXELS = {
+  half: 2,
+  small: 4,
+  regionDown: 5,
+  regionAcross: 7,
+  wide: 8
+};
+var METER_HEIGHT_VIEWPORT_PERCENT_MAXIMUM = 66;
+var PLACE = {
+  insetPixels: 8,
+  /**
+     * The host against the game's own page, and nothing inside the root: the game's interface
+     * layer, won by standing after it in `body`, and under every window of theirs —
+     * `develop ADR 0114`.
+     */
+  layer: "10"
+};
+var LAYER = {
+  /** A section's heading over the rows scrolling under it, and the size grip over the list. */
+  section: "1",
+  grip: "1",
+  helper: "2",
+  card: "3"
+};
+var TYPE_TOKENS = {
+  [TYPE_STEP.small]: {
+    fontPixels: 12,
+    lineHeightPixels: 16,
+    lineHeightTitlePixels: 14,
+    fontSmallPixels: 11,
+    rowHeightPixels: 25,
+    rankWidthPixels: 24,
+    pipSizePixels: 5,
+    castWidthPixelsMinimum: 50,
+    markSizePixels: 12,
+    meterWidthPixels: 274,
+    cardWidthPixelsMaximum: 272,
+    helperWidthPixels: 228
+  },
+  [TYPE_STEP.medium]: {
+    fontPixels: 13,
+    lineHeightPixels: 18,
+    lineHeightTitlePixels: 15,
+    fontSmallPixels: 12,
+    rowHeightPixels: 27,
+    rankWidthPixels: 25,
+    pipSizePixels: 6,
+    castWidthPixelsMinimum: 54,
+    markSizePixels: 12,
+    meterWidthPixels: 306,
+    cardWidthPixelsMaximum: 296,
+    helperWidthPixels: 248
+  },
+  [TYPE_STEP.large]: {
+    fontPixels: 14,
+    lineHeightPixels: 20,
+    lineHeightTitlePixels: 16,
+    fontSmallPixels: 13,
+    rowHeightPixels: 29,
+    rankWidthPixels: 27,
+    pipSizePixels: 6,
+    castWidthPixelsMinimum: 58,
+    markSizePixels: 14,
+    meterWidthPixels: 316,
+    cardWidthPixelsMaximum: 318,
+    helperWidthPixels: 268
+  }
+};
+var SHAPE = {
+  radiusPixels: 8,
+  radiusSmallPixels: 3,
+  windowShadow: "0 6px 20px rgb(0 0 0 / 55%)"
+};
+var ROW_INK_DROP_PIXELS = 1;
+var BAR_TINT = 0.55;
+var MASK_INK = [
+  0,
+  0,
+  0
+];
+var HEADING_TINT = 0.85;
+var VARIABLE_PREFIX = "--MargoMeter-";
+var ROWS_BY_DEFAULT = RANKING_ROWS;
+var FONT_STACK = "system-ui, sans-serif";
+var RULE_WIDTH_PIXELS = 1;
+var SIDES_TRACK_HEIGHT_PIXELS = SPACE_PIXELS.small;
+var ROW_SIDE_WIDTH_PIXELS = 2;
+var MASK_STRIPE_PIXELS = 4;
+var HEADING_LETTER_SPACING_EM = 0.08;
+var TITLE_LETTER_SPACING_EM = 0.06;
+var CAP_WIDTH_PIXELS = 3;
+var CAVEAT_LETTER = {
+  clearPixels: 1,
+  gapPixels: 1,
+  stemWidthPixels: 2
+};
+var BAR_ICON_DRAWINGS = {
+  [BAR_ICON.options]: "<circle cx='5' cy='5' r='2.4' stroke-width='1.4'/><path stroke-width='1.6' d='M8.2 5L9.6 5M7.26 7.26L8.25 8.25M5 8.2L5 9.6M2.74 7.26L1.75 8.25M1.8 5L0.4 5M2.74 2.74L1.75 1.75M5 1.8L5 0.4M7.26 2.74L8.25 1.75'/>",
+  [BAR_ICON.shelf]: "<path stroke-width='1.2' d='M1 2H9M1 5H9M1 8H9'/>",
+  [BAR_ICON.save]: "<path stroke-width='1.2' d='M5 1V6.6M2.4 4.2L5 6.8L7.6 4.2M1 9H9'/>",
+  [BAR_ICON.fold]: "<path stroke-width='1.2' d='M1 5H9'/>",
+  [BAR_ICON.unfold]: "<path stroke-width='1.2' d='M1 5H9M5 1V9'/>"
+};
+var BAR_ICONS = Object.values(BAR_ICON);
+var BAR_ICON_INSET_PIXELS = 2;
+var PIN_STAR_PATH = "M5 0.93L6.01 4.04H9.28L6.63 5.96L7.65 9.07L5 7.15L2.35 9.07L3.37 5.96L0.72 4.04H3.99Z";
+var PIN_INSET_PIXELS = 6;
+var SIZE_GRIP = {
+  sizePixels: 12
+};
+var SIZED_METER_VARIABLES = {
+  listBasis: "--MargoMeter-list-basis",
+  listRowsLeast: "--MargoMeter-list-rows-least",
+  share: "--MargoMeter-meter-share"
+};
+var LIST_ROWS_SIZED_MINIMUM = 3;
+var SIZE_VARIABLES = {
+  [PANEL_WINDOW.meter]: {
+    width: "--MargoMeter-meter-width",
+    height: "--MargoMeter-meter-height"
+  },
+  [PANEL_WINDOW.helper]: {
+    width: "--MargoMeter-helper-width",
+    height: "--MargoMeter-helper-height"
+  }
+};
+var TOP_VARIABLES = {
+  [PANEL_WINDOW.meter]: "--MargoMeter-meter-top",
+  [PANEL_WINDOW.helper]: "--MargoMeter-helper-top"
+};
+var ROWS_VARIABLE = "--MargoMeter-rows";
+var CARD_VARIABLES = {
+  top: "--MargoMeter-card-top",
+  left: "--MargoMeter-card-left",
+  right: "--MargoMeter-card-right",
+  height: "--MargoMeter-card-height"
+};
+var NO_SELECTION = "-webkit-user-select:none;user-select:none;";
+function composeColourOver(top, bottom, alpha) {
+  const share = clampNumber(alpha, 0, 1);
+  return [
+    composeColourOverChannel(top[0], bottom[0], share),
+    composeColourOverChannel(top[1], bottom[1], share),
+    composeColourOverChannel(top[2], bottom[2], share)
+  ];
+}
+function composeColourOverChannel(above, below, share) {
+  return Math.round(share * above + (1 - share) * below);
+}
+function calculateCardHeight(size, tokens) {
+  const line = tokens.lineHeightPixels;
+  const air = SPACE_PIXELS.small;
+  if (!Number.isSafeInteger(size.lines)) return null;
+  if (!Number.isSafeInteger(size.groups)) return null;
+  const runs = size.groups * (2 * air + RULE_WIDTH_PIXELS);
+  return size.lines * line + runs + 2 * air + 2 * RULE_WIDTH_PIXELS;
+}
+function calculateCardWidthForColumns(tokens, columns) {
+  const between = 2 * SPACE_PIXELS.wide + RULE_WIDTH_PIXELS;
+  return columns * tokens.cardWidthPixelsMaximum + (columns - 1) * between;
+}
+function calculateCardHeightAvailable(viewportHeight) {
+  if (viewportHeight === null) return null;
+  if (!Number.isFinite(viewportHeight)) return null;
+  const room = viewportHeight - 2 * PLACE.insetPixels;
+  if (room <= 0) return null;
+  return room;
+}
+function calculateCardWidthAvailable(viewportWidth) {
+  if (viewportWidth === null) return null;
+  if (!Number.isFinite(viewportWidth)) return null;
+  const room = viewportWidth - 2 * PLACE.insetPixels;
+  if (room <= 0) return null;
+  return room;
+}
+function composeSizedPanelStyle() {
+  const { listBasis, listRowsLeast, share } = SIZED_METER_VARIABLES;
+  return `${listBasis}:0px;${listRowsLeast}:${LIST_ROWS_SIZED_MINIMUM};${share}:100vh`;
+}
+function calculateBarHeight(tokens) {
+  return calculateControlHeightPixels(tokens) + 2 * SPACE_PIXELS.half + RULE_WIDTH_PIXELS;
+}
+function calculateControlHeightPixels(tokens) {
+  return Math.max(tokens.lineHeightTitlePixels + 2 * RULE_WIDTH_PIXELS, TARGET_PIXELS_MINIMUM);
+}
+function composeBarIconClass(icon) {
+  return `${CLASS.control}-${icon}`;
+}
+function composeOptionsStepClass(step) {
+  return `${CLASS.optionsStep}-${step}`;
+}
+function composeStyleSheet(step) {
+  return composeStyleSheetForTokens(TYPE_TOKENS[step]);
+}
+function composeStyleSheetForTokens(tokens) {
+  return `${composeFrameRules(tokens)}${composeRegionRules(tokens)}${composeOptionsRules(tokens)}${composeListRules(tokens)}${composeRowRules(tokens)}${composeUnderListRules()}${composeCardRules(tokens)}${composeHelperRules(tokens)}`;
+}
+function composeFrameRules(tokens) {
+  const share = `var(${SIZED_METER_VARIABLES.share},${METER_HEIGHT_VIEWPORT_PERCENT_MAXIMUM}vh)`;
+  const ceiling = `min(calc(100vh - var(${TOP_VARIABLES.meter}) - ${PLACE.insetPixels}px),${share})`;
+  const width = `var(${SIZE_VARIABLES.meter.width},${tokens.meterWidthPixels}px)`;
+  return `:host{all:initial;${composeVariables(tokens)}${TOP_VARIABLES.meter}:${PLACE.insetPixels}px;position:fixed;top:var(${TOP_VARIABLES.meter});right:${PLACE.insetPixels}px;z-index:${PLACE.layer};display:flex;flex-direction:column;max-height:${ceiling};}.${CLASS.title}{flex:none;display:flex;align-items:center;gap:var(${VARIABLE_PREFIX}small);padding:var(${VARIABLE_PREFIX}half) var(${VARIABLE_PREFIX}wide);font:${composeFontTitle(tokens)};letter-spacing:${TITLE_LETTER_SPACING_EM}em;color:var(${VARIABLE_PREFIX}quiet);white-space:nowrap;background:var(${VARIABLE_PREFIX}raised);border:${RULE_WIDTH_PIXELS}px solid var(${VARIABLE_PREFIX}border);border-bottom:none;border-radius:var(${VARIABLE_PREFIX}radius) var(${VARIABLE_PREFIX}radius) 0 0;box-sizing:border-box;width:${width};cursor:move;${NO_SELECTION}touch-action:none;}.${CLASS.control}{display:inline-flex;align-items:center;justify-content:center;flex:none;box-sizing:border-box;padding:0;font-size:0;width:${calculateControlHeightPixels(tokens)}px;height:${calculateControlHeightPixels(tokens)}px;border:${RULE_WIDTH_PIXELS}px solid var(${VARIABLE_PREFIX}border);border-radius:var(${VARIABLE_PREFIX}radius);color:var(${VARIABLE_PREFIX}quiet);background:var(${VARIABLE_PREFIX}surface);cursor:pointer;}.${CLASS.control}:hover{color:var(${VARIABLE_PREFIX}text);}` + composeBarIconRules(tokens) + `.${CLASS.controlLead}{margin-left:auto;}.${CLASS.frame}{display:flex;flex-direction:column;min-height:0;}.${CLASS.frame}.${CLASS.folded}{display:none;}.${CLASS.meter}{font:${composeFontBody(tokens)};width:${width};position:relative;color:var(${VARIABLE_PREFIX}text);background:var(${VARIABLE_PREFIX}surface);border:${RULE_WIDTH_PIXELS}px solid var(${VARIABLE_PREFIX}border);border-radius:0 0 var(${VARIABLE_PREFIX}radius) var(${VARIABLE_PREFIX}radius);box-sizing:border-box;display:flex;flex-direction:column;min-height:var(${SIZE_VARIABLES.meter.height},0);}.${CLASS.meter}>*{flex:none;}.${CLASS.meter}>.${CLASS.list}{flex:1 1 var(${SIZED_METER_VARIABLES.listBasis},auto);min-height:calc(var(${SIZED_METER_VARIABLES.listRowsLeast},0) * (var(${VARIABLE_PREFIX}row-height) + var(${VARIABLE_PREFIX}half)));}.${CLASS.slot}{display:none;}`;
+}
+function composeBarIconRules(tokens) {
+  const lined = tokens.lineHeightTitlePixels - 2 * BAR_ICON_INSET_PIXELS;
+  const size = lined + lined % 2;
+  let rules = `.${CLASS.control}::before{content:"";flex:none;width:${size}px;height:${size}px;background:currentColor;}`;
+  for (const icon of BAR_ICONS) {
+    rules += `.${composeBarIconClass(icon)}::before{${composeMaskImage("fill='none'", BAR_ICON_DRAWINGS[icon])}}`;
+  }
+  return rules;
+}
+function composeMaskImage(paint, drawing) {
+  const svg = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 10' ${paint} stroke='black'>${drawing}</svg>`;
+  const url = `url("data:image/svg+xml,${encodeURIComponent(svg)}")`;
+  return `-webkit-mask-image:${url};mask-image:${url};`;
+}
+function composeFontBody(tokens) {
+  return `${tokens.fontPixels}px/${tokens.lineHeightPixels}px ${FONT_STACK}`;
+}
+function composeFontTitle(tokens) {
+  return `${tokens.fontPixels}px/${tokens.lineHeightTitlePixels}px ${FONT_STACK}`;
+}
+function composeVariables(tokens) {
+  const stated = [
+    composeVariable("surface", formatColour(SURFACE.panel)),
+    composeVariable("raised", formatColour(SURFACE.raised)),
+    composeVariable("track", formatColour(SURFACE.track)),
+    composeVariable("border", formatColour(SURFACE.border)),
+    composeVariable("text", formatColour(TEXT.plain)),
+    composeVariable("quiet", formatColour(TEXT.quiet)),
+    composeVariable("suspect", formatColour(SIGNAL.suspect)),
+    composeVariable("caveat", formatColour(SIGNAL.caveat)),
+    composeVariable("defect", formatColour(SIGNAL.defect)),
+    composeVariable("ours", formatColour(SIGNAL.ours)),
+    composeVariable("theirs", formatColour(SIGNAL.theirs)),
+    composeVariable("nobody", formatColour(SIGNAL.unknown)),
+    composeVariable("heading", formatRgbColour(composeColourOver(TEXT.quiet, SURFACE.panel, HEADING_TINT))),
+    composeVariable("mask", formatColour(MASK_INK)),
+    composeVariable("bar-tint", `${BAR_TINT}`),
+    composeVariable("half", `${SPACE_PIXELS.half}px`),
+    composeVariable("small", `${SPACE_PIXELS.small}px`),
+    composeVariable("region-down", `${SPACE_PIXELS.regionDown}px`),
+    composeVariable("region-across", `${SPACE_PIXELS.regionAcross}px`),
+    composeVariable("wide", `${SPACE_PIXELS.wide}px`),
+    composeVariable("row-height", `${tokens.rowHeightPixels}px`),
+    composeVariable("radius", `${SHAPE.radiusPixels}px`),
+    composeVariable("radius-small", `${SHAPE.radiusSmallPixels}px`)
+  ].join("");
+  return stated;
+}
+function composeVariable(name, variableValue) {
+  return `${VARIABLE_PREFIX}${name}:${variableValue};`;
+}
+function formatRgbColour(colour) {
+  return `rgb(${colour[0]} ${colour[1]} ${colour[2]})`;
+}
+function composeRegionRules(tokens) {
+  const region = `var(${VARIABLE_PREFIX}region-down) var(${VARIABLE_PREFIX}region-across)`;
+  return `.${CLASS.header}{display:block;padding:${region};padding-bottom:0;}.${CLASS.headerLine}{display:flex;align-items:baseline;gap:var(${VARIABLE_PREFIX}wide);}.${CLASS.headerLine}>*{flex:none;}.${CLASS.headerPlace}{flex:1 1 auto;min-width:0;display:flex;justify-content:flex-end;color:var(${VARIABLE_PREFIX}quiet);font-size:${tokens.fontSmallPixels}px;white-space:nowrap;}.${CLASS.headerPlaceName}{overflow:hidden;text-overflow:ellipsis;}.${CLASS.headerPlaceTile}{white-space:pre;}.${CLASS.headerOutcome}{color:var(${VARIABLE_PREFIX}quiet);text-transform:uppercase;font-size:${tokens.fontSmallPixels}px;}.${CLASS.headerOutcome}.${CLASS.outcomeWon}{color:var(${VARIABLE_PREFIX}ours);}.${CLASS.headerOutcome}.${CLASS.outcomeLost}{color:var(${VARIABLE_PREFIX}theirs);}.${CLASS.strips}{display:flex;flex-wrap:wrap;gap:var(${VARIABLE_PREFIX}half);padding:${region};padding-bottom:0;}.${CLASS.strips}+.${CLASS.strips}{padding-top:var(${VARIABLE_PREFIX}radius-small);}.${CLASS.stripsGap}{flex:1;}.${CLASS.strip}{white-space:nowrap;padding:0 var(${VARIABLE_PREFIX}small);line-height:var(${VARIABLE_PREFIX}row-height);border-radius:var(${VARIABLE_PREFIX}radius-small);color:var(${VARIABLE_PREFIX}quiet);background:transparent;cursor:pointer;${NO_SELECTION}}.${CLASS.strip}.${CLASS.stripCurrent}{color:var(${VARIABLE_PREFIX}text);background:var(${VARIABLE_PREFIX}raised);}.${CLASS.crumb}{display:flex;gap:var(${VARIABLE_PREFIX}wide);align-items:baseline;padding:${region};padding-bottom:0;}.${CLASS.crumbBack}{cursor:pointer;color:var(${VARIABLE_PREFIX}quiet);line-height:var(${VARIABLE_PREFIX}row-height);}.${CLASS.crumbBack}:hover{color:var(${VARIABLE_PREFIX}text);}.${CLASS.crumbHere}{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}`;
+}
+function composeOptionsRules(tokens) {
+  const chosen = CLASS.stripCurrent;
+  const stepSizes = TYPE_STEPS.map((step) => `.${composeOptionsStepClass(step)}{font-size:${TYPE_TOKENS[step].fontPixels}px;}`).join("");
+  return `.${CLASS.optionsQuestion}{padding:var(${VARIABLE_PREFIX}wide) var(${VARIABLE_PREFIX}region-across) 0;}.${CLASS.options}{padding-bottom:var(${VARIABLE_PREFIX}wide);}.${CLASS.optionsHeading}{color:var(${VARIABLE_PREFIX}heading);letter-spacing:${HEADING_LETTER_SPACING_EM}em;font-size:${tokens.fontSmallPixels}px;text-transform:uppercase;}.${CLASS.optionsSteps}{display:flex;margin-top:var(${VARIABLE_PREFIX}half);border:${RULE_WIDTH_PIXELS}px solid var(${VARIABLE_PREFIX}border);border-radius:var(${VARIABLE_PREFIX}radius-small);overflow:hidden;}.${CLASS.optionsStep}{flex:1 1 0;height:var(${VARIABLE_PREFIX}row-height);line-height:var(${VARIABLE_PREFIX}row-height);text-align:center;white-space:nowrap;color:var(${VARIABLE_PREFIX}quiet);border-left:${RULE_WIDTH_PIXELS}px solid var(${VARIABLE_PREFIX}border);cursor:pointer;${NO_SELECTION}}.${CLASS.optionsStep}:first-child{border-left:none;}` + stepSizes + `.${CLASS.optionsWindow}{display:flex;align-items:center;gap:var(${VARIABLE_PREFIX}small);height:var(${VARIABLE_PREFIX}row-height);margin-top:var(${VARIABLE_PREFIX}half);padding-left:var(${VARIABLE_PREFIX}small);}.${CLASS.optionsWindowName}{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}.${CLASS.optionsWindowState}{color:var(${VARIABLE_PREFIX}quiet);}.${CLASS.optionsWindowState}.${CLASS.optionsWindowOwn}{color:var(${VARIABLE_PREFIX}text);}.${CLASS.optionsReset}{padding:0 var(${VARIABLE_PREFIX}small);border:${RULE_WIDTH_PIXELS}px solid var(${VARIABLE_PREFIX}border);border-radius:var(${VARIABLE_PREFIX}radius-small);background:var(${VARIABLE_PREFIX}raised);color:var(${VARIABLE_PREFIX}text);font-size:${tokens.fontSmallPixels}px;line-height:calc(var(${VARIABLE_PREFIX}row-height) - ${2 * RULE_WIDTH_PIXELS}px);cursor:pointer;${NO_SELECTION}}.${CLASS.optionsAnswer}{display:flex;align-items:center;height:var(${VARIABLE_PREFIX}row-height);margin-top:var(${VARIABLE_PREFIX}half);padding:0 var(${VARIABLE_PREFIX}small) 0 var(${VARIABLE_PREFIX}half);border-radius:var(${VARIABLE_PREFIX}radius-small);color:var(${VARIABLE_PREFIX}quiet);white-space:nowrap;cursor:pointer;${NO_SELECTION}}.${CLASS.optionsAnswer}::before{content:"";flex:none;text-align:center;width:calc(var(${VARIABLE_PREFIX}wide) + var(${VARIABLE_PREFIX}small));}.${CLASS.optionsAnswer}.${chosen}::before{content:"\u2713";}.${CLASS.optionsStep}:hover,.${CLASS.optionsAnswer}:hover{color:var(${VARIABLE_PREFIX}text);}.${CLASS.optionsStep}.${chosen},.${CLASS.optionsAnswer}.${chosen}{color:var(${VARIABLE_PREFIX}text);background:var(${VARIABLE_PREFIX}track);font-weight:600;}.${CLASS.optionsMeaning}{margin-top:var(${VARIABLE_PREFIX}small);padding:0 var(${VARIABLE_PREFIX}half);color:var(${VARIABLE_PREFIX}quiet);font-size:${tokens.fontSmallPixels}px;}.${CLASS.optionsVersion}{margin-top:var(${VARIABLE_PREFIX}half);padding:0 var(${VARIABLE_PREFIX}half);font-variant-numeric:tabular-nums;}`;
+}
+function composeListRules(tokens) {
+  const region = `var(${VARIABLE_PREFIX}region-down) var(${VARIABLE_PREFIX}region-across)`;
+  const belowRows = composeInsetUnderRows(VARIABLE_PREFIX + "region-down");
+  const rowCost = `(var(${VARIABLE_PREFIX}row-height) + var(${VARIABLE_PREFIX}half))`;
+  return `.${CLASS.list}{padding:${region};padding-bottom:${belowRows};height:calc(var(${ROWS_VARIABLE},${ROWS_BY_DEFAULT}) * ${rowCost});overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;scrollbar-width:none;}.${CLASS.figure}{flex:none;white-space:nowrap;}.${CLASS.sectionWords}{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}.${CLASS.section}{position:sticky;top:calc(0px - var(${VARIABLE_PREFIX}region-down));z-index:${LAYER.section};background:var(${VARIABLE_PREFIX}surface);display:flex;justify-content:space-between;color:var(${VARIABLE_PREFIX}heading);letter-spacing:${HEADING_LETTER_SPACING_EM}em;font-size:${tokens.fontSmallPixels}px;padding:var(${VARIABLE_PREFIX}small) var(${VARIABLE_PREFIX}half) var(${VARIABLE_PREFIX}half);}.${CLASS.listWaiting}{display:flex;align-items:center;justify-content:center;text-align:center;}.${CLASS.empty}{color:var(${VARIABLE_PREFIX}quiet);padding:var(${VARIABLE_PREFIX}wide) var(${VARIABLE_PREFIX}half);}.${CLASS.undrawn}{color:var(${VARIABLE_PREFIX}quiet);font-style:italic;padding:var(${VARIABLE_PREFIX}small);}.${CLASS.sides}{padding:var(${VARIABLE_PREFIX}region-down) var(${VARIABLE_PREFIX}region-across);border-top:${RULE_WIDTH_PIXELS}px solid var(${VARIABLE_PREFIX}border);overflow:hidden;}.${CLASS.sidesLine}{display:flex;justify-content:space-between;align-items:baseline;font-variant-numeric:tabular-nums;font-weight:600;}.${CLASS.sidesLabel}{color:var(${VARIABLE_PREFIX}quiet);font-weight:400;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}.${CLASS.sidesSpare}{margin-top:var(${VARIABLE_PREFIX}small);font-size:${tokens.fontSmallPixels}px;}.${CLASS.sidesSpare} .${CLASS.sidesLabel}{color:inherit;}.${CLASS.sidesTrack}{display:flex;height:${SIDES_TRACK_HEIGHT_PIXELS}px;margin-top:var(${VARIABLE_PREFIX}small);border-radius:var(${VARIABLE_PREFIX}radius-small);overflow:hidden;background:var(${VARIABLE_PREFIX}track);}.${CLASS.sidesOurs}{color:var(${VARIABLE_PREFIX}ours);}.${CLASS.sidesTheirs}{color:var(${VARIABLE_PREFIX}theirs);}.${CLASS.sidesNobody}{color:var(${VARIABLE_PREFIX}nobody);}.${CLASS.sidesTrack}>*{background:currentColor;}.${CLASS.suspicions}{border-top:${RULE_WIDTH_PIXELS}px solid var(${VARIABLE_PREFIX}border);padding-top:var(${VARIABLE_PREFIX}region-down);}.${CLASS.suspicion}{color:var(${VARIABLE_PREFIX}suspect);padding:0 var(${VARIABLE_PREFIX}region-across) var(${VARIABLE_PREFIX}region-down);}.${CLASS.defects}{border-top:${RULE_WIDTH_PIXELS}px solid var(${VARIABLE_PREFIX}border);padding-top:var(${VARIABLE_PREFIX}region-down);}.${CLASS.defect}{color:var(${VARIABLE_PREFIX}defect);padding:0 var(${VARIABLE_PREFIX}region-across) var(${VARIABLE_PREFIX}region-down);}`;
+}
+function composeInsetUnderRows(inset) {
+  const written = `calc(var(${inset}) - var(${VARIABLE_PREFIX}half))`;
+  return written;
+}
+function composeRowRules(tokens) {
+  const capRight = `var(${VARIABLE_PREFIX}radius-small)`;
+  const cap = `${capRight} 0 0 ${capRight}`;
+  return `.${CLASS.row}{position:relative;display:flex;justify-content:space-between;align-items:center;box-sizing:border-box;height:var(${VARIABLE_PREFIX}row-height);padding:${ROW_INK_DROP_PIXELS}px var(${VARIABLE_PREFIX}wide) 0;margin-bottom:var(${VARIABLE_PREFIX}half);border-radius:var(${VARIABLE_PREFIX}radius-small);background:var(${VARIABLE_PREFIX}track);overflow:hidden;${NO_SELECTION}}.${CLASS.row}.${CLASS.rowDrillable}{cursor:pointer;}.${CLASS.row}.${CLASS.rowLeaf}{cursor:help;}.${CLASS.bar}{position:absolute;left:0;top:0;bottom:0;opacity:var(${VARIABLE_PREFIX}bar-tint);}.${CLASS.barCap}{position:absolute;left:0;top:0;bottom:0;width:${CAP_WIDTH_PIXELS}px;border-radius:${cap};}.${CLASS.rowRank},.${CLASS.rowName},.${CLASS.rowValue}{position:relative;}.${CLASS.rowRank}{color:var(${VARIABLE_PREFIX}text);font-variant-numeric:tabular-nums;flex:none;box-sizing:border-box;width:${tokens.rankWidthPixels}px;text-align:right;padding-right:var(${VARIABLE_PREFIX}small);}.${CLASS.rowTime}{color:var(${VARIABLE_PREFIX}quiet);font-variant-numeric:tabular-nums;flex:none;padding-right:var(${VARIABLE_PREFIX}small);}.${CLASS.rowName}{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;}.${CLASS.rowSuspect}{position:relative;color:var(${VARIABLE_PREFIX}suspect);flex:none;padding-right:var(${VARIABLE_PREFIX}small);background:var(${VARIABLE_PREFIX}track);border-radius:var(${VARIABLE_PREFIX}radius-small);}.${CLASS.rowCaveat}{position:relative;margin-right:var(${VARIABLE_PREFIX}small);background:var(${VARIABLE_PREFIX}track);}.${CLASS.rowTurn}{position:relative;color:var(${VARIABLE_PREFIX}text);flex:none;padding-right:var(${VARIABLE_PREFIX}small);}.${CLASS.rowSide}{position:absolute;right:0;top:0;bottom:0;width:${ROW_SIDE_WIDTH_PIXELS}px;border-radius:0 ${capRight} ${capRight} 0;background:currentColor;}.${CLASS.rowSize}{flex:none;padding-right:var(${VARIABLE_PREFIX}small);}.${CLASS.row}.${CLASS.rowChosen}{box-shadow:inset ${CAP_WIDTH_PIXELS}px 0 0 var(${VARIABLE_PREFIX}text);}.${CLASS.rowPin}{position:relative;cursor:pointer;color:var(${VARIABLE_PREFIX}quiet);width:var(${VARIABLE_PREFIX}row-height);flex:none;align-self:stretch;display:flex;align-items:center;justify-content:center;font-size:0;margin:-${ROW_INK_DROP_PIXELS}px var(${VARIABLE_PREFIX}small) 0 0;padding-top:${ROW_INK_DROP_PIXELS}px;}.${CLASS.rowPin}:hover{color:var(${VARIABLE_PREFIX}text);}.${CLASS.rowPin}.${CLASS.rowPinSet}{color:var(${VARIABLE_PREFIX}text);}` + composePinStarRules(tokens) + `.${CLASS.rowValue}{font-variant-numeric:tabular-nums;flex:none;white-space:nowrap;padding-left:var(${VARIABLE_PREFIX}wide);font-weight:600;}.${CLASS.rowOutcome}{position:relative;flex:none;width:var(${VARIABLE_PREFIX}row-height);text-align:center;font-weight:600;color:var(${VARIABLE_PREFIX}quiet);}.${CLASS.rowOutcome}.${CLASS.outcomeWon}{color:var(${VARIABLE_PREFIX}ours);}.${CLASS.rowOutcome}.${CLASS.outcomeLost}{color:var(${VARIABLE_PREFIX}theirs);}.${CLASS.row}.${CLASS.rowUnread} .${CLASS.rowName}{color:var(${VARIABLE_PREFIX}quiet);}.${CLASS.row}.${CLASS.rowUnread} .${CLASS.rowOutcome}{color:var(${VARIABLE_PREFIX}defect);}.${CLASS.rowShare}{color:var(${VARIABLE_PREFIX}text);padding-left:var(${VARIABLE_PREFIX}small);font-weight:400;}.${CLASS.row}.${CLASS.rowApart} .${CLASS.bar}{opacity:0.4;mask-image:repeating-linear-gradient(-45deg,var(${VARIABLE_PREFIX}mask) 0 ${MASK_STRIPE_PIXELS}px,transparent ${MASK_STRIPE_PIXELS}px ${2 * MASK_STRIPE_PIXELS}px);}.${CLASS.row}.${CLASS.rowApart} .${CLASS.barCap}{opacity:0.7;}`;
+}
+function composePinStarRules(tokens) {
+  const lined = tokens.rowHeightPixels - 2 * PIN_INSET_PIXELS;
+  const size = lined + lined % 2;
+  const star = `<path stroke-width='1' stroke-linejoin='round' d='${PIN_STAR_PATH}'/>`;
+  return `.${CLASS.rowPin}::before{content:"";flex:none;width:${size}px;height:${size}px;background:currentColor;${composeMaskImage("fill='none'", star)}}.${CLASS.rowPin}.${CLASS.rowPinSet}::before{${composeMaskImage("fill='black'", star)}}`;
+}
+function composeUnderListRules() {
+  const inset = composeInsetUnderRows(VARIABLE_PREFIX + "region-down");
+  const shape = `margin:0 var(${VARIABLE_PREFIX}region-across);padding:var(${VARIABLE_PREFIX}region-down) 0 ${inset};border-top:${RULE_WIDTH_PIXELS}px dashed var(${VARIABLE_PREFIX}border);overflow:hidden;`;
+  return `.${CLASS.pinned}{${shape}}.${CLASS.outside}{${shape}}`;
+}
+function composeCardRules(tokens) {
+  const right = `var(${CARD_VARIABLES.right},calc(${PLACE.insetPixels}px + var(${SIZE_VARIABLES.meter.width},${tokens.meterWidthPixels}px) + ${SPACE_PIXELS.small}px))`;
+  return `.${CLASS.card}{position:fixed;box-sizing:border-box;pointer-events:none;left:var(${CARD_VARIABLES.left},auto);right:${right};top:${composeCardTop()};z-index:${LAYER.card};width:max-content;max-width:min(${tokens.cardWidthPixelsMaximum}px,calc(100vw - ${PLACE.insetPixels}px - ${PLACE.insetPixels}px));max-height:calc(100vh - ${PLACE.insetPixels}px - ${PLACE.insetPixels}px);overflow:hidden;padding:var(${VARIABLE_PREFIX}small);font:${composeFontBody(tokens)};color:var(${VARIABLE_PREFIX}text);background:var(${VARIABLE_PREFIX}raised);border:${RULE_WIDTH_PIXELS}px solid var(${VARIABLE_PREFIX}border);border-radius:var(${VARIABLE_PREFIX}radius);box-shadow:${SHAPE.windowShadow};}.${CLASS.cardHidden}{display:none;}.${CLASS.card}.${CLASS.cardWide}{width:min(${calculateCardWidthForColumns(tokens, 2)}px,calc(100vw - ${PLACE.insetPixels}px - ${PLACE.insetPixels}px));max-width:none;}.${CLASS.cardColumns}{display:flex;gap:var(${VARIABLE_PREFIX}wide);}.${CLASS.cardColumn}{flex:1 1 0;min-width:0;}.${CLASS.cardColumn}+.${CLASS.cardColumn}{padding-left:var(${VARIABLE_PREFIX}wide);border-left:${RULE_WIDTH_PIXELS}px solid var(${VARIABLE_PREFIX}border);}.${CLASS.cardName}{font-weight:600;overflow-wrap:break-word;}.${CLASS.cardSubtitle}{color:var(${VARIABLE_PREFIX}quiet);}.${CLASS.cardGroup}{margin-top:var(${VARIABLE_PREFIX}small);padding-top:var(${VARIABLE_PREFIX}small);border-top:${RULE_WIDTH_PIXELS}px solid var(${VARIABLE_PREFIX}border);}.${CLASS.cardLine}{display:flex;justify-content:space-between;gap:var(${VARIABLE_PREFIX}small);}.${CLASS.cardLine}.${CLASS.cardStrong}{font-weight:600;}.${CLASS.cardLine}.${CLASS.cardSub}{padding-left:var(${VARIABLE_PREFIX}wide);}.${CLASS.cardLabel}{color:var(${VARIABLE_PREFIX}quiet);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}.${CLASS.cardValue}{font-variant-numeric:tabular-nums;flex:none;}` + composeCaveatMarkRule(tokens) + // The same letters a cut's heading wears down the panel, so a run of parts under one
+  // reads as the same kind of thing in both places. `DESIGN.md` owns the look.
+  `.${CLASS.cardHeading}{color:var(${VARIABLE_PREFIX}heading);letter-spacing:${HEADING_LETTER_SPACING_EM}em;font-size:${tokens.fontSmallPixels}px;text-transform:uppercase;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}.${CLASS.cardNote}{color:var(${VARIABLE_PREFIX}quiet);}.${CLASS.cardNote}.${CLASS.cardCaveatNote}{display:flex;align-items:flex-start;gap:var(${VARIABLE_PREFIX}small);}.${CLASS.cardNote} .${CLASS.cardCaveat}{order:-1;align-self:flex-start;margin-top:${Math.floor((tokens.lineHeightPixels - tokens.markSizePixels) / 2)}px;}.${CLASS.cardNote}.${CLASS.cardSuspect}{color:var(${VARIABLE_PREFIX}suspect);}.${CLASS.cardNote}.${CLASS.cardDefect}{color:var(${VARIABLE_PREFIX}defect);}.${CLASS.cardOutcome}.${CLASS.outcomeWon}{color:var(${VARIABLE_PREFIX}ours);}.${CLASS.cardOutcome}.${CLASS.outcomeLost}{color:var(${VARIABLE_PREFIX}theirs);}.${CLASS.cardNote}.${CLASS.cardCaveatNote}{color:var(${VARIABLE_PREFIX}caveat);}`;
+}
+function composeCardTop() {
+  return `clamp(${PLACE.insetPixels}px,var(${CARD_VARIABLES.top},${PLACE.insetPixels}px),calc(100vh - var(${CARD_VARIABLES.height},0px) - ${PLACE.insetPixels}px))`;
+}
+function composeCaveatMarkRule(tokens) {
+  const marks = `.${CLASS.rowCaveat},.${CLASS.cardCaveat}`;
+  const { clearPixels, gapPixels, stemWidthPixels } = CAVEAT_LETTER;
+  const inside = tokens.markSizePixels - 2 * RULE_WIDTH_PIXELS;
+  const stemTop = clearPixels + stemWidthPixels + gapPixels;
+  return `${marks}{box-sizing:border-box;display:inline-flex;align-self:center;flex:none;position:relative;font-size:0;width:${tokens.markSizePixels}px;height:${tokens.markSizePixels}px;color:var(${VARIABLE_PREFIX}caveat);border:${RULE_WIDTH_PIXELS}px solid currentColor;border-radius:50%;}.${CLASS.rowCaveat}::before,.${CLASS.cardCaveat}::before,.${CLASS.rowCaveat}::after,.${CLASS.cardCaveat}::after{content:"";position:absolute;left:${(inside - stemWidthPixels) / 2}px;width:${stemWidthPixels}px;background:currentColor;}.${CLASS.rowCaveat}::before,.${CLASS.cardCaveat}::before{top:${clearPixels}px;height:${stemWidthPixels}px;}.${CLASS.rowCaveat}::after,.${CLASS.cardCaveat}::after{top:${stemTop}px;height:${inside - stemTop - clearPixels}px;}`;
+}
+function composeHelperRules(tokens) {
+  const top = `clamp(${PLACE.insetPixels}px,var(${TOP_VARIABLES.helper},${PLACE.insetPixels}px),calc(100vh - ${PLACE.insetPixels}px))`;
+  const left = `calc(100vw - ${PLACE.insetPixels}px - var(${SIZE_VARIABLES.meter.width},${tokens.meterWidthPixels}px) - var(${SIZE_VARIABLES.helper.width},${tokens.helperWidthPixels}px) - ${SPACE_PIXELS.small}px)`;
+  return `.${CLASS.helper}{position:fixed;box-sizing:border-box;left:${left};top:${top};z-index:${LAYER.helper};width:var(${SIZE_VARIABLES.helper.width},${tokens.helperWidthPixels}px);display:flex;flex-direction:column;max-height:calc(100vh - ${PLACE.insetPixels}px - ${PLACE.insetPixels}px);font:${composeFontBody(tokens)};color:var(${VARIABLE_PREFIX}text);}.${CLASS.helperBar}{flex:none;display:flex;align-items:center;gap:var(${VARIABLE_PREFIX}small);padding:var(${VARIABLE_PREFIX}half) var(${VARIABLE_PREFIX}wide);font:${composeFontTitle(tokens)};letter-spacing:${TITLE_LETTER_SPACING_EM}em;color:var(${VARIABLE_PREFIX}quiet);white-space:nowrap;background:var(${VARIABLE_PREFIX}raised);border:${RULE_WIDTH_PIXELS}px solid var(${VARIABLE_PREFIX}border);border-bottom:none;border-radius:var(${VARIABLE_PREFIX}radius) var(${VARIABLE_PREFIX}radius) 0 0;cursor:move;${NO_SELECTION}touch-action:none;}.${CLASS.helperBar} .${CLASS.control}{margin-left:auto;}.${CLASS.helperBody}{min-height:0;overflow-y:auto;overflow-x:hidden;box-sizing:border-box;height:var(${SIZE_VARIABLES.helper.height},auto);overscroll-behavior:contain;scrollbar-width:none;padding:var(${VARIABLE_PREFIX}region-down) var(${VARIABLE_PREFIX}region-across);padding-bottom:calc(var(${VARIABLE_PREFIX}region-down) - var(${VARIABLE_PREFIX}half));background:var(${VARIABLE_PREFIX}surface);border:${RULE_WIDTH_PIXELS}px solid var(${VARIABLE_PREFIX}border);border-radius:0 0 var(${VARIABLE_PREFIX}radius) var(${VARIABLE_PREFIX}radius);}.${CLASS.helper}.${CLASS.helperFolded} .${CLASS.helperBody}{display:none;}.${CLASS.helperUnder}{margin-left:var(${VARIABLE_PREFIX}wide);}.${CLASS.helperHolding} .${CLASS.rowName}{flex:0 1 auto;}.${CLASS.helperHolding} .${CLASS.rowShare}{color:var(${VARIABLE_PREFIX}quiet);}.${CLASS.helperCast}{color:var(${VARIABLE_PREFIX}quiet);flex:1 1 0;min-width:min(${tokens.castWidthPixelsMinimum}px,100%);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding-left:var(${VARIABLE_PREFIX}small);}.${CLASS.helperPips}{position:relative;flex:none;display:flex;align-items:center;gap:var(${VARIABLE_PREFIX}half);padding-left:var(${VARIABLE_PREFIX}small);}.${CLASS.helperPip}{width:${tokens.pipSizePixels}px;height:${tokens.pipSizePixels}px;border-radius:50%;flex:none;background:var(${VARIABLE_PREFIX}border);}.${CLASS.helperPip}.${CLASS.helperPipLit}{background:currentColor;}.${CLASS.helper}.${CLASS.helperFolded} .${CLASS.sizeGrip}{display:none;}` + composeSizeGripRules();
+}
+function composeSizeGripRules() {
+  const strokes = "transparent 0 50%,currentColor 50% 60%,transparent 60% 72%,currentColor 72% 82%,transparent 82%";
+  const meterOutside = `-${RULE_WIDTH_PIXELS}px`;
+  return `.${CLASS.sizeGrip}{position:absolute;right:0;bottom:0;width:${SIZE_GRIP.sizePixels}px;height:${SIZE_GRIP.sizePixels}px;z-index:${LAYER.grip};color:var(${VARIABLE_PREFIX}quiet);background:linear-gradient(135deg,${strokes});cursor:nwse-resize;touch-action:none;${NO_SELECTION}}.${CLASS.meter}>.${CLASS.sizeGrip}{right:${meterOutside};bottom:${meterOutside};}.${CLASS.sizeGrip}:hover{color:var(${VARIABLE_PREFIX}text);}`;
+}
+
+// src/ui/panel-drag.ts
+var GRAB_KIND = {
+  move: "move",
+  size: "size"
+};
+var CARD_EDGE = {
+  left: "left",
+  right: "right"
+};
+var VISIBLE_PIXELS_MINIMUM = 64;
+var GRIP_ATTRIBUTE = "data-grip";
+var SIZE_GRIP_ATTRIBUTE = "data-size-grip";
+var WIDTH_TIMES_TYPE_MAXIMUM = 2;
+var ROWS_BY_WINDOW_MINIMUM = {
+  [PANEL_WINDOW.meter]: 6,
+  [PANEL_WINDOW.helper]: 3
+};
+var HELPER_GAP_PIXELS = SPACE_PIXELS.small;
+function clampPosition(position, viewport) {
+  if (viewport === null) {
+    return {
+      left: clampPositionWithin(position.left, Number.POSITIVE_INFINITY),
+      top: clampPositionWithin(position.top, Number.POSITIVE_INFINITY)
+    };
+  }
+  return {
+    left: clampPositionWithin(position.left, viewport.width - VISIBLE_PIXELS_MINIMUM),
+    top: clampPositionWithin(position.top, viewport.height - VISIBLE_PIXELS_MINIMUM)
+  };
+}
+function clampPositionWithin(coordinate, limit) {
+  if (!Number.isFinite(coordinate)) return 0;
+  let clamped;
+  if (Number.isFinite(limit)) clamped = clampNumber(coordinate, 0, limit);
+  else clamped = coordinate;
+  const rounded = Math.round(clamped);
+  if (!Number.isSafeInteger(rounded)) return 0;
+  return rounded;
+}
+function composeDefaultPosition(viewport, meterWidthPixels) {
+  if (viewport === null) return null;
+  const height = viewport.height * METER_HEIGHT_VIEWPORT_PERCENT_MAXIMUM / 100;
+  return clampPosition({
+    left: (viewport.width - meterWidthPixels) / 2,
+    top: (viewport.height - height) / 2
+  }, viewport);
+}
+function composePositionStyle(position, panelWindow) {
+  if (!Number.isSafeInteger(position.left)) return null;
+  if (!Number.isSafeInteger(position.top)) return null;
+  const left = formatWholeUngrouped(position.left);
+  const top = formatWholeUngrouped(position.top);
+  return `left:${left}px;top:${top}px;${TOP_VARIABLES[panelWindow]}:${top}px;right:auto`;
+}
+function composeHostStyle(position, size, panelWindow) {
+  const placed = position === null ? null : composePositionStyle(position, panelWindow);
+  if (size === null) return placed;
+  if (!Number.isSafeInteger(size.width)) return placed;
+  if (!Number.isSafeInteger(size.height)) return placed;
+  const variables = SIZE_VARIABLES[panelWindow];
+  const width = formatWholeUngrouped(size.width);
+  const height = formatWholeUngrouped(size.height);
+  const both = `${variables.width}:${width}px;${variables.height}:${height}px`;
+  const sized = panelWindow === PANEL_WINDOW.meter ? `${both};${composeSizedPanelStyle()}` : both;
+  return placed === null ? sized : `${placed};${sized}`;
+}
+function composeSizeBounds(panelWindow, tokens, position, viewport) {
+  const widthMinimum = getWindowWidthPixels(panelWindow, tokens);
+  const rowCost = tokens.rowHeightPixels + SPACE_PIXELS.half;
+  const heightMinimum = ROWS_BY_WINDOW_MINIMUM[panelWindow] * rowCost;
+  const widthTypeMaximum = widthMinimum * WIDTH_TIMES_TYPE_MAXIMUM;
+  let widthMaximum;
+  let heightMaximum;
+  if (viewport !== null) {
+    if (position !== null) {
+      widthMaximum = Math.min(widthTypeMaximum, viewport.width - position.left - PLACE.insetPixels);
+      heightMaximum = viewport.height - position.top - calculateBarHeight(tokens) - PLACE.insetPixels;
+    } else {
+      widthMaximum = widthTypeMaximum;
+      heightMaximum = Number.POSITIVE_INFINITY;
+    }
+  } else {
+    widthMaximum = widthTypeMaximum;
+    heightMaximum = Number.POSITIVE_INFINITY;
+  }
+  return {
+    widthMinimum,
+    widthMaximum: Math.max(widthMinimum, widthMaximum),
+    heightMinimum,
+    heightMaximum: Math.max(heightMinimum, heightMaximum)
+  };
+}
+function getWindowWidthPixels(panelWindow, tokens) {
+  if (panelWindow === PANEL_WINDOW.helper) return tokens.helperWidthPixels;
+  return tokens.meterWidthPixels;
+}
+function clampSize(size, bounds) {
+  const width = Number.isFinite(size.width) ? size.width : bounds.widthMinimum;
+  const height = Number.isFinite(size.height) ? size.height : bounds.heightMinimum;
+  const heightHeld = Number.isFinite(bounds.heightMaximum) ? clampNumber(height, bounds.heightMinimum, bounds.heightMaximum) : Math.max(height, bounds.heightMinimum);
+  return {
+    width: Math.round(clampNumber(width, bounds.widthMinimum, bounds.widthMaximum)),
+    height: Math.round(heightHeld)
+  };
+}
+function composeCardAcross(anchor, viewport, cardWidthMaximum) {
+  if (!Number.isFinite(cardWidthMaximum)) return null;
+  if (cardWidthMaximum <= 0) return null;
+  if (anchor === null) return null;
+  if (viewport === null) return null;
+  const gap = SPACE_PIXELS.small;
+  if (anchor.position.left - cardWidthMaximum - gap >= 0) {
+    return {
+      edge: CARD_EDGE.right,
+      offsetPixels: viewport.width - anchor.position.left + gap
+    };
+  }
+  const right = calculateWindowRight(anchor);
+  return {
+    edge: CARD_EDGE.left,
+    offsetPixels: Math.min(right + gap, Math.max(0, viewport.width - cardWidthMaximum))
+  };
+}
+function calculateWindowRight(place) {
+  return place.position.left + place.widthPixels;
+}
+function setGripMark(grip, window2) {
+  grip.setAttribute(GRIP_ATTRIBUTE, window2);
+}
+function composeHelperPositionAfterTypeStep(meter, helper, before, after) {
+  const helperRight = helper.left + before.helper;
+  if (helperRight <= meter.left) {
+    return {
+      left: helper.left - (after.helper - before.helper),
+      top: helper.top
+    };
+  }
+  if (helper.left >= meter.left + before.meter) {
+    return {
+      left: helper.left + (after.meter - before.meter),
+      top: helper.top
+    };
+  }
+  return null;
+}
+function initPanelDrag(root, host, getBar, placement, options) {
+  const state = {
+    position: null,
+    size: placement.size,
+    grab: null,
+    written: null
+  };
+  const writeHostStyle = () => {
+    const applied = readPanelDragSize(state, placement, options);
+    const style = composeHostStyle(state.position, applied, options.window);
+    if (style === state.written) return;
+    host.setAttribute(STYLE_ATTRIBUTE, style ?? "");
+    state.written = style;
+  };
+  {
+    const opened = attempt(() => {
+      const opening = placement.position ?? composeOpeningPosition(options.window, placement.readViewport(), options.getTypeTokens());
+      state.position = opening === null ? null : clampPosition(opening, placement.readViewport());
+      writeHostStyle();
+      return state.position;
+    });
+    if (opened instanceof Error) {
+      addViewFailureGuarded(new WindowUnplaced(options.window, opened), options.onFailure);
+      state.position = null;
+      const sized = attempt(writeHostStyle);
+      if (sized instanceof Error) {
+        addViewFailureGuarded(new WindowUnplaced(options.window, sized), options.onFailure);
+      }
+    }
+  }
+  {
+    const addRootListener = (type, listener, handle) => {
+      addGuardedListener(root, type, listener, handle, (failure) => {
+        state.grab = null;
+        addViewFailureGuarded(failure, options.onFailure);
+      });
+    };
+    const getGrabbedElement = (grab) => {
+      if (grab.kind === GRAB_KIND.size) return options.grip;
+      return getBar();
+    };
+    addRootListener(EVENT_TYPE.press, PANEL_LISTENER.grab, (event) => {
+      const started = composePanelDragGrab(event, state, placement, options);
+      if (started === null) return;
+      event.preventDefault?.();
+      state.grab = started;
+      writePointerCapture(getGrabbedElement(started), true, event.pointerId, options);
+    });
+    const onDragEnd = () => {
+      const grab = state.grab;
+      if (grab === null) return;
+      state.grab = null;
+      writePointerCapture(getGrabbedElement(grab), false, grab.pointerId, options);
+      const window2 = options.window;
+      if (grab.kind === GRAB_KIND.size) {
+        const size = state.size;
+        if (size !== null) options.onIntent({
+          kind: PANEL_INTENT.resize,
+          window: window2,
+          size
+        });
+      } else {
+        const position = state.position;
+        if (position !== null) {
+          options.onIntent({
+            kind: PANEL_INTENT.move,
+            window: window2,
+            position
+          });
+        }
+      }
+    };
+    addRootListener(EVENT_TYPE.move, PANEL_LISTENER.drag, (event) => {
+      const grab = state.grab;
+      if (grab === null) return;
+      if (event.buttons === 0) {
+        onDragEnd();
+        return;
+      }
+      const pointer = readPointerFromEvent(event);
+      if (pointer === null) return;
+      const viewport = placement.readViewport();
+      if (grab.kind === GRAB_KIND.move) {
+        state.position = composeDraggedPosition(grab, pointer, viewport);
+        writeHostStyle();
+        return;
+      }
+      state.size = composeDraggedSize(grab, pointer, state, placement, options);
+      writeHostStyle();
+    });
+    addRootListener(EVENT_TYPE.release, PANEL_LISTENER.release, onDragEnd);
+    addRootListener(EVENT_TYPE.cancel, PANEL_LISTENER.cancel, onDragEnd);
+  }
+  return {
+    getPosition: () => state.position,
+    holdBarRedrawn: () => {
+      if (state.grab?.kind === GRAB_KIND.move) {
+        const grab = state.grab;
+        writePointerCapture(getBar(), true, grab.pointerId, options);
+      }
+    },
+    placeWindow: (positionRequested) => {
+      const position = clampPosition(positionRequested, placement.readViewport());
+      state.position = position;
+      writeHostStyle();
+      options.onIntent({
+        kind: PANEL_INTENT.move,
+        window: options.window,
+        position
+      });
+    },
+    readWidthPixels: () => {
+      const applied = readPanelDragSize(state, placement, options);
+      return applied?.width ?? getWindowWidthPixels(options.window, options.getTypeTokens());
+    },
+    sizeWindow: (size) => {
+      if (state.grab?.kind === GRAB_KIND.size) return;
+      state.size = size;
+      writeHostStyle();
+    }
+  };
+}
+function readPanelDragSize(state, placement, options) {
+  if (state.size === null) return null;
+  const viewport = placement.readViewport();
+  const tokens = options.getTypeTokens();
+  return clampSize(state.size, composeSizeBounds(options.window, tokens, state.position, viewport));
+}
+function composeOpeningPosition(panelWindow, viewport, tokens) {
+  if (panelWindow === PANEL_WINDOW.helper) return composeHelperOpeningPosition(viewport, tokens);
+  return composeDefaultPosition(viewport, tokens.meterWidthPixels);
+}
+function composeHelperOpeningPosition(viewport, tokens) {
+  const meter = composeDefaultPosition(viewport, tokens.meterWidthPixels);
+  if (meter === null) return null;
+  const gap = HELPER_GAP_PIXELS;
+  const beside = meter.left - tokens.helperWidthPixels - gap;
+  if (beside >= 0) return clampPosition({
+    left: beside,
+    top: meter.top
+  }, viewport);
+  const rightOfMeter = {
+    left: meter.left + tokens.meterWidthPixels + gap,
+    top: meter.top
+  };
+  return clampPosition(rightOfMeter, viewport);
+}
+function composePanelDragGrab(event, state, placement, options) {
+  const grip = event.target?.getAttribute(GRIP_ATTRIBUTE) ?? null;
+  const corner = event.target?.getAttribute(SIZE_GRIP_ATTRIBUTE) ?? null;
+  const mark = options.window;
+  const kind = grip === mark ? GRAB_KIND.move : corner === mark ? GRAB_KIND.size : null;
+  if (kind === null) return null;
+  const pointer = readPointerFromEvent(event);
+  if (pointer === null) return null;
+  const tokens = options.getTypeTokens();
+  const from = state.position ?? composeOpeningPosition(options.window, placement.readViewport(), tokens);
+  if (from === null) return null;
+  const grab = {
+    kind,
+    pointerLeft: pointer.left,
+    pointerTop: pointer.top,
+    pointerId: event.pointerId
+  };
+  if (kind === GRAB_KIND.move) return {
+    ...grab,
+    fromLeft: from.left,
+    fromTop: from.top
+  };
+  const inside = SIZE_GRIP.sizePixels;
+  const right = pointer.left + inside - readGripPressOffset(event.offsetX, inside);
+  const bottom = pointer.top + inside - readGripPressOffset(event.offsetY, inside);
+  return {
+    ...grab,
+    fromLeft: right - from.left,
+    fromTop: bottom - from.top - calculateBarHeight(tokens)
+  };
+}
+function readGripPressOffset(offset, corner) {
+  const offsetRead = readCoordinate(offset);
+  return offsetRead === null ? corner : offsetRead;
+}
+function composeDraggedSize(grab, pointer, state, placement, options) {
+  const size = {
+    width: grab.fromLeft + (pointer.left - grab.pointerLeft),
+    height: grab.fromTop + (pointer.top - grab.pointerTop)
+  };
+  const tokens = options.getTypeTokens();
+  const bounds = composeSizeBounds(options.window, tokens, state.position, placement.readViewport());
+  return clampSize(size, bounds);
+}
+function readCoordinate(coordinate) {
+  if (typeof coordinate !== "number") return null;
+  if (!Number.isFinite(coordinate)) return null;
+  return coordinate;
+}
+function writePointerCapture(grabbed, isHeld, pointerId, options) {
+  if (pointerId === void 0) return;
+  const captured = attempt(() => {
+    if (isHeld) grabbed.setPointerCapture?.(pointerId);
+    else grabbed.releasePointerCapture?.(pointerId);
+  });
+  if (!(captured instanceof Error)) return;
+  addViewFailureGuarded(new GestureDropped(PANEL_LISTENER.capture, captured), options.onFailure);
+}
+function composeDraggedPosition(grab, pointer, viewport) {
+  return clampPosition({
+    left: grab.fromLeft + (pointer.left - grab.pointerLeft),
+    top: grab.fromTop + (pointer.top - grab.pointerTop)
+  }, viewport);
+}
+function readPointerFromEvent(event) {
+  const left = readCoordinate(event.clientX);
+  const top = readCoordinate(event.clientY);
+  if (left === null) return null;
+  if (top === null) return null;
+  return {
+    left,
+    top
+  };
+}
+
+// src/ui/panel-element.ts
+var CARD_KEY_PLACE = {
+  skill: "skill",
+  pair: "pair",
+  pairKinds: "pair-kinds"
+};
+var CARD_KEY_PREFIX = {
+  row: "row",
+  reached: "reached",
+  to: "to",
+  named: "named",
+  kind: "kind",
+  skill: "skill",
+  source: "source",
+  shelf: "shelf",
+  pin: "pin",
+  /**
+     * Keyed by whoever is making the blow ready: `core/charged-skill.ts` holds one charge per
+     * combatant, so one row is one key. A second row under the same key would be refused,
+     * reported as the card undrawn, and would wear its neighbour's card, which is why
+     * `tests/ui/panel-helper.test.ts` counts the keys rather than trusting that.
+     * `develop ADR 0100`.
+     */
+  helperCharge: "helper:charge",
+  helperHolding: "helper:holding",
+  helperHeld: "helper:held"
+};
+var CARD_LINE = {
+  stat: "stat",
+  sub: "sub",
+  heading: "heading",
+  note: "note"
+};
+var CARD_NOTE_TONE = {
+  plain: "plain",
+  suspect: "suspect",
+  caveat: "caveat",
+  defect: "defect"
+};
+var STANDING_CARD = {
+  options: "bar:options",
+  shelf: "bar:shelf",
+  save: "bar:save"
+};
+var HOST_NAME = "MargoMeter-Panel";
+var VERSION_ATTRIBUTE = "data-margometer-version";
+var CARD_ATTRIBUTE = "data-card";
+var DOES_RANKING_ROW_OPEN = true;
+var CRUMB_CARD_KEY = "crumb:back";
+var FIGHT_CARD_KEY = "fight";
+var HELPER_CARD_PREFIX = "helper:";
+var HELPER_NOW_CARD_KEY = `${HELPER_CARD_PREFIX}now`;
+var STANDING_CARD_WORDS = /* @__PURE__ */ new Map([
+  [
+    STANDING_CARD.options,
+    PANEL_WORDS.openOptions
+  ],
+  [
+    STANDING_CARD.shelf,
+    PANEL_WORDS.openFights
+  ],
+  [
+    STANDING_CARD.save,
+    PANEL_WORDS.saveFight
+  ]
+]);
+var FOLD_CARD_KEY = "bar:fold";
+var HELPER_FOLD_CARD_KEY = `${HELPER_CARD_PREFIX}bar:fold`;
+var CRUMB_HERE_CARD_KEY = "crumb:here";
+var SAVE_MARK = "\u2B73";
+var SHELF_MARK = "\u2630";
+var OPTIONS_MARK = "\u2699";
+var FOLD_MARK = "\u2014";
+var UNFOLD_MARK = "+";
+var BACK_MARK = "\u2039 ";
+var GRIP_MARK = "\u283F ";
+var PRIMARY_BUTTON = 0;
+var STILL_TRAVEL_PIXELS_MAXIMUM = 3;
+var PIN_MARK = "\u2605";
+var UNPINNED_MARK = "\u2606";
+var ROWS_WAITING = RANKING_ROWS;
+var ROWS_SHELF = 11;
+var WAITING_LIST_NAME = "waiting";
+var CARD_CUT_PARTS_MAXIMUM = 6;
+var FILL_PLACES = 1;
+var AS_PERCENT = 100;
+var UNDRAWN_MAXIMUM = 32;
+var DEFECTS_MAXIMUM = Object.values(PANEL_DEFECT_KIND).length * (Object.values(PANEL_REGION).length + 1);
+var CARDS_DRAWN_MAXIMUM = 512;
+var CHARACTERS_PER_LINE_BY_STEP = {
+  [TYPE_STEP.small]: {
+    note: 32,
+    name: 27
+  },
+  [TYPE_STEP.medium]: {
+    note: 32,
+    name: 27
+  },
+  [TYPE_STEP.large]: {
+    note: 32,
+    name: 27
+  }
+};
+var NOTE_MARK_CHARACTERS = 2;
+var CARD_LINES_MAXIMUM = 128;
+var EDGE_RELEASED = "auto";
+var CARD_GROUPS_MAXIMUM = 16;
+var LISTS_KEPT_MAXIMUM = 32;
+var CARD_NOTE_TONE_CLASS = {
+  [CARD_NOTE_TONE.plain]: "",
+  [CARD_NOTE_TONE.suspect]: ` ${CLASS.cardSuspect}`,
+  [CARD_NOTE_TONE.caveat]: ` ${CLASS.cardCaveatNote}`,
+  [CARD_NOTE_TONE.defect]: ` ${CLASS.cardDefect}`
+};
+var CARD_ENDING_SEPARATOR = " \xB7 ";
+var OUTCOME_INK_CLASS = {
+  [OUTCOME_RESULT.won]: ` ${CLASS.outcomeWon}`,
+  [OUTCOME_RESULT.lost]: ` ${CLASS.outcomeLost}`,
+  [OUTCOME_RESULT.drawn]: "",
+  [OUTCOME_RESULT.fled]: ""
+};
+function initPanelView(document, options) {
+  let typeStep = options.typeStep;
+  const host = document.createElement("div");
+  let root;
+  let sheet;
+  {
+    host.setAttribute("id", HOST_NAME);
+    host.setAttribute(VERSION_ATTRIBUTE, options.addOnVersion);
+    root = host.attachShadow({
+      mode: "open"
+    });
+    sheet = document.createElement("style");
+    sheet.textContent = composeStyleSheet(typeStep);
+    root.append(sheet);
+  }
+  const regions = {
+    title: renderElement(document, "div", CLASS.title),
+    header: renderSlot(document),
+    nouns: renderSlot(document),
+    directions: renderSlot(document),
+    crumb: renderSlot(document),
+    options: renderSlot(document),
+    list: renderSlot(document),
+    pinnedActor: renderSlot(document),
+    pinnedTarget: renderSlot(document),
+    outside: renderSlot(document),
+    sides: renderSlot(document),
+    suspicions: renderSlot(document),
+    defects: renderSlot(document)
+  };
+  const meterGrip = renderSizeGrip(document, PANEL_WINDOW.meter);
+  const frame = renderElement(document, "div", CLASS.frame);
+  {
+    const meter = renderElement(document, "div", CLASS.meter);
+    for (const region of [
+      regions.header,
+      regions.nouns,
+      regions.directions,
+      regions.crumb
+    ]) {
+      meter.append(region);
+    }
+    meter.append(regions.options);
+    for (const region of [
+      regions.list,
+      regions.pinnedActor,
+      regions.pinnedTarget
+    ]) {
+      meter.append(region);
+    }
+    meter.append(regions.outside);
+    meter.append(regions.sides);
+    meter.append(regions.suspicions);
+    meter.append(regions.defects);
+    meter.append(meterGrip);
+    frame.append(meter);
+  }
+  const report = initUndrawnReport(options);
+  const renderInPlace = (previousRegion, region, render) => {
+    const renderedRegion = renderRegion(document, region, report, render);
+    if (renderedRegion === null) return previousRegion;
+    const replaced = attempt(() => previousRegion.replaceWith(renderedRegion));
+    if (!(replaced instanceof Error)) return renderedRegion;
+    report.add(region, replaced);
+    return previousRegion;
+  };
+  const meterRegister = createCardRegister();
+  const helperRegister = createCardRegister();
+  const standingRegister = createCardRegister();
+  for (const [key, words] of STANDING_CARD_WORDS) {
+    standingRegister.add(key, () => presentNamedCard(words));
+  }
+  let drawing;
+  {
+    const scrolls = createScrollMemo();
+    let shownName = WAITING_LIST_NAME;
+    let isRegionKept = false;
+    drawing = {
+      // ⚠️ **Before any region is redrawn.** A region taken away grows the list under it,
+      // and a browser answers a taller box by clamping the position on it — the reader's own
+      // place, gone before anything read it. Measured on Chrome 152.0.7977.64, 2026-09-04:
+      // going back from a level takes the crumb away, and 54 pixels became 34 as it went.
+      keep: () => {
+        const top = readTopOfList(regions.list);
+        if (top !== null) scrolls.setTop(shownName, top);
+      },
+      renderListRegion: (name, render) => {
+        const renderedList = renderRegion(document, PANEL_REGION.list, report, render);
+        if (renderedList === null) return;
+        if (name === shownName) {
+          const wasKept = attempt(() => renderListRows(regions.list, renderedList));
+          if (wasKept instanceof Error) {
+            report.add(PANEL_REGION.list, wasKept);
+            isRegionKept = true;
+            return;
+          }
+          isRegionKept = wasKept;
+        } else {
+          isRegionKept = false;
+        }
+        if (!isRegionKept) {
+          const replaced = attempt(() => regions.list.replaceWith(renderedList));
+          if (replaced instanceof Error) report.add(PANEL_REGION.list, replaced);
+          else regions.list = renderedList;
+        }
+        shownName = name;
+      },
+      // And after every region is standing, for the same reason read the other way round. A
+      // fold empties the region like any other and takes no name away, so what a reader
+      // unfolds onto is the list they were reading, at the position they left it at.
+      // Nothing to put back where the region itself stayed: the browser has the reader's
+      // place already.
+      settle: () => {
+        if (isRegionKept) return;
+        writeTopOfList(regions.list, scrolls.getTop(shownName));
+      }
+    };
+  }
+  let meterDrag = null;
+  let helperDrag = null;
+  const lookupCard = composeCardLookup(meterRegister, helperRegister, standingRegister);
+  const getTypeStep = () => typeStep;
+  let cardHandle;
+  {
+    const placement = options.meterPlacement;
+    const readCardWindowPlace = (handle) => {
+      const position = handle?.getPosition() ?? null;
+      if (handle === null) return null;
+      if (position === null) return null;
+      return {
+        position,
+        widthPixels: handle.readWidthPixels()
+      };
+    };
+    const readCardAcross = (key, columns) => {
+      const viewport = placement?.readViewport() ?? null;
+      const widthMaximum = calculateCardWidthForColumns(TYPE_TOKENS[getTypeStep()], columns);
+      if (key.startsWith(HELPER_CARD_PREFIX)) {
+        const helperPlace = readCardWindowPlace(helperDrag);
+        return composeCardAcross(helperPlace, viewport, widthMaximum);
+      }
+      const meterPlace = readCardWindowPlace(meterDrag);
+      return composeCardAcross(meterPlace, viewport, widthMaximum);
+    };
+    cardHandle = initCardHandle(
+      document,
+      lookupCard,
+      // standing where it was; the card is a child of the root and the only thing the sheet
+      // places, so that sentence would be a block under the panel. A card that will not
+      // render is no card: the one standing hides (**E12**).
+      (previousCard, render) => {
+        const rendered = attempt(() => {
+          const renderedCard = render();
+          previousCard.replaceWith(renderedCard);
+          return renderedCard;
+        });
+        if (!(rendered instanceof Error)) return rendered;
+        report.add(PANEL_REGION.card, rendered);
+        setCardHidden(previousCard, true);
+        return previousCard;
+      },
+      readCardAcross,
+      () => placement?.readViewport() ?? null,
+      getTypeStep,
+      (failure) => report.add(PANEL_REGION.card, failure)
+    );
+  }
+  const helperWindow = renderElement(document, "div", CLASS.helper);
+  let helperBar = renderHelperBar(document, helperRegister, false);
+  let helperBody = renderSlot(document);
+  const helperGrip = renderSizeGrip(document, PANEL_WINDOW.helper);
+  helperWindow.append(helperBar);
+  helperWindow.append(helperBody);
+  helperWindow.append(helperGrip);
+  for (const child of [
+    regions.title,
+    frame,
+    cardHandle.element,
+    helperWindow
+  ]) {
+    root.append(child);
+  }
+  {
+    const onHover = cardHandle.onHover;
+    let pressed = null;
+    addGuardedListener(root, EVENT_TYPE.press, PANEL_LISTENER.press, (event) => {
+      if ((event.button ?? PRIMARY_BUTTON) !== PRIMARY_BUTTON) return;
+      pressed = null;
+      const target = event.target;
+      if (target === null) return;
+      const intent = readPanelIntent(target);
+      if (intent instanceof Error) {
+        addViewFailureGuarded(new GestureDropped(PANEL_LISTENER.press, intent), options.onFailure);
+        return;
+      }
+      if (intent === null) return;
+      pressed = {
+        intent,
+        pointer: readPointerFromEvent(event)
+      };
+    }, options.onFailure);
+    addGuardedListener(root, EVENT_TYPE.release, PANEL_LISTENER.click, (event) => {
+      if ((event.button ?? PRIMARY_BUTTON) !== PRIMARY_BUTTON) return;
+      const press = pressed;
+      pressed = null;
+      if (press === null) return;
+      if (isPointerStill(press.pointer, readPointerFromEvent(event))) {
+        options.onIntent(press.intent);
+        return;
+      }
+      const target = event.target;
+      if (target === null) return;
+      const intent = readPanelIntent(target);
+      if (intent instanceof Error) {
+        addViewFailureGuarded(new GestureDropped(PANEL_LISTENER.click, intent), options.onFailure);
+        return;
+      }
+      if (intent === null) return;
+      if (isPanelIntentSame(press.intent, intent)) options.onIntent(intent);
+    }, options.onFailure);
+    addGuardedListener(root, EVENT_TYPE.back, PANEL_LISTENER.back, (event) => {
+      event.preventDefault?.();
+      if (helperWindow.contains(event.target)) return;
+      options.onIntent({
+        kind: PANEL_INTENT.close
+      });
+    }, options.onFailure);
+    addGuardedListener(root, EVENT_TYPE.move, PANEL_LISTENER.hover, (event) => {
+      onHover(readCardKey(event.target), event.clientY);
+    }, options.onFailure);
+    addGuardedListener(root, EVENT_TYPE.leave, PANEL_LISTENER.leave, (event) => {
+      const towards = event.relatedTarget ?? null;
+      onHover(readCardKey(towards), event.clientY);
+      for (const element of [
+        regions.title,
+        frame,
+        cardHandle.element,
+        helperWindow
+      ]) {
+        if (element.contains(towards)) return;
+      }
+      pressed = null;
+    }, options.onFailure);
+  }
+  const dragOptions = {
+    view: options,
+    getTypeStep
+  };
+  const meterDragOptions = {
+    ...dragOptions,
+    window: PANEL_WINDOW.meter,
+    grip: meterGrip
+  };
+  meterDrag = initPanelDragIfPlaced(root, host, () => regions.title, options.meterPlacement, meterDragOptions);
+  const helperDragOptions = {
+    ...dragOptions,
+    window: PANEL_WINDOW.helper,
+    grip: helperGrip
+  };
+  const helperBarNow = () => helperBar;
+  const helperPlacement = options.helperPlacement;
+  helperDrag = initPanelDragIfPlaced(root, helperWindow, helperBarNow, helperPlacement, helperDragOptions);
+  const panelDrawing = {
+    document,
+    addOnVersion: options.addOnVersion,
+    sheet,
+    getTypeStep,
+    setTypeStep: (typeStepChosen) => typeStep = typeStepChosen,
+    regions,
+    frame,
+    renderInPlace,
+    report,
+    drawing,
+    card: cardHandle,
+    meterDrag,
+    helperDrag
+  };
+  const renderScreen = (shown) => report.collect(() => {
+    executeRegionStep(report, PANEL_REGION.list, () => drawing.keep());
+    meterRegister.reset();
+    renderFold(panelDrawing, meterRegister, shown);
+    if (shown.isMeterCollapsed) {
+      renderPanelFolded(document, regions, renderInPlace);
+    } else if (shown.options !== null) {
+      renderPanelOptions(document, {
+        regions,
+        renderInPlace,
+        drawing,
+        register: meterRegister
+      }, shown.options, {
+        typeStep: shown.typeStep,
+        windowSizes: shown.windowSizes
+      }, panelDrawing.addOnVersion);
+      regions.defects = renderInPlace(regions.defects, PANEL_REGION.defects, () => renderDefects(document, shown.defects));
+    } else {
+      regions.header = renderInPlace(regions.header, PANEL_REGION.header, () => renderHeaderRegion(document, meterRegister, shown));
+      regions.nouns = renderInPlace(regions.nouns, PANEL_REGION.strips, () => renderNounStrips(document, shown));
+      regions.directions = renderInPlace(regions.directions, PANEL_REGION.strips, () => renderDirectionStrips(document, shown));
+      regions.crumb = renderInPlace(regions.crumb, PANEL_REGION.crumb, () => renderCrumbRegion(document, meterRegister, shown));
+      regions.options = renderInPlace(regions.options, PANEL_REGION.strips, () => renderSlot(document));
+      drawing.renderListRegion(shown.listName, () => renderListLevel(document, meterRegister, shown, options.translate));
+      renderPinnedRows(document, regions, renderInPlace, meterRegister, shown);
+      regions.outside = renderInPlace(regions.outside, PANEL_REGION.outside, () => renderOutsideRegion(document, meterRegister, shown));
+      regions.sides = renderInPlace(regions.sides, PANEL_REGION.sides, () => renderSidesRegion(document, shown));
+      regions.suspicions = renderInPlace(regions.suspicions, PANEL_REGION.suspicions, () => renderSuspicions(document, shown.isOnShelf ? shown.shelfAnswers : shown.ranking.suspicions));
+      regions.defects = renderInPlace(regions.defects, PANEL_REGION.defects, () => renderDefects(document, shown.defects));
+    }
+    const refused = meterRegister.lookupRefused();
+    if (refused !== null) report.add(PANEL_REGION.card, refused);
+    renderPanelSettled(panelDrawing);
+  });
+  const renderWaiting = (waiting) => report.collect(() => {
+    executeRegionStep(report, PANEL_REGION.list, () => drawing.keep());
+    meterRegister.reset();
+    renderFold(panelDrawing, meterRegister, waiting);
+    renderPanelFolded(document, regions, renderInPlace);
+    if (!waiting.isMeterCollapsed) {
+      if (waiting.options !== null) {
+        renderPanelOptions(document, {
+          regions,
+          renderInPlace,
+          drawing,
+          register: meterRegister
+        }, waiting.options, {
+          typeStep: waiting.typeStep,
+          windowSizes: waiting.windowSizes
+        }, panelDrawing.addOnVersion);
+      } else {
+        drawing.renderListRegion(WAITING_LIST_NAME, () => renderWaitingList(document, waiting));
+      }
+      regions.defects = renderInPlace(regions.defects, PANEL_REGION.defects, () => renderDefects(document, waiting.defects));
+    }
+    renderPanelSettled(panelDrawing);
+  });
+  const renderHelper = (helper, isCollapsed) => report.collect(() => {
+    executeRegionStep(report, PANEL_REGION.helper, () => {
+      helperWindow.className = isCollapsed ? `${CLASS.helper} ${CLASS.helperFolded}` : CLASS.helper;
+    });
+    helperRegister.reset();
+    helperBar = renderInPlace(helperBar, PANEL_REGION.helper, () => renderHelperBar(document, helperRegister, isCollapsed));
+    helperBody = renderInPlace(helperBody, PANEL_REGION.helper, () => renderHelperBody(document, helperRegister, helper, isCollapsed));
+    const refused = helperRegister.lookupRefused();
+    if (refused !== null) report.add(PANEL_REGION.card, refused);
+    helperDrag?.holdBarRedrawn();
+  });
+  return {
+    element: host,
+    render: renderScreen,
+    renderWaiting,
+    renderHelper
+  };
+}
+function readCardKey(target) {
+  if (target === null) return null;
+  if (typeof target.getAttribute !== "function") return null;
+  return target.getAttribute(CARD_ATTRIBUTE);
+}
+function presentNamedCard(name) {
+  return {
+    name,
+    subtitle: null,
+    ending: null,
+    groups: []
+  };
+}
+function renderWaitingList(document, waiting) {
+  const list = renderListContainer(document, ROWS_WAITING);
+  list.className = `${CLASS.list} ${CLASS.listWaiting}`;
+  const kept = waiting.keptUnread;
+  if (kept !== null) {
+    list.append(renderEmptyNote(document, PANEL_WORDS.keptUnread));
+    const when = formatKeptUnread(kept.at, kept.place);
+    if (when.length > 0) list.append(renderEmptyNote(document, when));
+    return list;
+  }
+  const said = waiting.isFightUnread ? PANEL_WORDS.fightUnread : PANEL_WORDS.noFightYet;
+  list.append(renderEmptyNote(document, said));
+  return list;
+}
+function renderHelperBody(document, register, helper, isCollapsed) {
+  if (isCollapsed) return renderSlot(document);
+  const body = renderElement(document, "div", CLASS.helperBody);
+  if (typeof helper === "string") {
+    body.append(renderEmptyNote(document, getWordsForHelperAbsence(helper)));
+    return body;
+  }
+  {
+    const said = helper.turnOrdinal === null ? "" : formatTurnOrdinal(helper.turnOrdinal);
+    const section = renderElement(document, "div", CLASS.section);
+    const words = renderText(document, "span", CLASS.sectionWords, HELPER_WORDS.now);
+    const figure = renderText(document, "span", CLASS.figure, said);
+    section.append(words);
+    section.append(figure);
+    body.append(section);
+    const holder = helper.turnHolder;
+    if (holder === null) {
+      const empty = renderText(document, "div", CLASS.empty, getWordsForTurnState(helper.turnState));
+      body.append(empty);
+    } else {
+      body.append(renderHelperPerson(document, register, HELPER_NOW_CARD_KEY, {
+        name: holder.name,
+        skillName: null,
+        colour: holder.colour,
+        sideRelation: holder.sideRelation,
+        turns: null,
+        turnsCaveat: null,
+        isNested: false
+      }));
+    }
+  }
+  if (helper.chargedSkills.length > 0) {
+    const firstCharged = helper.chargedSkills[0];
+    const section = renderElement(document, "div", CLASS.section);
+    const words = renderText(document, "span", CLASS.sectionWords, HELPER_WORDS.chargedSkill);
+    const state = renderText(document, "span", CLASS.figure, firstCharged === void 0 ? "" : getWordsForChargedSkill(firstCharged.state));
+    section.append(words);
+    section.append(state);
+    body.append(section);
+    for (const charged of helper.chargedSkills) {
+      const row = renderElement(document, "div", `${CLASS.row} ${CLASS.rowLeaf}`);
+      const cap = renderElement(document, "div", CLASS.barCap);
+      cap.setAttribute(STYLE_ATTRIBUTE, `background:${formatColour(charged.colour)}`);
+      const name = renderText(document, "span", CLASS.rowName, charged.skillName);
+      const pips = renderElement(document, "div", CLASS.helperPips);
+      const dots = [
+        pips
+      ];
+      {
+        pips.setAttribute(STYLE_ATTRIBUTE, `color:${formatColour(charged.colour)}`);
+        const stated = Math.min(Math.max(charged.turnsStated, 0), CHARGED_PIPS_MAXIMUM);
+        for (let turn = 0; turn < stated; turn += 1) {
+          const lit = turn < charged.turnsElapsed ? ` ${CLASS.helperPipLit}` : "";
+          const pip = renderElement(document, "div", `${CLASS.helperPip}${lit}`);
+          pips.append(pip);
+          dots.push(pip);
+        }
+      }
+      row.append(cap);
+      row.append(name);
+      row.append(pips);
+      const parts = [
+        cap,
+        name,
+        ...dots
+      ];
+      const turnsLeft = formatChargedSkillTurnsLeft(charged);
+      if (turnsLeft !== null) {
+        const counter = renderText(document, "span", `${CLASS.rowValue} ${CLASS.figure}`, turnsLeft);
+        row.append(counter);
+        parts.push(counter);
+      }
+      for (const rule of renderSideRules(document, charged.sideRelation)) {
+        row.append(rule);
+        parts.push(rule);
+      }
+      const key = composeCardKey(CARD_KEY_PREFIX.helperCharge, formatWholeUngrouped(charged.combatantId));
+      register.add(key, () => presentChargedSkillCard(charged));
+      setRowMarks([
+        row,
+        ...parts
+      ], CARD_ATTRIBUTE, key);
+      body.append(row);
+    }
+  }
+  if (helper.provocations.length === 0) {
+    if (helper.chargedSkills.length === 0) {
+      const empty = renderText(document, "div", CLASS.empty, HELPER_WORDS.nothingHappens);
+      body.append(empty);
+    }
+    return body;
+  }
+  {
+    let counted = 0;
+    for (const provocation of helper.provocations) counted += provocation.provoked.length;
+    body.append(renderSection(document, HELPER_WORDS.provocation, counted));
+    for (const provocation of helper.provocations) {
+      const cast = `${formatWholeUngrouped(provocation.casterId)}/${formatWholeUngrouped(provocation.skillId)}`;
+      body.append(renderHelperPerson(document, register, composeCardKey(CARD_KEY_PREFIX.helperHolding, cast), {
+        name: provocation.casterName,
+        skillName: provocation.skillName,
+        colour: provocation.casterColour,
+        sideRelation: provocation.casterSideRelation,
+        // No length here: one cast holding two characters is two counts on
+        // two clocks, so the figure sits on the row of whoever is carrying
+        // it (`develop ADR 0103`).
+        turns: null,
+        turnsCaveat: null,
+        isNested: false
+      }));
+      for (const holding of provocation.provoked) {
+        const key = composeCardKey(CARD_KEY_PREFIX.helperHeld, `${cast}/${formatWholeUngrouped(holding.provokedId)}`);
+        body.append(renderHelperPerson(document, register, key, {
+          name: holding.name,
+          // Named on the card and never on the row: the row above draws it
+          // already, and what this row does state is a length of this
+          // character's own (`develop ADR 0103`).
+          skillName: provocation.skillName,
+          colour: holding.colour,
+          sideRelation: holding.sideRelation,
+          turns: formatTurnsLeft(holding.turnsElapsed, holding.turnsStated),
+          turnsCaveat: null,
+          isNested: true
+        }));
+      }
+    }
+  }
+  return body;
+}
+function renderHeaderRegion(document, register, shown) {
+  if (shown.isOnShelf) return renderSlot(document);
+  const header = renderElement(document, "div", CLASS.header);
+  const line = renderElement(document, "div", CLASS.headerLine);
+  const who = renderText(document, "span", "", formatSideCounts(shown.ranking.sizes, shown.ranking.unplaced));
+  line.append(who);
+  const marked = [
+    line,
+    who
+  ];
+  const outcome = shown.ranking.outcome;
+  if (outcome !== null) {
+    const said = renderText(document, "span", `${CLASS.headerOutcome}${OUTCOME_INK_CLASS[outcome]}`, getWordsForOutcome(outcome));
+    line.append(said);
+    marked.push(said);
+  }
+  if (shown.fightPlace !== null) {
+    const place = shown.fightPlace;
+    const where = renderElement(document, "span", CLASS.headerPlace);
+    if (place.name !== null) {
+      const name = renderText(document, "span", CLASS.headerPlaceName, place.name);
+      where.append(name);
+    }
+    if (place.tile !== null) {
+      const tile = renderText(document, "span", CLASS.headerPlaceTile, place.name === null ? place.tile : ` ${place.tile}`);
+      where.append(tile);
+    }
+    line.append(where);
+    marked.push(where, ...Array.from(where.children));
+  }
+  header.append(line);
+  register.add(FIGHT_CARD_KEY, () => presentFightCard(shown.card));
+  setRowMarks(marked, CARD_ATTRIBUTE, FIGHT_CARD_KEY);
+  return header;
+}
+function renderNounStrips(document, shown) {
+  if (shown.isOnShelf) return renderSlot(document);
+  const strips = renderElement(document, "div", CLASS.strips);
+  for (const strip of presentNounStrips(shown.metric)) {
+    strips.append(renderStrip(document, PANEL_MARK.screen, strip));
+  }
+  return strips;
+}
+function renderDirectionStrips(document, shown) {
+  if (shown.isOnShelf) return renderSlot(document);
+  const strips = renderElement(document, "div", CLASS.strips);
+  for (const strip of presentDirectionStrips(shown.metric)) {
+    strips.append(renderStrip(document, PANEL_MARK.screen, strip));
+  }
+  if (shown.readerSide === null) return strips;
+  strips.append(renderElement(document, "span", CLASS.stripsGap));
+  for (const strip of presentSideStrips(shown.side)) {
+    strips.append(renderStrip(document, PANEL_MARK.side, strip));
+  }
+  return strips;
+}
+function renderCrumbRegion(document, register, shown) {
+  if (shown.isOnShelf) {
+    return renderCrumb(document, register, {
+      said: PANEL_WORDS.fights,
+      from: PANEL_WORDS.backFromFights
+    });
+  }
+  if (shown.unnamedCut !== null) {
+    const unnamed = getWordsForUnnamedRow(getEndForPinned(shown.unnamedCut.case));
+    if (shown.opened !== null) {
+      return renderCrumb(document, register, {
+        said: unnamed,
+        from: shown.opened.name ?? PANEL_WORDS.unknown
+      });
+    }
+    return renderCrumb(document, register, {
+      said: getCrumbWordsForUnnamedCut(shown.unnamedCut, shown.metric),
+      from: unnamed
+    });
+  }
+  if (shown.unnamed !== null) {
+    return renderCrumb(document, register, {
+      said: getWordsForUnnamedRow(shown.unnamed.end),
+      from: null
+    });
+  }
+  if (shown.opened === null) return renderSlot(document);
+  const opened = shown.opened.name ?? PANEL_WORDS.unknown;
+  if (shown.part !== null) {
+    return renderCrumb(document, register, {
+      said: getWordsForNamedPart(shown.part.part, shown.metric),
+      from: opened
+    });
+  }
+  if (shown.pair === null) {
+    return renderCrumb(document, register, {
+      said: opened,
+      from: null
+    });
+  }
+  return renderCrumb(document, register, {
+    said: shown.pair.otherName ?? PANEL_WORDS.unknown,
+    from: opened
+  });
+}
+function renderListLevel(document, register, shown, translate) {
+  if (shown.isOnShelf) {
+    const list2 = renderListContainer(document, ROWS_SHELF);
+    if (shown.shelf.length === 0) {
+      list2.append(renderEmptyNote(document, PANEL_WORDS.shelfEmpty));
+      return list2;
+    }
+    for (const fight of shown.shelf) {
+      const chosen = fight.isChosen ? ` ${CLASS.rowChosen}` : "";
+      const opens = fight.card.isUnread ? ` ${CLASS.rowUnread}` : ` ${CLASS.rowDrillable}`;
+      const row = renderElement(document, "div", `${CLASS.row}${opens}${chosen}`);
+      if (fight.isPinnable) {
+        const set = fight.isPinned ? ` ${CLASS.rowPinSet}` : "";
+        const pin = renderText(document, "span", `${CLASS.rowPin}${set}`, fight.isPinned ? PIN_MARK : UNPINNED_MARK);
+        const pinKey = composeCardKey(CARD_KEY_PREFIX.pin, `${fight.openedAt}`);
+        const pinWords = getWordsForPin(fight.isPinned);
+        register.add(pinKey, () => presentNamedCard(pinWords));
+        pin.setAttribute(CARD_ATTRIBUTE, pinKey);
+        pin.setAttribute(PANEL_MARK.pin, `${fight.openedAt}`);
+        row.append(pin);
+      }
+      const time = renderText(document, "span", CLASS.rowTime, formatShelfTime(fight.at, fight.isLive));
+      const size = renderText(document, "span", CLASS.rowSize, formatShelfSize(fight.sizes));
+      const parts = [
+        row,
+        time,
+        size
+      ];
+      for (const cell of [
+        time,
+        size
+      ]) row.append(cell);
+      if (fight.card.suspicions.length > 0) {
+        const mark = renderText(document, "span", CLASS.rowSuspect, SUSPECT_MARK);
+        row.append(mark);
+        parts.push(mark);
+      }
+      const where = renderText(document, "span", CLASS.rowName, fight.place ?? "");
+      let outcomeClass;
+      let outcomeText;
+      if (fight.card.isUnread) {
+        outcomeClass = CLASS.rowOutcome;
+        outcomeText = DEFECT_MARK.trimEnd();
+      } else if (fight.outcome === null) {
+        outcomeClass = CLASS.rowOutcome;
+        outcomeText = "";
+      } else {
+        outcomeClass = `${CLASS.rowOutcome}${OUTCOME_INK_CLASS[fight.outcome]}`;
+        outcomeText = getLetterForShelfOutcome(fight.outcome);
+      }
+      const outcome = renderText(document, "span", outcomeClass, outcomeText);
+      for (const cell of [
+        where,
+        outcome
+      ]) row.append(cell);
+      parts.push(where, outcome);
+      const rowKey = fight.isLive ? LIVE_FIGHT_MARK : `${fight.openedAt}`;
+      const shelfKey = composeCardKey(CARD_KEY_PREFIX.shelf, rowKey);
+      register.add(shelfKey, () => presentFightCard(fight.card));
+      setRowMarks(parts, CARD_ATTRIBUTE, shelfKey);
+      if (!fight.card.isUnread) setRowMarks(parts, PANEL_MARK.fight, rowKey);
+      list2.append(row);
+    }
+    return list2;
+  }
+  if (shown.part !== null) {
+    const partLevel = shown.part;
+    const rows = partLevel.byOtherEnd.rows.length + (partLevel.byOtherEnd.halfNamed === null ? 0 : 1);
+    const list2 = renderListContainer(document, Math.max(rows + 1, shown.ranking.rowsVisibleCount));
+    const figure = getWordsForMetric(shown.metric);
+    const heading = getWordsForOpponentCut(shown.metric);
+    list2.append(renderSection(document, heading, partLevel.total));
+    const share = PANEL_WORDS.shareOfFigure;
+    const cardContext = {
+      metric: shown.metric,
+      translate,
+      isRowNarrower: true,
+      unnamedNote: null,
+      readerSide: shown.readerSide
+    };
+    const person2 = {
+      register,
+      keyPrefix: CARD_KEY_PREFIX.reached,
+      figure,
+      share,
+      card: cardContext,
+      place: composeCutPlace(shown)
+    };
+    for (const [rowIndex, row] of partLevel.byOtherEnd.rows.entries()) {
+      list2.append(renderPersonRow(document, row, rowIndex + 1, person2, false));
+    }
+    if (partLevel.byOtherEnd.halfNamed === null) return list2;
+    const end = getUnnamedEndForMetric(shown.metric);
+    const card = {
+      register,
+      key: "reached/nobody",
+      figure,
+      share,
+      notes: formatOpenedUnnamedNotes(shown.metric)
+    };
+    const rowContent = presentUnnamedRow(partLevel.byOtherEnd.halfNamed, getWordsForUnnamedRow(end));
+    list2.append(renderRow(document, rowContent, null, card));
+    return list2;
+  }
+  if (shown.pair !== null) {
+    const pair = shown.pair;
+    const list2 = renderListContainer(document, countRowsForPairLevel(pair, shown.ranking.rowsVisibleCount));
+    const figure = getWordsForMetric(shown.metric);
+    const share = PANEL_WORDS.shareOfFigure;
+    if (pair.parts.length > 0) {
+      list2.append(renderSection(document, PANEL_WORDS.skills, pair.total));
+      for (const [rowIndex, row] of pair.parts.entries()) {
+        const card = {
+          register,
+          figure,
+          share,
+          key: getKeyForNamedPart(CARD_KEY_PLACE.pair, row.part),
+          caveat: getCaveatForNamedPart(row.part, shown.metric)
+        };
+        const rowContent = {
+          name: getWordsForNamedPart(row.part, shown.metric),
+          figure: row.figure,
+          fill: row.fill,
+          shareText: row.shareText,
+          colour: lookupColourForProfession(null),
+          profession: null,
+          rank: rowIndex + 1
+        };
+        list2.append(renderRow(document, rowContent, null, card));
+      }
+    }
+    const cut = pair.byElement;
+    if (cut.rows.length > 0) {
+      list2.append(renderSection(document, PANEL_WORDS.damageKind, pair.total));
+      for (const [rowIndex, row] of cut.rows.entries()) {
+        const openedPart = {
+          kind: OPENED_PART.element,
+          element: row.element
+        };
+        const card = {
+          register,
+          figure,
+          share,
+          key: getKeyForNamedPart(CARD_KEY_PLACE.pairKinds, openedPart),
+          caveat: getCaveatForNamedPart(openedPart, shown.metric)
+        };
+        list2.append(renderRow(document, presentElementRow(row, PANEL_NOUN.damage, rowIndex + 1), null, card));
+      }
+    }
+    return list2;
+  }
+  if (shown.unnamedCut !== null) {
+    const unnamedCut = shown.unnamedCut;
+    const figure = getWordsForMetric(shown.metric);
+    const unnamedNote = getNoteForUnnamedEnd(getEndForPinned(unnamedCut.case), getNounForMetric(shown.metric));
+    if (unnamedCut.opened === HALF_NAMED_OPENED.element) {
+      const rows = unnamedCut.rows.length + (unnamedCut.neitherEnd === null ? 0 : 1);
+      const list3 = renderListContainer(document, Math.max(rows + 1, shown.ranking.rowsVisibleCount));
+      const heading = getWordsForHalfNamedCut(unnamedCut.end);
+      list3.append(renderSection(document, heading, unnamedCut.total));
+      renderHalfNamedRows(document, list3, shown, {
+        rows: unnamedCut.rows,
+        neither: unnamedCut.neitherEnd,
+        doesOpen: false,
+        register,
+        translate: null,
+        unnamedNote
+      });
+      return list3;
+    }
+    const kinds = countElementCutRows(unnamedCut.kinds);
+    const list2 = renderListContainer(document, Math.max(kinds + 1, shown.ranking.rowsVisibleCount));
+    renderElementSection(document, list2, unnamedCut.kinds, {
+      metric: shown.metric,
+      register,
+      figure,
+      total: unnamedCut.total,
+      unnamedNote
+    });
+    return list2;
+  }
+  if (shown.unnamed !== null) {
+    const unnamed = shown.unnamed;
+    const named = unnamed.rows.length + (unnamed.neitherEnd === null ? 0 : 1);
+    const kinds = countElementCutRows(unnamed.kinds);
+    const needed = named + 1 + (kinds === 0 ? 0 : kinds + 1);
+    const list2 = renderListContainer(document, Math.max(needed, shown.ranking.rowsVisibleCount));
+    const heading = getWordsForHalfNamedCut(unnamed.end);
+    list2.append(renderSection(document, heading, unnamed.total));
+    const unnamedNote = getNoteForUnnamedEnd(unnamed.end, getNounForMetric(shown.metric));
+    renderHalfNamedRows(document, list2, shown, {
+      rows: unnamed.rows,
+      neither: unnamed.neitherEnd,
+      doesOpen: true,
+      register,
+      translate,
+      unnamedNote
+    });
+    renderElementSection(document, list2, unnamed.kinds, {
+      metric: shown.metric,
+      register,
+      figure: getWordsForMetric(shown.metric),
+      total: unnamed.total,
+      unnamedNote
+    });
+    return list2;
+  }
+  if (shown.opened !== null) {
+    const opened = shown.opened;
+    const list2 = renderListContainer(document, countRowsForOpenedLevel(opened, shown.ranking.rowsVisibleCount));
+    const figure = getWordsForMetric(shown.metric);
+    const share = PANEL_WORDS.shareOfFigure;
+    {
+      const cut = opened.byOtherEnd;
+      const cardContext = {
+        metric: shown.metric,
+        translate,
+        isRowNarrower: true,
+        unnamedNote: null,
+        readerSide: shown.readerSide
+      };
+      if (cut.rows.length + (cut.halfNamed === null ? 0 : 1) > 0) {
+        const heading = getWordsForOpponentCut(shown.metric);
+        list2.append(renderSection(document, heading, opened.total));
+      }
+      const person2 = {
+        register,
+        keyPrefix: CARD_KEY_PREFIX.to,
+        figure,
+        share,
+        card: cardContext,
+        place: composeCutPlace(shown)
+      };
+      for (const [rowIndex, row] of cut.rows.entries()) {
+        const drawn = renderPersonRow(document, row, rowIndex + 1, person2, row.doesOpenPair);
+        list2.append(drawn);
+      }
+      if (cut.halfNamed !== null) {
+        const end = getUnnamedEndForMetric(shown.metric);
+        const kinds = cut.halfNamed.kinds;
+        const card = {
+          register,
+          key: "to/nobody",
+          figure,
+          share,
+          notes: formatOpenedUnnamedNotes(shown.metric),
+          cut: kinds === null ? void 0 : presentKindCutParts(kinds, shown.metric)
+        };
+        const rowContent = presentUnnamedRow(cut.halfNamed, getWordsForUnnamedRow(end));
+        const mark = cut.halfNamed.doesOpenPair ? {
+          attribute: PANEL_MARK.unnamed,
+          stated: end
+        } : null;
+        list2.append(renderRow(document, rowContent, mark, card));
+      }
+    }
+    {
+      const cut = opened.bySkill;
+      const stated = {
+        metric: shown.metric,
+        register,
+        figure
+      };
+      if (cut.rows.length + (cut.closing === null ? 0 : 1) > 0) {
+        list2.append(renderSection(document, PANEL_WORDS.skills, opened.total));
+        let drawn = 0;
+        for (const row of cut.rows) {
+          drawn = renderClosingRowAtPlace(document, list2, cut.closing, stated, drawn, false);
+          drawn += 1;
+          const card = {
+            register,
+            key: getKeyForNamedPart(CARD_KEY_PLACE.skill, row.part),
+            figure,
+            share
+          };
+          const rowContent = presentSkillRow(row, shown.metric, drawn);
+          const mark = getMarkForNamedPart(row.part, row.doesOpenPart);
+          list2.append(renderRow(document, rowContent, mark, card));
+        }
+        renderClosingRowAtPlace(document, list2, cut.closing, stated, drawn, true);
+        renderRestRow(document, list2, cut.rest, {
+          register,
+          figure,
+          key: "skill/rest",
+          unnamedNote: null
+        });
+      }
+    }
+    renderElementSection(document, list2, opened.byElement, {
+      metric: shown.metric,
+      register,
+      figure,
+      total: opened.total,
+      unnamedNote: null
+    });
+    if (opened.total === 0) {
+      list2.append(renderEmptyNote(document, getWordsForNothing(shown.metric)));
+    }
+    return list2;
+  }
+  const ranking = shown.ranking;
+  const metric = shown.metric;
+  const personContext = {
+    readerSide: shown.readerSide,
+    turnHolderId: shown.turnHolderId
+  };
+  const list = renderListContainer(document, ranking.rowsVisibleCount);
+  if (ranking.rows.length === 0) {
+    list.append(renderEmptyNote(document, PANEL_WORDS.nothingYet));
+    return list;
+  }
+  const person = {
+    register,
+    keyPrefix: CARD_KEY_PREFIX.row,
+    figure: getWordsForMetric(metric),
+    share: PANEL_WORDS.share,
+    card: composeRankingCardPlace(metric, translate, shown.readerSide),
+    place: personContext
+  };
+  for (const [rowIndex, row] of ranking.rows.entries()) {
+    list.append(renderPersonRow(document, row, rowIndex + 1, person, DOES_RANKING_ROW_OPEN));
+  }
+  return list;
+}
+function composeRankingCardPlace(metric, translate, readerSide) {
+  return {
+    metric,
+    translate,
+    isRowNarrower: false,
+    unnamedNote: null,
+    readerSide
+  };
+}
+function renderPinnedRows(document, regions, renderInPlace, register, shown) {
+  const stated = {
+    metric: shown.metric,
+    isSideChosen: shown.side !== SIDE_CHOICE.everyone,
+    figure: getWordsForMetric(shown.metric)
+  };
+  const ends = [
+    [
+      UNNAMED_END.actor,
+      "pinnedActor"
+    ],
+    [
+      UNNAMED_END.target,
+      "pinnedTarget"
+    ]
+  ];
+  for (const [end, regionName] of ends) {
+    regions[regionName] = renderInPlace(regions[regionName], PANEL_REGION.pinned, () => {
+      let pinned;
+      if (isLevelOpen(shown)) {
+        pinned = [];
+      } else {
+        pinned = shown.isOnShelf ? [] : shown.ranking.pinned;
+      }
+      const row = pinned.find((pinnedRow) => pinnedRow.end === end) ?? null;
+      if (row === null) return renderSlot(document);
+      const block = renderElement(document, "div", CLASS.pinned);
+      const card = {
+        register,
+        key: `pinned:${row.end}`,
+        figure: stated.figure,
+        share: PANEL_WORDS.share,
+        notes: formatPinnedNotes(row, stated.metric, stated.isSideChosen),
+        cut: presentKindCutParts(row.kinds, stated.metric)
+      };
+      const rowContent = presentUnnamedRow(row, getWordsForUnnamedRow(row.end));
+      const mark = {
+        attribute: PANEL_MARK.unnamed,
+        stated: row.end
+      };
+      block.append(renderRow(document, rowContent, mark, card));
+      return block;
+    });
+  }
+}
+function renderOutsideRegion(document, register, shown) {
+  if (shown.isOnShelf) return renderSlot(document);
+  const outside = shown.ranking.outsideRanking;
+  if (outside === null) return renderSlot(document);
+  const block = renderElement(document, "div", CLASS.outside);
+  block.append(renderSection(document, PANEL_WORDS.outsideRanking, outside.figure));
+  const rowContent = {
+    name: PANEL_WORDS.outsideRow,
+    figure: outside.figure,
+    fill: outside.fill,
+    shareText: outside.shareText,
+    colour: lookupColourForProfession(null),
+    profession: null,
+    // No place, so the hatch: its figure is what reached no row rather than
+    // what anybody did — `DESIGN.md`, and `develop ADR 0079`'s test for
+    // which kind of row takes one.
+    rank: null
+  };
+  const card = {
+    register,
+    key: "outside",
+    figure: getWordsForMetric(shown.metric),
+    share: PANEL_WORDS.share,
+    notes: [
+      PANEL_WORDS.outsideNote
+    ]
+  };
+  block.append(renderRow(document, rowContent, null, card));
+  return block;
+}
+function renderSidesRegion(document, shown) {
+  const sides = shown.ranking.sides;
+  if (sides === null) return renderSlot(document);
+  if (shown.isOnShelf) return renderSlot(document);
+  const block = renderElement(document, "div", CLASS.sides);
+  const line = renderElement(document, "div", CLASS.sidesLine);
+  const reader = renderText(document, "span", `${CLASS.sidesOurs} ${CLASS.figure}`, formatFigure(sides.reader));
+  const label = renderText(document, "span", CLASS.sidesLabel, formatSidesLabel(shown));
+  const opposing = renderText(document, "span", `${CLASS.sidesTheirs} ${CLASS.figure}`, formatFigure(sides.opposing));
+  line.append(reader);
+  line.append(label);
+  line.append(opposing);
+  block.append(line);
+  {
+    const whole = sides.reader + sides.opposing + sides.nobody;
+    if (whole > 0) {
+      const track = renderElement(document, "div", CLASS.sidesTrack);
+      const parts = [
+        [
+          sides.reader / whole,
+          CLASS.sidesOurs
+        ],
+        [
+          sides.opposing / whole,
+          CLASS.sidesTheirs
+        ],
+        [
+          sides.nobody / whole,
+          CLASS.sidesNobody
+        ]
+      ];
+      for (const [share, className] of parts) {
+        if (share > 0) {
+          const sideSegment = renderElement(document, "span", className);
+          const width = formatDecimal(Math.min(share, 1) * AS_PERCENT, FILL_PLACES);
+          sideSegment.setAttribute(STYLE_ATTRIBUTE, `width:${width}%`);
+          track.append(sideSegment);
+        }
+      }
+      block.append(track);
+    }
+  }
+  if (sides.nobody > 0) {
+    const spare = renderElement(document, "div", `${CLASS.sidesLine} ${CLASS.sidesSpare} ${CLASS.sidesNobody}`);
+    const words = renderText(document, "span", CLASS.sidesLabel, PANEL_WORDS.withoutSide);
+    const stated = renderText(document, "span", CLASS.figure, formatFigure(sides.nobody));
+    spare.append(words);
+    spare.append(stated);
+    block.append(spare);
+  }
+  return block;
+}
+function renderElement(document, tag, className) {
+  const createdElement = document.createElement(tag);
+  createdElement.className = className;
+  return createdElement;
+}
+function renderText(document, tag, className, text) {
+  const textElement = renderElement(document, tag, className);
+  textElement.textContent = text;
+  return textElement;
+}
+function renderSlot(document) {
+  const slot = renderElement(document, "div", CLASS.slot);
+  return slot;
+}
+function renderSizeGrip(document, window2) {
+  const grip = renderElement(document, "div", CLASS.sizeGrip);
+  grip.setAttribute(SIZE_GRIP_ATTRIBUTE, window2);
+  return grip;
+}
+function renderRegion(document, region, report, render) {
+  const rendered = attempt(render);
+  if (!(rendered instanceof Error)) return rendered;
+  report.add(region, rendered);
+  const undrawn = attempt(() => {
+    const mark = renderText(document, "div", CLASS.undrawn, formatUndrawn(region));
+    return mark;
+  });
+  return undrawn instanceof Error ? null : undrawn;
+}
+function composeCardLookup(meterRegister, helperRegister, standingRegister) {
+  return (key) => meterRegister.lookup(key) ?? helperRegister.lookup(key) ?? standingRegister.lookup(key);
+}
+function renderHelperBar(document, register, isCollapsed) {
+  const bar = renderText(document, "div", CLASS.helperBar, `${GRIP_MARK}${HELPER_WORDS.title}`);
+  setGripMark(bar, PANEL_WINDOW.helper);
+  const words = isCollapsed ? HELPER_WORDS.expand : HELPER_WORDS.collapse;
+  register.add(HELPER_FOLD_CARD_KEY, () => presentNamedCard(words));
+  bar.append(renderBarControl(document, {
+    className: CLASS.control,
+    icon: isCollapsed ? BAR_ICON.unfold : BAR_ICON.fold,
+    mark: isCollapsed ? UNFOLD_MARK : FOLD_MARK,
+    attribute: PANEL_MARK.helperFold,
+    card: HELPER_FOLD_CARD_KEY
+  }));
+  return bar;
+}
+function renderBarControl(document, stated) {
+  const className = `${stated.className} ${composeBarIconClass(stated.icon)}`;
+  const control = renderText(document, "span", className, stated.mark);
+  control.setAttribute(stated.attribute, "");
+  control.setAttribute(CARD_ATTRIBUTE, stated.card);
+  return control;
+}
+function initPanelDragIfPlaced(root, host, getBar, placement, dragOptions) {
+  if (placement === null) return null;
+  const { window: window2, view } = dragOptions;
+  return initPanelDrag(root, host, getBar, placement, {
+    window: window2,
+    getTypeTokens: () => TYPE_TOKENS[dragOptions.getTypeStep()],
+    onIntent: view.onIntent,
+    onFailure: view.onFailure,
+    grip: dragOptions.grip
+  });
+}
+function executeRegionStep(report, region, step) {
+  const ran = attempt(step);
+  if (ran instanceof Error) report.add(region, ran);
+}
+function renderFold(panelDrawing, register, drawn) {
+  const { isMeterCollapsed, hasFightToSave, typeStep } = drawn;
+  if (typeStep !== panelDrawing.getTypeStep()) {
+    const before = attempt(() => readWindowWidths(panelDrawing));
+    if (before instanceof Error) panelDrawing.report.add(PANEL_REGION.helper, before);
+    executeRegionStep(panelDrawing.report, PANEL_REGION.header, () => {
+      panelDrawing.sheet.textContent = composeStyleSheet(typeStep);
+      panelDrawing.setTypeStep(typeStep);
+    });
+    executeRegionStep(panelDrawing.report, PANEL_REGION.helper, () => {
+      if (before instanceof Error) return;
+      const after = readWindowWidths(panelDrawing);
+      const meterPosition = panelDrawing.meterDrag?.getPosition() ?? null;
+      const helperPosition = panelDrawing.helperDrag?.getPosition() ?? null;
+      if (meterPosition === null) return;
+      if (helperPosition === null) return;
+      const helperPositionAfter = composeHelperPositionAfterTypeStep(meterPosition, helperPosition, before, after);
+      if (helperPositionAfter !== null) {
+        panelDrawing.helperDrag?.placeWindow(helperPositionAfter);
+      }
+    });
+  }
+  executeRegionStep(panelDrawing.report, PANEL_REGION.header, () => {
+    panelDrawing.meterDrag?.sizeWindow(drawn.windowSizes.meter);
+  });
+  executeRegionStep(panelDrawing.report, PANEL_REGION.helper, () => {
+    panelDrawing.helperDrag?.sizeWindow(drawn.windowSizes.helper);
+  });
+  const foldWords = isMeterCollapsed ? PANEL_WORDS.expand : PANEL_WORDS.collapse;
+  register.add(FOLD_CARD_KEY, () => presentNamedCard(foldWords));
+  panelDrawing.regions.title = panelDrawing.renderInPlace(panelDrawing.regions.title, PANEL_REGION.header, () => {
+    const document = panelDrawing.document;
+    const bar = renderElement(document, "div", CLASS.title);
+    bar.textContent = `${GRIP_MARK}${PANEL_WORDS.title}`;
+    setGripMark(bar, PANEL_WINDOW.meter);
+    bar.append(renderBarControl(document, {
+      className: `${CLASS.control} ${CLASS.controlLead}`,
+      icon: BAR_ICON.options,
+      mark: OPTIONS_MARK,
+      attribute: PANEL_MARK.options,
+      card: STANDING_CARD.options
+    }));
+    bar.append(renderBarControl(document, {
+      className: CLASS.control,
+      icon: BAR_ICON.shelf,
+      mark: SHELF_MARK,
+      attribute: PANEL_MARK.shelf,
+      card: STANDING_CARD.shelf
+    }));
+    if (hasFightToSave) {
+      bar.append(renderBarControl(document, {
+        className: CLASS.control,
+        icon: BAR_ICON.save,
+        mark: SAVE_MARK,
+        attribute: PANEL_MARK.save,
+        card: STANDING_CARD.save
+      }));
+    }
+    bar.append(renderBarControl(document, {
+      className: CLASS.control,
+      icon: isMeterCollapsed ? BAR_ICON.unfold : BAR_ICON.fold,
+      mark: isMeterCollapsed ? UNFOLD_MARK : FOLD_MARK,
+      attribute: PANEL_MARK.fold,
+      card: FOLD_CARD_KEY
+    }));
+    return bar;
+  });
+  executeRegionStep(panelDrawing.report, PANEL_REGION.header, () => {
+    panelDrawing.frame.className = isMeterCollapsed ? `${CLASS.frame} ${CLASS.folded}` : CLASS.frame;
+  });
+}
+function readWindowWidths(panelDrawing) {
+  const tokens = TYPE_TOKENS[panelDrawing.getTypeStep()];
+  return {
+    meter: panelDrawing.meterDrag?.readWidthPixels() ?? tokens.meterWidthPixels,
+    helper: panelDrawing.helperDrag?.readWidthPixels() ?? tokens.helperWidthPixels
+  };
+}
+function renderPanelFolded(document, regions, renderInPlace) {
+  const renderEmptySlot = () => renderSlot(document);
+  regions.header = renderInPlace(regions.header, PANEL_REGION.header, renderEmptySlot);
+  regions.nouns = renderInPlace(regions.nouns, PANEL_REGION.strips, renderEmptySlot);
+  regions.directions = renderInPlace(regions.directions, PANEL_REGION.strips, renderEmptySlot);
+  regions.crumb = renderInPlace(regions.crumb, PANEL_REGION.crumb, renderEmptySlot);
+  regions.options = renderInPlace(regions.options, PANEL_REGION.strips, renderEmptySlot);
+  regions.list = renderInPlace(regions.list, PANEL_REGION.list, renderEmptySlot);
+  regions.pinnedActor = renderInPlace(regions.pinnedActor, PANEL_REGION.pinned, renderEmptySlot);
+  regions.pinnedTarget = renderInPlace(regions.pinnedTarget, PANEL_REGION.pinned, renderEmptySlot);
+  regions.outside = renderInPlace(regions.outside, PANEL_REGION.outside, renderEmptySlot);
+  regions.sides = renderInPlace(regions.sides, PANEL_REGION.sides, renderEmptySlot);
+  regions.suspicions = renderInPlace(regions.suspicions, PANEL_REGION.suspicions, renderEmptySlot);
+  regions.defects = renderInPlace(regions.defects, PANEL_REGION.defects, renderEmptySlot);
+}
+function renderStrip(document, attribute, strip) {
+  const marked = strip.isCurrent ? ` ${CLASS.stripCurrent}` : "";
+  const stripElement = renderElement(document, "div", `${CLASS.strip}${marked}`);
+  stripElement.setAttribute(attribute, strip.name);
+  stripElement.textContent = strip.words;
+  return stripElement;
+}
+function renderCrumb(document, register, stated) {
+  const crumb = renderElement(document, "div", CLASS.crumb);
+  const back = renderElement(document, "span", CLASS.crumbBack);
+  const leaving = stated.from ?? PANEL_WORDS.back;
+  back.textContent = `${BACK_MARK}${leaving}`;
+  back.setAttribute(PANEL_MARK.back, PANEL_WORDS.back);
+  register.add(CRUMB_CARD_KEY, () => presentCrumbCard(leaving));
+  back.setAttribute(CARD_ATTRIBUTE, CRUMB_CARD_KEY);
+  const here = renderText(document, "span", CLASS.crumbHere, stated.said);
+  register.add(CRUMB_HERE_CARD_KEY, () => presentNamedCard(stated.said));
+  here.setAttribute(CARD_ATTRIBUTE, CRUMB_HERE_CARD_KEY);
+  crumb.append(back);
+  crumb.append(here);
+  return crumb;
+}
+function presentCrumbCard(leaving) {
+  return {
+    name: leaving,
+    subtitle: null,
+    ending: null,
+    groups: [
+      {
+        lines: [
+          {
+            kind: CARD_LINE.note,
+            text: CARD_WORDS.gestureBack,
+            tone: CARD_NOTE_TONE.plain
+          },
+          {
+            kind: CARD_LINE.note,
+            text: CARD_WORDS.gestureBackAnywhere,
+            tone: CARD_NOTE_TONE.plain
+          }
+        ]
+      }
+    ]
+  };
+}
+function getCrumbWordsForUnnamedCut(unnamedCut, metric) {
+  if (unnamedCut.opened === HALF_NAMED_OPENED.person) {
+    return unnamedCut.row.name ?? PANEL_WORDS.unknown;
+  }
+  return getWordsForKind(getNounForMetric(metric), unnamedCut.element);
+}
+function getWordsForKind(noun, key) {
+  if (noun === PANEL_NOUN.damage) return formatDamageKind(key);
+  return getWordsForHealthSource(key);
+}
+function getWordsForUnnamedRow(end) {
+  return end === UNNAMED_END.actor ? PANEL_WORDS.withoutActor : PANEL_WORDS.withoutTarget;
+}
+function getWordsForNamedPart(openedPart, metric) {
+  if (openedPart.kind === OPENED_PART.skill) return openedPart.name;
+  if (openedPart.kind === OPENED_PART.plain) return getWordsForUnannounced(metric);
+  const named = openedPart.kind === OPENED_PART.source ? openedPart.source : openedPart.element;
+  return getWordsForKind(getNounForMetric(metric), named);
+}
+function renderPanelOptions(document, drawn, options, chosen, addOnVersion) {
+  const { regions, renderInPlace, drawing, register } = drawn;
+  const renderEmptySlot = () => renderSlot(document);
+  regions.header = renderInPlace(regions.header, PANEL_REGION.header, renderEmptySlot);
+  regions.nouns = renderInPlace(regions.nouns, PANEL_REGION.strips, renderEmptySlot);
+  regions.directions = renderInPlace(regions.directions, PANEL_REGION.strips, renderEmptySlot);
+  regions.crumb = renderInPlace(regions.crumb, PANEL_REGION.crumb, () => renderCrumb(document, register, {
+    said: PANEL_WORDS.options,
+    from: PANEL_WORDS.backFromOptions
+  }));
+  regions.options = renderInPlace(regions.options, PANEL_REGION.strips, () => {
+    const region = renderElement(document, "div", CLASS.options);
+    {
+      const question = renderOptionsQuestion(document, PANEL_WORDS.typeSize);
+      const steps = renderElement(document, "div", CLASS.optionsSteps);
+      for (const step of TYPE_STEPS) {
+        const marked = step === chosen.typeStep ? ` ${CLASS.stripCurrent}` : "";
+        const className = `${CLASS.optionsStep} ${composeOptionsStepClass(step)}${marked}`;
+        const answer = renderText(document, "div", className, getWordsForTypeStep(step));
+        answer.setAttribute(PANEL_MARK.typeStep, step);
+        steps.append(answer);
+      }
+      question.append(steps);
+      region.append(question);
+    }
+    {
+      const question = renderOptionsQuestion(document, PANEL_WORDS.windowSize);
+      for (const window2 of PANEL_WINDOWS) {
+        const isSized = chosen.windowSizes[window2] !== null;
+        const line = renderElement(document, "div", CLASS.optionsWindow);
+        const name = renderText(document, "span", CLASS.optionsWindowName, getWordsForWindow(window2));
+        const own = isSized ? ` ${CLASS.optionsWindowOwn}` : "";
+        const state = renderText(document, "span", `${CLASS.optionsWindowState}${own}`, isSized ? PANEL_WORDS.sizeOwn : PANEL_WORDS.sizeDefault);
+        line.append(name);
+        line.append(state);
+        if (isSized) {
+          const reset = renderText(document, "span", CLASS.optionsReset, PANEL_WORDS.sizeReset);
+          reset.setAttribute(PANEL_MARK.resetSize, window2);
+          line.append(reset);
+        }
+        question.append(line);
+      }
+      const hint = renderText(document, "div", CLASS.optionsMeaning, PANEL_WORDS.resizeHint);
+      question.append(hint);
+      region.append(question);
+    }
+    {
+      const storageChosen = options.storage;
+      const question = renderOptionsQuestion(document, PANEL_WORDS.storage);
+      for (const choice of STORAGE_CHOICES) {
+        const marked = choice === storageChosen ? ` ${CLASS.stripCurrent}` : "";
+        const answer = renderText(document, "div", `${CLASS.optionsAnswer}${marked}`, getWordsForStorage(choice));
+        answer.setAttribute(PANEL_MARK.storage, choice);
+        question.append(answer);
+      }
+      const meaning = renderText(document, "div", CLASS.optionsMeaning, getWordsForStorageMeaning(storageChosen));
+      question.append(meaning);
+      region.append(question);
+    }
+    {
+      const question = renderOptionsQuestion(document, PANEL_WORDS.version);
+      question.append(renderText(document, "div", CLASS.optionsVersion, addOnVersion));
+      region.append(question);
+    }
+    return region;
+  });
+  drawing.renderListRegion(OPTIONS_LIST_NAME, renderEmptySlot);
+  regions.pinnedActor = renderInPlace(regions.pinnedActor, PANEL_REGION.pinned, renderEmptySlot);
+  regions.pinnedTarget = renderInPlace(regions.pinnedTarget, PANEL_REGION.pinned, renderEmptySlot);
+  regions.outside = renderInPlace(regions.outside, PANEL_REGION.outside, renderEmptySlot);
+  regions.sides = renderInPlace(regions.sides, PANEL_REGION.sides, renderEmptySlot);
+  regions.suspicions = renderInPlace(regions.suspicions, PANEL_REGION.suspicions, () => renderSuspicions(document, options.answers));
+}
+function renderOptionsQuestion(document, said) {
+  const question = renderElement(document, "div", CLASS.optionsQuestion);
+  const heading = renderText(document, "div", CLASS.optionsHeading, said);
+  question.append(heading);
+  return question;
+}
+function renderListContainer(document, rowsVisibleCount) {
+  if (!Number.isSafeInteger(rowsVisibleCount)) rowsVisibleCount = ROWS_WAITING;
+  if (rowsVisibleCount < 1) rowsVisibleCount = ROWS_WAITING;
+  const list = renderElement(document, "div", CLASS.list);
+  list.setAttribute(STYLE_ATTRIBUTE, `${ROWS_VARIABLE}:${formatWholeUngrouped(rowsVisibleCount)}`);
+  return list;
+}
+function renderEmptyNote(document, words) {
+  const empty = renderText(document, "div", CLASS.empty, words);
+  return empty;
+}
+function setRowMarks(parts, name, stated) {
+  for (const cell of parts) cell.setAttribute(name, stated);
+}
+function renderSection(document, heading, total) {
+  const section = renderElement(document, "div", CLASS.section);
+  const words = renderText(document, "span", CLASS.sectionWords, heading);
+  const figure = renderText(document, "span", CLASS.figure, formatFigure(total));
+  section.append(words);
+  section.append(figure);
+  return section;
+}
+function renderPersonRow(document, row, rank, person, doesOpen) {
+  const card = {
+    register: person.register,
+    key: composeCardKey(person.keyPrefix, `${row.combatantId}`),
+    figure: person.figure,
+    share: person.share,
+    compose: composePersonCard(row, person.card, doesOpen)
+  };
+  const rowContent = presentCombatantRow(row, rank, person.card.metric, person.place);
+  const mark = doesOpen ? {
+    attribute: PANEL_MARK.row,
+    stated: `${row.combatantId}`
+  } : null;
+  return renderRow(document, rowContent, mark, card);
+}
+function composePersonCard(row, cardContext, doesOpen) {
+  return () => presentPersonCard(row, cardContext, doesOpen);
+}
+function presentPersonCard(row, cardContext, doesOpen) {
+  return presentCard({
+    name: row.name ?? PANEL_WORDS.unknown,
+    profession: row.profession,
+    sideRelation: getSideRelation(row.side, cardContext.readerSide),
+    detail: row.detail,
+    metric: cardContext.metric,
+    doesOpen,
+    isRowNarrower: cardContext.isRowNarrower,
+    unnamedNote: cardContext.unnamedNote,
+    translate: cardContext.translate
+  });
+}
+function renderRow(document, rowContent, mark, card) {
+  const doesOpen = mark !== null;
+  const kind = doesOpen ? CLASS.rowDrillable : CLASS.rowLeaf;
+  const apartClass = rowContent.rank === null ? ` ${CLASS.rowApart}` : "";
+  const rowElement = renderElement(document, "div", `${CLASS.row} ${kind}${apartClass}`);
+  const parts = [];
+  {
+    const fill = Number.isFinite(rowContent.fill) ? Math.min(rowContent.fill, 1) : 0;
+    const width = formatDecimal(fill * AS_PERCENT, FILL_PLACES);
+    const colour = formatColour(rowContent.colour);
+    const bar = renderElement(document, "div", CLASS.bar);
+    bar.setAttribute(STYLE_ATTRIBUTE, `width:${width}%;background:${colour}`);
+    const cap = renderElement(document, "div", CLASS.barCap);
+    cap.setAttribute(STYLE_ATTRIBUTE, `background:${colour}`);
+    parts.push(bar, cap);
+  }
+  const rank = renderText(document, "span", CLASS.rowRank, rowContent.rank === null ? "" : `${formatFigure(rowContent.rank)}.`);
+  parts.push(rank);
+  if (rowContent.isSuspect === true) {
+    const mark2 = renderText(document, "span", CLASS.rowSuspect, SUSPECT_MARK);
+    parts.push(mark2);
+  }
+  if (card.caveat !== void 0) {
+    if (card.caveat !== null) {
+      const mark2 = renderText(document, "span", CLASS.rowCaveat, CAVEAT_MARK);
+      parts.push(mark2);
+    }
+  }
+  if (rowContent.isTurnHolder === true) {
+    const mark2 = renderText(document, "span", CLASS.rowTurn, TURN_MARK);
+    parts.push(mark2);
+  }
+  parts.push(...renderSideRules(document, rowContent.sideRelation ?? SIDE_RELATION.nobody));
+  const name = renderText(document, "span", CLASS.rowName, rowContent.name);
+  const figureCell = renderText(document, "span", `${CLASS.rowValue} ${CLASS.figure}`, formatFigure(rowContent.figure));
+  const share = renderElement(document, "span", CLASS.rowShare);
+  const uses = rowContent.uses ?? null;
+  const counted = uses === null ? "" : ` \xB7 ${formatUses(uses)}`;
+  share.textContent = `(${rowContent.shareText}${counted})`;
+  figureCell.append(share);
+  parts.push(name, figureCell);
+  for (const cell of parts) rowElement.append(cell);
+  parts.push(share);
+  const marked = [
+    rowElement,
+    ...parts
+  ];
+  if (mark !== null) setRowMarks(marked, mark.attribute, mark.stated);
+  card.register.add(card.key, card.compose ?? (() => presentRowCard(rowContent, card, doesOpen)));
+  setRowMarks(marked, CARD_ATTRIBUTE, card.key);
+  return rowElement;
+}
+function renderSideRules(document, sideRelation) {
+  if (sideRelation === SIDE_RELATION.nobody) return [];
+  const rule = renderElement(document, "div", CLASS.rowSide);
+  const colour = sideRelation === SIDE_RELATION.reader ? SIGNAL.ours : SIGNAL.theirs;
+  rule.setAttribute(STYLE_ATTRIBUTE, `color:${formatColour(colour)}`);
+  return [
+    rule
+  ];
+}
+function presentRowCard(rowContent, card, doesOpen) {
+  const stated = [
+    {
+      kind: CARD_LINE.stat,
+      label: card.figure,
+      stated: formatFigure(rowContent.figure),
+      isStrong: false,
+      caveat: card.caveat ?? null
+    }
+  ];
+  if (card.share !== null) {
+    stated.push({
+      kind: CARD_LINE.stat,
+      label: card.share,
+      stated: rowContent.shareText,
+      isStrong: false,
+      caveat: null
+    });
+  }
+  const said = [
+    ...presentCaveatNoteLines([
+      {
+        lines: stated
+      }
+    ])
+  ];
+  for (const note of card.notes ?? []) {
+    said.push({
+      kind: CARD_LINE.note,
+      text: note,
+      tone: CARD_NOTE_TONE.plain
+    });
+  }
+  if (doesOpen) {
+    said.push({
+      kind: CARD_LINE.note,
+      text: CARD_WORDS.gesture,
+      tone: CARD_NOTE_TONE.plain
+    });
+  }
+  const cut = presentRowCardCutLines(card.cut);
+  if (cut.length === 0) {
+    return {
+      name: rowContent.name,
+      subtitle: null,
+      ending: null,
+      groups: [
+        {
+          lines: [
+            ...stated,
+            ...said
+          ]
+        }
+      ]
+    };
+  }
+  const groups = [
+    {
+      lines: stated
+    },
+    {
+      lines: cut
+    }
+  ];
+  if (said.length > 0) groups.push({
+    lines: said
+  });
+  return {
+    name: rowContent.name,
+    subtitle: null,
+    ending: null,
+    groups
+  };
+}
+function presentRowCardCutLines(cut) {
+  if (cut === void 0) return [];
+  if (cut.parts.length === 0) return [];
+  const lines = [
+    {
+      kind: CARD_LINE.heading,
+      text: cut.heading
+    }
+  ];
+  for (const cutPart of cut.parts) {
+    lines.push({
+      kind: CARD_LINE.sub,
+      label: cutPart.label,
+      stated: cutPart.stated
+    });
+  }
+  return lines;
+}
+function presentCombatantRow(row, rank, metric, personContext) {
+  return {
+    name: row.name ?? PANEL_WORDS.unknown,
+    figure: row.figure,
+    fill: row.fill,
+    shareText: row.shareText,
+    colour: lookupColourForProfession(row.profession),
+    profession: row.profession,
+    rank,
+    isSuspect: isRowSuspect(row.detail, metric),
+    sideRelation: getSideRelation(row.side, personContext.readerSide),
+    isTurnHolder: row.combatantId === personContext.turnHolderId
+  };
+}
+function composeCutPlace(shown) {
+  return {
+    readerSide: shown.readerSide,
+    turnHolderId: null
+  };
+}
+function formatOpenedUnnamedNotes(metric) {
+  const notes = [
+    getNoteForUnnamedEnd(getUnnamedEndForMetric(metric), getNounForMetric(metric)),
+    CARD_WORDS.insideSection
+  ];
+  const standing = getNoteForOpenedUnnamedStanding(metric);
+  if (standing !== null) notes.push(standing);
+  return notes;
+}
+function getUnnamedEndForMetric(metric) {
+  return getDirectionForMetric(metric) === PANEL_DIRECTION.given ? UNNAMED_END.target : UNNAMED_END.actor;
+}
+function presentUnnamedRow(row, name) {
+  return {
+    name,
+    figure: row.figure,
+    fill: row.fill,
+    shareText: row.shareText,
+    colour: lookupColourForProfession(null),
+    profession: null,
+    rank: null
+  };
+}
+function countRowsForPairLevel(pair, floor) {
+  const parts = pair.parts.length;
+  const kinds = pair.byElement.rows.length;
+  const needed = (parts === 0 ? 0 : parts + 1) + (kinds === 0 ? 0 : kinds + 1);
+  return Math.max(needed, floor);
+}
+function getKeyForNamedPart(where, openedPart) {
+  if (openedPart.kind === OPENED_PART.skill) {
+    return `${where}-${composeCardKey(CARD_KEY_PREFIX.skill, openedPart.name)}`;
+  }
+  if (openedPart.kind === OPENED_PART.plain) return `${where}-skill/plain`;
+  if (openedPart.kind === OPENED_PART.element) {
+    return `${where}-${composeCardKey(CARD_KEY_PREFIX.kind, openedPart.element)}`;
+  }
+  return `${where}-${composeCardKey(CARD_KEY_PREFIX.source, openedPart.source)}`;
+}
+function composeCardKey(prefix, stated) {
+  return `${prefix}:${stated}`;
+}
+function getCaveatForNamedPart(openedPart, metric) {
+  if (openedPart.kind === OPENED_PART.element) return getCaveatForKind(openedPart.element);
+  if (openedPart.kind !== OPENED_PART.plain) return null;
+  return getCaveatForUnannounced(getNounForMetric(metric));
+}
+function presentElementRow(row, noun, rank) {
+  return {
+    name: getWordsForKind(noun, row.element),
+    figure: row.figure,
+    fill: row.fill,
+    shareText: row.shareText,
+    colour: lookupColourForProfession(null),
+    profession: null,
+    rank
+  };
+}
+function getWordsForHalfNamedCut(end) {
+  return end === UNNAMED_END.actor ? PANEL_WORDS.dealtTo : PANEL_WORDS.takenFrom;
+}
+function renderHalfNamedRows(document, list, shown, stated) {
+  const { rows, neither, doesOpen, register, translate } = stated;
+  const figure = getWordsForMetric(shown.metric);
+  const share = PANEL_WORDS.shareOfFigure;
+  const cardContext = {
+    metric: shown.metric,
+    translate,
+    isRowNarrower: true,
+    unnamedNote: stated.unnamedNote,
+    readerSide: shown.readerSide
+  };
+  const person = {
+    register,
+    keyPrefix: CARD_KEY_PREFIX.named,
+    figure,
+    share,
+    card: cardContext,
+    place: composeCutPlace(shown)
+  };
+  for (const [rowIndex, row] of rows.entries()) {
+    list.append(renderPersonRow(document, row, rowIndex + 1, person, doesOpen));
+  }
+  if (neither === null) return;
+  const card = {
+    register,
+    key: "named/nobody",
+    figure,
+    share,
+    notes: [
+      NEITHER_END_WORDS.note
+    ]
+  };
+  const rowContent = presentUnnamedRow(neither, NEITHER_END_WORDS.label);
+  list.append(renderRow(document, rowContent, null, card));
+}
+function countElementCutRows(cut) {
+  return cut.rows.length + (cut.rest === null ? 0 : 1) + (cut.noKind === null ? 0 : 1);
+}
+function renderElementSection(document, list, cut, stated) {
+  if (countElementCutRows(cut) === 0) return;
+  const unnamedNotes = stated.unnamedNote === null ? [] : [
+    stated.unnamedNote
+  ];
+  list.append(renderSection(document, getWordsForKindCut(stated.metric), stated.total));
+  const noun = getNounForMetric(stated.metric);
+  const share = PANEL_WORDS.shareOfFigure;
+  for (const [rowIndex, row] of cut.rows.entries()) {
+    const openedPart = {
+      kind: OPENED_PART.element,
+      element: row.element
+    };
+    const card2 = {
+      register: stated.register,
+      key: composeCardKey(CARD_KEY_PREFIX.kind, row.element),
+      figure: stated.figure,
+      share,
+      notes: unnamedNotes,
+      caveat: getCaveatForNamedPart(openedPart, stated.metric)
+    };
+    list.append(renderRow(document, presentElementRow(row, noun, rowIndex + 1), getMarkForNamedPart(openedPart, row.doesOpenPart), card2));
+  }
+  renderRestRow(document, list, cut.rest, {
+    register: stated.register,
+    figure: stated.figure,
+    key: "kind/rest",
+    unnamedNote: stated.unnamedNote
+  });
+  if (cut.noKind === null) return;
+  const card = {
+    register: stated.register,
+    key: "kind/nobody",
+    figure: stated.figure,
+    share,
+    notes: [
+      getNoteForNoKind(noun),
+      ...unnamedNotes
+    ]
+  };
+  const rowContent = presentUnnamedRow(cut.noKind, PANEL_WORDS.withoutKind);
+  list.append(renderRow(document, rowContent, null, card));
+}
+function getMarkForNamedPart(openedPart, doesOpen) {
+  if (!doesOpen) return null;
+  if (openedPart.kind === OPENED_PART.skill) {
+    return {
+      attribute: PANEL_MARK.skill,
+      stated: openedPart.name
+    };
+  }
+  if (openedPart.kind === OPENED_PART.source) {
+    return {
+      attribute: PANEL_MARK.source,
+      stated: openedPart.source
+    };
+  }
+  if (openedPart.kind === OPENED_PART.plain) {
+    return {
+      attribute: PANEL_MARK.plain,
+      stated: PLAIN_MARK
+    };
+  }
+  return {
+    attribute: PANEL_MARK.kind,
+    stated: openedPart.element
+  };
+}
+function renderRestRow(document, list, rest, stated) {
+  if (rest === null) return;
+  const notes = [
+    PANEL_WORDS.restNote
+  ];
+  if (stated.unnamedNote !== null) notes.push(stated.unnamedNote);
+  const card = {
+    register: stated.register,
+    key: stated.key,
+    figure: stated.figure,
+    share: PANEL_WORDS.shareOfFigure,
+    notes
+  };
+  const rowContent = presentUnnamedRow(rest, PANEL_WORDS.restOfKinds);
+  list.append(renderRow(document, rowContent, null, card));
+}
+function countRowsForOpenedLevel(opened, floor) {
+  const opponents = opened.byOtherEnd;
+  let needed = 0;
+  const opponentRows = opponents.rows.length + (opponents.halfNamed === null ? 0 : 1);
+  if (opponentRows > 0) needed += opponentRows + 1;
+  if (countElementCutRows(opened.byElement) > 0) {
+    needed += countElementCutRows(opened.byElement) + 1;
+  }
+  const skillRows = opened.bySkill.rows.length + (opened.bySkill.closing === null ? 0 : 1);
+  if (skillRows > 0) needed += skillRows + (opened.bySkill.rest === null ? 0 : 1) + 1;
+  return Math.max(needed, floor);
+}
+function renderClosingRowAtPlace(document, list, closing, stated, drawn, isLast) {
+  if (closing === null) return drawn;
+  if (closing.rank !== drawn + 1) {
+    if (!isLast) return drawn;
+    if (closing.rank <= drawn) return drawn;
+  }
+  const card = {
+    register: stated.register,
+    key: "skill/plain",
+    figure: stated.figure,
+    share: PANEL_WORDS.shareOfFigure,
+    caveat: getCaveatForNamedPart({
+      kind: OPENED_PART.plain
+    }, stated.metric)
+  };
+  const rowContent = {
+    ...presentUnnamedRow(closing, getWordsForUnannounced(stated.metric)),
+    rank: closing.rank,
+    uses: closing.blows
+  };
+  const mark = getMarkForNamedPart({
+    kind: OPENED_PART.plain
+  }, closing.doesOpenPart);
+  list.append(renderRow(document, rowContent, mark, card));
+  return drawn + 1;
+}
+function presentSkillRow(row, metric, rank) {
+  const name = getWordsForNamedPart(row.part, metric);
+  return {
+    name,
+    figure: row.figure,
+    fill: row.fill,
+    shareText: row.shareText,
+    colour: lookupColourForProfession(null),
+    profession: null,
+    rank,
+    uses: row.uses
+  };
+}
+function isLevelOpen(shown) {
+  if (shown.opened !== null) return true;
+  if (shown.unnamed !== null) return true;
+  return shown.unnamedCut !== null;
+}
+function formatPinnedNotes(row, metric, isSideChosen) {
+  const notes = [
+    getNoteForUnnamedEnd(row.end, getNounForMetric(metric)),
+    getWordsForPinnedStanding(row.case)
+  ];
+  if (isSideChosen) notes.push(getWordsForPinnedScope(row.case));
+  return notes;
+}
+function presentKindCutParts(kinds, metric) {
+  const parts = [];
+  let rest = 0;
+  for (const [kindIndex, kindRow] of kinds.rows.entries()) {
+    if (kindIndex < CARD_CUT_PARTS_MAXIMUM) {
+      parts.push({
+        label: getWordsForNamedPart({
+          kind: OPENED_PART.element,
+          element: kindRow.element
+        }, metric),
+        stated: `${formatFigure(kindRow.figure)} (${kindRow.shareText})`
+      });
+      continue;
+    }
+    rest += kindRow.figure;
+  }
+  if (rest > 0) parts.push({
+    label: PANEL_WORDS.restOfKinds,
+    stated: formatFigure(rest)
+  });
+  return {
+    heading: getWordsForKindCut(metric),
+    parts
+  };
+}
+function formatSidesLabel(shown) {
+  const sides = `${PANEL_WORDS.ourSide} / ${PANEL_WORDS.theirSide}`;
+  if (shown.side === SIDE_CHOICE.everyone) {
+    if (!isLevelOpen(shown)) return sides;
+  }
+  return `${PANEL_WORDS.wholeFight} \xB7 ${sides}`;
+}
+function renderSuspicions(document, suspicions) {
+  if (suspicions.length === 0) return renderSlot(document);
+  const block = renderElement(document, "div", CLASS.suspicions);
+  for (const suspicion of suspicions) {
+    const line = renderText(document, "div", CLASS.suspicion, `${SUSPECT_MARK}${suspicion}`);
+    block.append(line);
+  }
+  return block;
+}
+function renderDefects(document, defects) {
+  if (defects.length === 0) return renderSlot(document);
+  const block = renderElement(document, "div", CLASS.defects);
+  for (const defect of defects.slice(0, DEFECTS_MAXIMUM)) {
+    const line = renderElement(document, "div", CLASS.defect);
+    const said = formatDefect(defect.kind, defect.region, defect.count);
+    line.textContent = `${DEFECT_MARK}${said}`;
+    block.append(line);
+  }
+  return block;
+}
+function renderPanelSettled(panelDrawing) {
+  executeRegionStep(panelDrawing.report, PANEL_REGION.list, () => panelDrawing.drawing.settle());
+  panelDrawing.meterDrag?.holdBarRedrawn();
+  executeRegionStep(panelDrawing.report, PANEL_REGION.card, () => panelDrawing.card.renderOpen());
+}
+function renderHelperPerson(document, register, cardKey, person) {
+  const nested = person.isNested ? ` ${CLASS.helperUnder}` : "";
+  const castName = person.isNested ? null : person.skillName;
+  const holding = castName === null ? "" : ` ${CLASS.helperHolding}`;
+  const classes = `${CLASS.row} ${CLASS.rowLeaf}${nested}${holding}`;
+  const row = renderElement(document, "div", classes);
+  const cap = renderElement(document, "div", CLASS.barCap);
+  cap.setAttribute(STYLE_ATTRIBUTE, `background:${formatColour(person.colour)}`);
+  const name = renderText(document, "span", CLASS.rowName, person.name);
+  row.append(cap);
+  row.append(name);
+  const parts = [
+    cap,
+    name
+  ];
+  if (castName !== null) {
+    const between = renderText(document, "span", CLASS.rowShare, HELPER_WORDS.castSeparator);
+    const cast = renderText(document, "span", CLASS.helperCast, castName);
+    row.append(between);
+    row.append(cast);
+    parts.push(between, cast);
+  }
+  if (person.turns !== null) {
+    const turnsCell = renderText(document, "span", `${CLASS.rowValue} ${CLASS.figure}`, person.turns);
+    row.append(turnsCell);
+    parts.push(turnsCell);
+  }
+  for (const rule of renderSideRules(document, person.sideRelation)) {
+    row.append(rule);
+    parts.push(rule);
+  }
+  register.add(cardKey, () => presentHelperPersonCard(person));
+  setRowMarks([
+    row,
+    ...parts
+  ], CARD_ATTRIBUTE, cardKey);
+  return row;
+}
+function presentHelperPersonCard(person) {
+  if (person.turns === null) {
+    return {
+      name: person.name,
+      subtitle: person.skillName,
+      ending: null,
+      groups: []
+    };
+  }
+  const stated = {
+    kind: CARD_LINE.stat,
+    label: HELPER_WORDS.turnsLeft,
+    stated: person.turns,
+    isStrong: false,
+    caveat: person.turnsCaveat
+  };
+  const lines = [
+    stated,
+    ...presentCaveatNoteLines([
+      {
+        lines: [
+          stated
+        ]
+      }
+    ])
+  ];
+  return {
+    name: person.name,
+    subtitle: person.skillName,
+    ending: null,
+    groups: [
+      {
+        lines
+      }
+    ]
+  };
+}
+function presentChargedSkillCard(charged) {
+  const name = charged.skillName;
+  const subtitle = formatChargedSkillSubtitle(charged.name, charged.state);
+  const turnsLeft = formatChargedSkillTurnsLeft(charged);
+  if (turnsLeft === null) return {
+    name,
+    subtitle,
+    ending: null,
+    groups: []
+  };
+  const stated = {
+    kind: CARD_LINE.stat,
+    label: HELPER_WORDS.turnsLeft,
+    stated: turnsLeft,
+    isStrong: false,
+    caveat: null
+  };
+  return {
+    name,
+    subtitle,
+    ending: null,
+    groups: [
+      {
+        lines: [
+          stated
+        ]
+      }
+    ]
+  };
+}
+function formatChargedSkillTurnsLeft(charged) {
+  if (charged.state === CHARGED_SKILL_STATE.charging) {
+    return formatTurnsLeft(charged.turnsElapsed, charged.turnsStated);
+  }
+  return null;
+}
+function presentCaveatNoteLines(groups) {
+  const said = /* @__PURE__ */ new Set();
+  for (const group of groups) {
+    for (const line of group.lines) {
+      if (line.kind !== CARD_LINE.stat) continue;
+      if (line.caveat === null) continue;
+      said.add(line.caveat);
+    }
+  }
+  return CAVEATS.filter((caveat) => said.has(caveat)).map((caveat) => ({
+    kind: CARD_LINE.note,
+    text: getNoteForCaveat(caveat),
+    tone: CARD_NOTE_TONE.caveat
+  }));
+}
+function presentFightCard(fight) {
+  const counted = fight.isUnread ? null : formatSideCounts(fight.sizes, fight.unplaced);
+  const words = getWordsForShelfOutcome(fight.outcome, fight.isLive);
+  const ending = words.length === 0 ? null : {
+    words,
+    outcome: fight.outcome
+  };
+  const lines = [];
+  addFightCardLine(lines, FIGHT_CARD_WORDS.when, formatShelfTime(fight.at, false));
+  addFightCardLine(lines, FIGHT_CARD_WORDS.world, fight.world ?? "");
+  addFightCardLine(lines, FIGHT_CARD_WORDS.character, fight.reader?.name ?? "");
+  const said = fight.reader === null ? null : formatCardSubtitle(fight.reader.profession, fight.reader.level, SIDE_RELATION.nobody);
+  addFightCardLine(lines, FIGHT_CARD_WORDS.profession, said ?? "");
+  const groups = lines.length === 0 ? [] : [
+    {
+      lines
+    }
+  ];
+  const notes = [];
+  if (fight.isUnread) {
+    notes.push({
+      kind: CARD_LINE.note,
+      text: `${DEFECT_MARK}${PANEL_WORDS.keptUnreadNote}`,
+      tone: CARD_NOTE_TONE.defect
+    });
+  }
+  for (const suspicion of fight.suspicions) {
+    notes.push({
+      kind: CARD_LINE.note,
+      text: `${SUSPECT_MARK}${suspicion}`,
+      tone: CARD_NOTE_TONE.suspect
+    });
+  }
+  if (notes.length > 0) groups.push({
+    lines: notes
+  });
+  if (fight.place === null) {
+    return {
+      name: counted ?? PANEL_WORDS.keptUnread,
+      subtitle: null,
+      ending,
+      groups
+    };
+  }
+  return {
+    name: fight.place,
+    subtitle: counted,
+    ending,
+    groups
+  };
+}
+function addFightCardLine(lines, label, stated) {
+  if (stated.length === 0) return;
+  lines.push({
+    kind: CARD_LINE.stat,
+    label,
+    stated,
+    isStrong: false,
+    caveat: null
+  });
+}
+function isPointerStill(pressedAt, releasedAt) {
+  if (pressedAt === null) return false;
+  if (releasedAt === null) return false;
+  if (Math.abs(releasedAt.left - pressedAt.left) > STILL_TRAVEL_PIXELS_MAXIMUM) return false;
+  return Math.abs(releasedAt.top - pressedAt.top) <= STILL_TRAVEL_PIXELS_MAXIMUM;
+}
+function createCardRegister() {
+  const composeByKey = /* @__PURE__ */ new Map();
+  let refused = null;
+  return {
+    // A row with no name, one already registered, or one past the bound is left without a
+    // card, and the first of them is kept for the draw to report (**E12**). What that costs
+    // is detail on hover, and never the draw it arrived in.
+    add(key, compose) {
+      let isRefused;
+      if (key.length === 0) {
+        isRefused = true;
+      } else if (composeByKey.has(key)) {
+        isRefused = true;
+      } else {
+        isRefused = composeByKey.size >= CARDS_DRAWN_MAXIMUM;
+      }
+      if (!isRefused) {
+        composeByKey.set(key, compose);
+      } else if (refused === null) {
+        refused = new CardRefused(key);
+      }
+    },
+    lookup(key) {
+      return composeByKey.get(key) ?? null;
+    },
+    lookupRefused() {
+      return refused;
+    },
+    reset() {
+      composeByKey.clear();
+      refused = null;
+    }
+  };
+}
+function tallyCardSize(card, step) {
+  if (card === null) return {
+    lines: 1,
+    groups: 0
+  };
+  const floors = CHARACTERS_PER_LINE_BY_STEP[step];
+  const endingLength = card.ending === null ? 0 : CARD_ENDING_SEPARATOR.length + card.ending.words.length;
+  let nameLength = card.name.length;
+  if (card.subtitle === null) nameLength += endingLength;
+  let lines = calculateCardLinesForCharacters(nameLength, floors.name);
+  if (card.subtitle !== null) {
+    lines += calculateCardLinesForCharacters(card.subtitle.length + endingLength, floors.note);
+  }
+  for (const group of card.groups) {
+    for (const line of group.lines) {
+      lines += calculateCardLineCost(line, floors);
+    }
+  }
+  return {
+    lines,
+    groups: card.groups.length
+  };
+}
+function calculateCardLinesForCharacters(characters, charactersPerLine) {
+  const wrapped = Math.ceil(characters / charactersPerLine);
+  if (wrapped < 1) return 1;
+  return wrapped;
+}
+function calculateCardLineCost(line, floors) {
+  if (line.kind !== CARD_LINE.note) return 1;
+  const marked = line.tone === CARD_NOTE_TONE.caveat ? NOTE_MARK_CHARACTERS : 0;
+  return calculateCardLinesForCharacters(line.text.length + marked, floors.note);
+}
+function renderCard(document, card, secondColumnFrom = null) {
+  const drawnCard = document.createElement("div");
+  drawnCard.className = composeCardClass(card === null, secondColumnFrom !== null);
+  if (card === null) return drawnCard;
+  const separator = card.ending === null ? "" : CARD_ENDING_SEPARATOR;
+  const name = document.createElement("div");
+  name.className = CLASS.cardName;
+  name.textContent = card.subtitle === null ? `${card.name}${separator}` : card.name;
+  drawnCard.append(name);
+  let headcount;
+  if (card.subtitle !== null) {
+    const subtitle = document.createElement("div");
+    subtitle.className = CLASS.cardSubtitle;
+    subtitle.textContent = `${card.subtitle}${separator}`;
+    drawnCard.append(subtitle);
+    headcount = subtitle;
+  } else {
+    headcount = name;
+  }
+  if (card.ending !== null) {
+    const inked = card.ending.outcome === null ? "" : OUTCOME_INK_CLASS[card.ending.outcome];
+    const words = card.ending.words;
+    headcount.append(renderText(document, "span", `${CLASS.cardOutcome}${inked}`, words));
+  }
+  const notesFrom = countCardGroupsColumned(card.groups);
+  let firstColumn;
+  let secondColumn;
+  if (secondColumnFrom === null) {
+    firstColumn = drawnCard;
+    secondColumn = drawnCard;
+  } else {
+    const columns = document.createElement("div");
+    columns.className = CLASS.cardColumns;
+    firstColumn = document.createElement("div");
+    firstColumn.className = CLASS.cardColumn;
+    secondColumn = document.createElement("div");
+    secondColumn.className = CLASS.cardColumn;
+    columns.append(firstColumn);
+    columns.append(secondColumn);
+    drawnCard.append(columns);
+  }
+  for (const [groupIndex, group] of card.groups.entries()) {
+    let parent;
+    if (groupIndex < (secondColumnFrom ?? notesFrom)) parent = firstColumn;
+    else if (groupIndex < notesFrom) parent = secondColumn;
+    else parent = drawnCard;
+    const drawnGroup = document.createElement("div");
+    drawnGroup.className = CLASS.cardGroup;
+    for (const line of group.lines) {
+      if (line.kind === CARD_LINE.note) {
+        const note = document.createElement("div");
+        const tone = CARD_NOTE_TONE_CLASS[line.tone];
+        note.className = `${CLASS.cardNote}${tone}`;
+        note.textContent = line.text;
+        if (line.tone === CARD_NOTE_TONE.caveat) {
+          note.append(renderCardCaveat(document));
+        }
+        drawnGroup.append(note);
+      } else if (line.kind === CARD_LINE.heading) {
+        const heading = document.createElement("div");
+        heading.className = CLASS.cardHeading;
+        heading.textContent = line.text;
+        drawnGroup.append(heading);
+      } else {
+        const drawnLine = document.createElement("div");
+        drawnLine.className = composeCardLineClass(line);
+        const label = document.createElement("span");
+        label.className = CLASS.cardLabel;
+        label.textContent = line.label;
+        const stated = document.createElement("span");
+        stated.className = CLASS.cardValue;
+        stated.textContent = line.stated;
+        drawnLine.append(label);
+        if (line.kind === CARD_LINE.stat) {
+          if (line.caveat !== null) drawnLine.append(renderCardCaveat(document));
+        }
+        drawnLine.append(stated);
+        drawnGroup.append(drawnLine);
+      }
+    }
+    parent.append(drawnGroup);
+  }
+  return drawnCard;
+}
+function composeCardClass(isHidden, isWide) {
+  if (isHidden) return `${CLASS.card} ${CLASS.cardHidden}`;
+  if (isWide) return `${CLASS.card} ${CLASS.cardWide}`;
+  return CLASS.card;
+}
+function countCardGroupsColumned(groups) {
+  const lastGroup = groups[groups.length - 1];
+  if (lastGroup === void 0) return 0;
+  if (isNoteGroup(lastGroup)) return groups.length - 1;
+  return groups.length;
+}
+function isNoteGroup(group) {
+  if (group.lines.length === 0) return false;
+  return group.lines.every((line) => line.kind === CARD_LINE.note);
+}
+function renderCardCaveat(document) {
+  const caveatElement = document.createElement("span");
+  caveatElement.className = CLASS.cardCaveat;
+  caveatElement.textContent = CAVEAT_MARK;
+  return caveatElement;
+}
+function composeCardLineClass(line) {
+  if (line.kind === CARD_LINE.sub) return `${CLASS.cardLine} ${CLASS.cardSub}`;
+  if (line.kind === CARD_LINE.stat) {
+    if (line.isStrong) return `${CLASS.cardLine} ${CLASS.cardStrong}`;
+  }
+  return CLASS.cardLine;
+}
+function setCardHidden(card, isHidden) {
+  card.className = isHidden ? `${CLASS.card} ${CLASS.cardHidden}` : CLASS.card;
+}
+function setCardPosition(card, clientY, across, size, step) {
+  const stated = Number.isFinite(clientY) ? clientY : 0;
+  const top = Math.max(0, Math.round(stated));
+  const sideways = composeCardAcrossStyle(across);
+  const height = calculateCardHeight(size, TYPE_TOKENS[step]);
+  const tall = height === null ? "" : `;${CARD_VARIABLES.height}:${height}px`;
+  card.setAttribute(STYLE_ATTRIBUTE, `${CARD_VARIABLES.top}:${top}px${tall}${sideways}`);
+}
+function composeCardAcrossStyle(across) {
+  if (across === null) return "";
+  const edgeOffset = `${Math.max(0, Math.round(across.offsetPixels))}px`;
+  if (across.edge === CARD_EDGE.left) {
+    return `;${CARD_VARIABLES.left}:${edgeOffset};${CARD_VARIABLES.right}:${EDGE_RELEASED}`;
+  }
+  return `;${CARD_VARIABLES.left}:${EDGE_RELEASED};${CARD_VARIABLES.right}:${edgeOffset}`;
+}
+function composeCardLayout(card, room, typeStep) {
+  const whole = {
+    card,
+    secondColumnFrom: null
+  };
+  const height = room.heightPixels;
+  if (height === null) return whole;
+  if (!Number.isFinite(height)) return whole;
+  if (height <= 0) return whole;
+  if (isCardLayoutWithin(whole, height, typeStep)) return whole;
+  const isTwoColumnsWithin = isCardWidthWithin(room.widthPixels, typeStep);
+  let kept = card.groups;
+  let laidOut = whole;
+  for (let step = 0; step < CARD_GROUPS_MAXIMUM; step += 1) {
+    const trimmed = composeCardTrimmed(card, kept);
+    const split = isTwoColumnsWithin ? calculateCardColumnSplit(trimmed, typeStep) : null;
+    laidOut = {
+      card: trimmed,
+      secondColumnFrom: split
+    };
+    if (isCardLayoutWithin(laidOut, height, typeStep)) return laidOut;
+    const shorter = composeGroupsWithout(kept);
+    if (shorter === null) return laidOut;
+    kept = shorter;
+  }
+  return laidOut;
+}
+function isCardLayoutWithin(layout, room, step) {
+  const height = calculateCardHeight(tallyCardLayoutSize(layout, step), TYPE_TOKENS[step]);
+  if (height === null) return true;
+  return height <= room;
+}
+function isCardWidthWithin(room, step) {
+  if (room === null) return false;
+  return calculateCardWidthForColumns(TYPE_TOKENS[step], 2) <= room;
+}
+function calculateCardColumnSplit(card, step) {
+  const columned = countCardGroupsColumned(card.groups);
+  if (columned < 2) return null;
+  const floors = CHARACTERS_PER_LINE_BY_STEP[step];
+  const costs = card.groups.slice(0, columned).map((group) => group.lines.reduce((sum, line) => sum + calculateCardLineCost(line, floors), 0));
+  const total = costs.reduce((sum, cost) => sum + cost, 0);
+  let split = 1;
+  let tallerLeast = Number.POSITIVE_INFINITY;
+  let before = 0;
+  for (let candidate = 1; candidate < Math.min(columned, CARD_GROUPS_MAXIMUM); candidate += 1) {
+    before += costs[candidate - 1] ?? 0;
+    const taller = Math.max(before, total - before);
+    if (taller < tallerLeast) {
+      split = candidate;
+      tallerLeast = taller;
+    }
+  }
+  return split;
+}
+function composeGroupsWithout(groups) {
+  const lastIndex = groups.length - 1;
+  if (lastIndex < 1) return null;
+  const droppedIndex = isNoteGroup(groups[lastIndex] ?? {
+    lines: []
+  }) ? lastIndex - 1 : lastIndex;
+  if (droppedIndex < 1) return null;
+  return [
+    ...groups.slice(0, droppedIndex),
+    ...groups.slice(droppedIndex + 1)
+  ];
+}
+function composeCardTrimmed(card, kept) {
+  if (kept.length === card.groups.length) return card;
+  const said = {
+    kind: CARD_LINE.note,
+    text: CARD_WORDS.cut,
+    tone: CARD_NOTE_TONE.plain
+  };
+  const lastGroup = kept[kept.length - 1];
+  if (lastGroup !== void 0) {
+    if (isNoteGroup(lastGroup)) {
+      const groups = [
+        ...kept.slice(0, -1),
+        {
+          lines: [
+            ...lastGroup.lines,
+            said
+          ]
+        }
+      ];
+      return {
+        ...card,
+        groups
+      };
+    }
+  }
+  return {
+    ...card,
+    groups: [
+      ...kept,
+      {
+        lines: [
+          said
+        ]
+      }
+    ]
+  };
+}
+function tallyCardLayoutSize(layout, step) {
+  const split = layout.secondColumnFrom;
+  if (split === null) return tallyCardSize(layout.card, step);
+  const card = layout.card;
+  const notesFrom = countCardGroupsColumned(card.groups);
+  const header = tallyCardSize({
+    ...card,
+    groups: []
+  }, step);
+  const leftColumn = tallyCardSize({
+    ...card,
+    groups: card.groups.slice(0, split)
+  }, step);
+  const rightColumn = tallyCardSize({
+    ...card,
+    groups: card.groups.slice(split, notesFrom)
+  }, step);
+  const notes = tallyCardSize({
+    ...card,
+    groups: card.groups.slice(notesFrom)
+  }, step);
+  const columnLines = Math.max(leftColumn.lines, rightColumn.lines) - header.lines;
+  const noteLines = notes.lines - header.lines;
+  return {
+    lines: header.lines + columnLines + noteLines,
+    groups: Math.max(leftColumn.groups, rightColumn.groups) + notes.groups
+  };
+}
+function initUndrawnReport(options) {
+  let collected = null;
+  return {
+    add(region, cause) {
+      const failure = new RegionUndrawn(region, cause);
+      if (collected === null) {
+        addViewFailureGuarded(failure, options.onFailure);
+        return;
+      }
+      if (collected.length < UNDRAWN_MAXIMUM) collected.push(failure);
+      else addViewFailureGuarded(failure, options.onFailure);
+    },
+    // ⚠️ Every step of a render stands under a guard of its own, so nothing leaves `render`
+    // with the report still collecting. A step added unguarded would take the sink with it.
+    collect(render) {
+      const undrawn = [];
+      collected = undrawn;
+      render();
+      collected = null;
+      return {
+        undrawn
+      };
+    }
+  };
+}
+function initCardHandle(document, lookupCard, redraw, readAcross, readViewport, getTypeStep, reportLinesExceeded) {
+  let cardElement = renderCard(document, null);
+  let openKey = null;
+  let openTop = 0;
+  let openSize = tallyCardSize(null, getTypeStep());
+  let openColumns = 1;
+  const renderCardFor = (key, compose) => {
+    cardElement = redraw(cardElement, () => {
+      const viewport = readViewport();
+      const room = {
+        heightPixels: calculateCardHeightAvailable(viewport?.height ?? null),
+        widthPixels: calculateCardWidthAvailable(viewport?.width ?? null)
+      };
+      const layout = composeCardLayout(compose(), room, getTypeStep());
+      const renderedCard = renderCard(document, layout.card, layout.secondColumnFrom);
+      const counted = tallyCardLayoutSize(layout, getTypeStep());
+      if (counted.lines > CARD_LINES_MAXIMUM) {
+        openSize = {
+          lines: CARD_LINES_MAXIMUM,
+          groups: counted.groups
+        };
+        reportLinesExceeded(new CardLinesExceeded(counted.lines, CARD_LINES_MAXIMUM));
+      } else {
+        openSize = counted;
+      }
+      openColumns = layout.secondColumnFrom === null ? 1 : 2;
+      return renderedCard;
+    });
+    setCardPosition(cardElement, openTop, readAcross(key, openColumns), openSize, getTypeStep());
+  };
+  const hideCard = () => {
+    if (openKey === null) return;
+    openKey = null;
+    setCardHidden(cardElement, true);
+  };
+  return {
+    element: cardElement,
+    onHover(key, clientY) {
+      if (key === null) {
+        hideCard();
+        return;
+      }
+      const top = Math.max(0, Math.round(clientY));
+      if (key === openKey) {
+        if (!cardElement.className.includes(CLASS.cardHidden)) {
+          if (top === openTop) return;
+          openTop = top;
+          setCardPosition(cardElement, openTop, readAcross(key, openColumns), openSize, getTypeStep());
+          return;
+        }
+      }
+      const compose = lookupCard(key);
+      if (compose === null) {
+        hideCard();
+        return;
+      }
+      openTop = top;
+      openKey = key;
+      renderCardFor(key, compose);
+    },
+    renderOpen() {
+      const key = openKey;
+      if (key === null) return;
+      const compose = lookupCard(key);
+      if (compose === null) {
+        hideCard();
+        return;
+      }
+      renderCardFor(key, compose);
+    }
+  };
+}
+function presentCard(subject) {
+  const groups = [
+    {
+      lines: presentCardFigureLines(subject.detail, subject.metric, subject.translate)
+    }
+  ];
+  const counters = presentCardCounterLines(subject.detail);
+  if (counters.length > 0) groups.push({
+    lines: counters
+  });
+  groups.push(...presentCardRunGroups(subject.detail, subject.translate));
+  const legendary = presentCardLegendaryLines(subject.detail.legendaryBonuses);
+  if (legendary.length > 0) groups.push({
+    lines: legendary
+  });
+  const reached = presentCardReachedLines(subject.detail.legendaryBonusesReached);
+  if (reached.length > 0) groups.push({
+    lines: reached
+  });
+  const notes = presentCardNoteLines(subject, groups);
+  if (notes.length > 0) groups.push({
+    lines: notes
+  });
+  return {
+    // A card with nobody behind it says so rather than standing with a blank where a name is.
+    name: subject.name.length > 0 ? subject.name : PANEL_WORDS.unknown,
+    subtitle: formatCardSubtitle(subject.profession, subject.detail.level, subject.sideRelation),
+    ending: null,
+    groups
+  };
+}
+function presentCardFigureLines(detail, metric, translate) {
+  const lines = [
+    {
+      kind: CARD_LINE.heading,
+      text: CARD_WORDS.wholeFight
+    }
+  ];
+  for (const cardFigure of presentCardFigures(detail)) {
+    if (cardFigure.metric !== metric) {
+      if (!Number.isFinite(cardFigure.figure)) continue;
+      if (cardFigure.figure <= 0) continue;
+    }
+    lines.push({
+      kind: CARD_LINE.stat,
+      label: getWordsForCardMetric(cardFigure.metric),
+      stated: formatFigure(cardFigure.figure),
+      isStrong: cardFigure.metric === metric,
+      caveat: null
+    });
+    if (cardFigure.halfNamed !== null) {
+      lines.push(...presentCardSubLine(cardFigure.halfNamed.label, cardFigure.halfNamed.figure));
+    }
+    for (const mergedPart of presentCardPartsMergedByWord(cardFigure.absorbed, translate)) {
+      lines.push(...presentCardSubLine(mergedPart.label, mergedPart.figure));
+    }
+  }
+  return lines;
+}
+function presentCardFigures(detail) {
+  const figures = [
+    {
+      metric: PANEL_METRIC.damageDealt,
+      figure: detail.damageDealt,
+      halfNamed: {
+        label: PANEL_WORDS.withoutTarget,
+        figure: detail.damageDealtToNobody
+      },
+      absorbed: detail.damageDealtAbsorbedByDefence
+    },
+    {
+      metric: PANEL_METRIC.damageTaken,
+      figure: detail.damageTaken,
+      halfNamed: {
+        label: PANEL_WORDS.withoutActor,
+        figure: detail.damageTakenFromNobody
+      },
+      absorbed: detail.damageTakenAbsorbedByDefence
+    },
+    {
+      metric: PANEL_METRIC.healthGiven,
+      figure: detail.healthGiven,
+      halfNamed: null,
+      absorbed: []
+    },
+    {
+      metric: PANEL_METRIC.healthRestored,
+      figure: detail.healthRestored,
+      halfNamed: {
+        label: PANEL_WORDS.withoutActor,
+        figure: detail.healthRestoredByNobody
+      },
+      absorbed: []
+    }
+  ];
+  return figures;
+}
+function presentCardSubLine(label, figure) {
+  if (label.length === 0) return [];
+  if (!Number.isFinite(figure)) return [];
+  if (figure <= 0) return [];
+  return [
+    {
+      kind: CARD_LINE.sub,
+      label,
+      stated: formatFigure(figure)
+    }
+  ];
+}
+function presentCardCounterLines(detail) {
+  const lines = [];
+  if (detail.turnsTaken > 0) lines.push(presentCardTurnLine(detail));
+  if (detail.blowsStruck > 0) {
+    lines.push({
+      kind: CARD_LINE.stat,
+      label: CARD_WORDS.blows,
+      stated: formatFigure(detail.blowsStruck),
+      isStrong: false,
+      caveat: null
+    });
+    lines.push(...presentCardSubLine(CARD_WORDS.blowsWithoutSkill, detail.blowsWithoutSkill));
+  }
+  if (detail.skillUses > 0) {
+    lines.push({
+      kind: CARD_LINE.stat,
+      label: CARD_WORDS.skillUses,
+      stated: formatFigure(detail.skillUses),
+      isStrong: false,
+      caveat: null
+    });
+  }
+  return lines;
+}
+function presentCardTurnLine(detail) {
+  if (!detail.wasTurnLostRead) {
+    return {
+      kind: CARD_LINE.stat,
+      label: CARD_WORDS.turns,
+      stated: formatFigure(detail.turnsTaken),
+      isStrong: false,
+      caveat: CAVEAT.turns
+    };
+  }
+  return {
+    kind: CARD_LINE.stat,
+    label: CARD_WORDS.turnsWithLost,
+    stated: formatTurns(detail.turnsTaken, detail.turnsLost),
+    isStrong: false,
+    caveat: CAVEAT.turns
+  };
+}
+function presentCardRunGroups(detail, translate) {
+  const runs = [
+    {
+      heading: CARD_WORDS.striking,
+      lines: presentCardDealtLines(detail, translate)
+    },
+    {
+      heading: CARD_WORDS.struck,
+      lines: presentCardTakenLines(detail, translate)
+    }
+  ];
+  const groups = [];
+  for (const run of runs) {
+    if (run.heading.length === 0) continue;
+    if (run.lines.length === 0) continue;
+    groups.push({
+      lines: [
+        {
+          kind: CARD_LINE.heading,
+          text: run.heading
+        },
+        ...run.lines
+      ]
+    });
+  }
+  return groups;
+}
+function presentCardDealtLines(detail, translate) {
+  const lines = [
+    ...presentCardRawLine(detail.damageDealtRaw)
+  ];
+  const critical = presentCardCriticalText(detail);
+  if (critical !== null) {
+    lines.push({
+      kind: CARD_LINE.stat,
+      label: CARD_WORDS.blowsCritical,
+      stated: critical,
+      isStrong: false,
+      caveat: null
+    });
+    const offhand = detail.procsWhenStriking.filter((cutPart) => cutPart.key === CRITICAL_OF_KEY);
+    lines.push(...presentCardPartsMergedByWord(offhand, translate).map((mergedPart) => ({
+      kind: CARD_LINE.sub,
+      label: mergedPart.label,
+      stated: formatUses(mergedPart.figure)
+    })));
+  }
+  lines.push(...presentCardProcLines(detail.procsWhenStriking, CRITICAL_PROC_KEYS, translate));
+  lines.push(...presentCardDestroyedLines(detail.statisticsDestroyed));
+  return lines;
+}
+function presentCardRawLine(raw) {
+  if (!Number.isFinite(raw)) return [];
+  if (raw <= 0) return [];
+  return [
+    {
+      kind: CARD_LINE.stat,
+      label: CARD_WORDS.raw,
+      stated: formatFigure(raw),
+      isStrong: false,
+      caveat: CAVEAT.reduction
+    }
+  ];
+}
+function presentCardCriticalText(detail) {
+  if (detail.blowsCritical <= 0) return null;
+  if (detail.blowsStruck <= 0) return null;
+  if (detail.blowsCritical > detail.blowsStruck) return formatUses(detail.blowsCritical);
+  const share = formatShareRounded(detail.blowsCritical / detail.blowsStruck);
+  return `${formatFigure(detail.blowsCritical)} (${share})`;
+}
+function presentCardPartsMergedByWord(parts, translate) {
+  const byLabel = /* @__PURE__ */ new Map();
+  for (const cutPart of parts.slice(0, CUT_PARTS_MAXIMUM)) {
+    const label = getWordsForBlowKey(cutPart.key, translate);
+    if (label.length === 0) continue;
+    byLabel.set(label, (byLabel.get(label) ?? 0) + cutPart.figure);
+  }
+  const folded = [
+    ...byLabel
+  ].map(([label, figure]) => ({
+    label,
+    figure
+  }));
+  folded.sort((leftPart, rightPart) => calculateRankedOrder(leftPart.figure, rightPart.figure, leftPart.label, rightPart.label));
+  return folded;
+}
+function presentCardProcLines(parts, without, translate) {
+  const kept = parts.filter((cutPart) => !without.includes(cutPart.key)).filter((cutPart) => lookupLegendaryBonus(cutPart.key) === null);
+  const narrowed = presentCardProcSubParts(kept, translate);
+  const lines = [];
+  for (const mergedPart of presentCardPartsMergedByWord(kept, translate)) {
+    lines.push({
+      kind: CARD_LINE.stat,
+      label: mergedPart.label,
+      stated: formatUses(mergedPart.figure),
+      isStrong: false,
+      caveat: null
+    });
+    for (const sub of narrowed.get(mergedPart.label) ?? []) {
+      lines.push({
+        kind: CARD_LINE.sub,
+        label: sub.label,
+        stated: formatUses(sub.figure)
+      });
+    }
+  }
+  return lines;
+}
+function presentCardProcSubParts(parts, translate) {
+  const figureBySubWordByLabel = /* @__PURE__ */ new Map();
+  for (const cutPart of parts.slice(0, CUT_PARTS_MAXIMUM)) {
+    const words = getSubWordsForBlowKey(cutPart.key);
+    if (words.length === 0) continue;
+    const label = getWordsForBlowKey(cutPart.key, translate);
+    if (label.length === 0) continue;
+    const figureBySubWord = figureBySubWordByLabel.get(label) ?? /* @__PURE__ */ new Map();
+    figureBySubWord.set(words, (figureBySubWord.get(words) ?? 0) + cutPart.figure);
+    figureBySubWordByLabel.set(label, figureBySubWord);
+  }
+  const folded = /* @__PURE__ */ new Map();
+  for (const [label, figureBySubWord] of figureBySubWordByLabel) {
+    const run = [
+      ...figureBySubWord
+    ].map(([words, figure]) => ({
+      label: words,
+      figure
+    }));
+    run.sort((leftPart, rightPart) => calculateRankedOrder(leftPart.figure, rightPart.figure, leftPart.label, rightPart.label));
+    folded.set(label, run);
+  }
+  return folded;
+}
+function presentCardLegendaryLines(parts) {
+  const fired = [];
+  const held = [];
+  for (const cutPart of parts.slice(0, CUT_PARTS_MAXIMUM)) {
+    const bonus = lookupLegendaryBonus(cutPart.key);
+    if (bonus === null) continue;
+    const label = getWordsForLegendaryBonus(cutPart.key);
+    if (bonus.showing === LEGENDARY_BONUS_SHOWING.held) held.push(label);
+    else {
+      fired.push({
+        kind: CARD_LINE.stat,
+        label,
+        stated: formatUses(cutPart.figure),
+        isStrong: false,
+        caveat: null
+      });
+    }
+  }
+  if (fired.length + held.length === 0) return [];
+  const lines = [
+    {
+      kind: CARD_LINE.heading,
+      text: CARD_WORDS.legendary
+    },
+    ...fired
+  ];
+  if (held.length > 0) {
+    lines.push({
+      kind: CARD_LINE.note,
+      text: `${CARD_WORDS.legendaryHeld} ${held.join(", ")}.`,
+      tone: CARD_NOTE_TONE.plain
+    });
+  }
+  return lines;
+}
+function presentCardReachedLines(parts) {
+  if (parts.length === 0) return [];
+  const lines = [
+    {
+      kind: CARD_LINE.heading,
+      text: CARD_WORDS.legendaryReached
+    }
+  ];
+  for (const cutPart of parts.slice(0, CUT_PARTS_MAXIMUM)) {
+    lines.push({
+      kind: CARD_LINE.stat,
+      label: getWordsForLegendaryBonus(cutPart.key),
+      stated: formatUses(cutPart.figure),
+      isStrong: false,
+      caveat: null
+    });
+  }
+  return lines;
+}
+function presentCardDestroyedLines(parts) {
+  if (parts.length === 0) return [];
+  const lines = [
+    {
+      kind: CARD_LINE.heading,
+      text: CARD_WORDS.destroyed
+    }
+  ];
+  for (const cutPart of parts.slice(0, CUT_PARTS_MAXIMUM)) {
+    if (cutPart.figure <= 0) continue;
+    lines.push({
+      kind: CARD_LINE.sub,
+      label: getWordsForDestroyed(cutPart.key),
+      stated: formatDestroyed(cutPart.key, cutPart.figure)
+    });
+  }
+  return lines;
+}
+function presentCardTakenLines(detail, translate) {
+  const lines = [
+    ...presentCardRawLine(detail.damageTakenRaw)
+  ];
+  if (detail.damagePrevented > 0) {
+    lines.push({
+      kind: CARD_LINE.stat,
+      label: CARD_WORDS.prevented,
+      stated: formatFigure(detail.damagePrevented),
+      isStrong: false,
+      caveat: CAVEAT.reduction
+    });
+    lines.push(...presentCardPartsMergedByWord(detail.damagePreventedByDefence, translate).map((mergedPart) => ({
+      kind: CARD_LINE.sub,
+      label: mergedPart.label,
+      stated: formatFigure(mergedPart.figure)
+    })));
+  }
+  lines.push(...presentCardProcLines(detail.procsWhenStruck, [], translate));
+  return lines;
+}
+function presentCardNoteLines(subject, groups) {
+  const lines = [
+    ...presentCaveatNoteLines(groups)
+  ];
+  for (const suspicion of formatRowSuspicions(subject.detail, subject.metric)) {
+    if (suspicion.length === 0) continue;
+    lines.push({
+      kind: CARD_LINE.note,
+      text: `${SUSPECT_MARK}${suspicion}`,
+      tone: CARD_NOTE_TONE.suspect
+    });
+  }
+  if (subject.unnamedNote !== null) {
+    lines.push({
+      kind: CARD_LINE.note,
+      text: subject.unnamedNote,
+      tone: CARD_NOTE_TONE.plain
+    });
+  }
+  if (subject.isRowNarrower) {
+    lines.push({
+      kind: CARD_LINE.note,
+      text: CARD_WORDS.scope,
+      tone: CARD_NOTE_TONE.plain
+    });
+  }
+  if (subject.doesOpen) {
+    lines.push({
+      kind: CARD_LINE.note,
+      text: CARD_WORDS.gesture,
+      tone: CARD_NOTE_TONE.plain
+    });
+  }
+  return lines;
+}
+function createScrollMemo() {
+  const topByName = /* @__PURE__ */ new Map();
+  return {
+    getTop(name) {
+      const kept = topByName.get(name);
+      if (kept === void 0) return 0;
+      if (!Number.isFinite(kept)) return 0;
+      if (kept < 0) return 0;
+      return kept;
+    },
+    // A name nobody can look up again, or a position no region could be put at, is refused
+    // rather than kept: what a bad one costs is the place a reader was at (**E12**).
+    setTop(name, top) {
+      if (name.length === 0) return;
+      if (!Number.isFinite(top)) return;
+      if (top < 0) return;
+      topByName.delete(name);
+      topByName.set(name, top);
+      if (topByName.size <= LISTS_KEPT_MAXIMUM) return;
+      const oldest = topByName.keys().next();
+      if (!oldest.done) topByName.delete(oldest.value);
+    }
+  };
+}
+function readTopOfList(region) {
+  if (!isRegionList(region)) return null;
+  const top = region.scrollTop;
+  if (!Number.isFinite(top)) return null;
+  if (top < 0) return null;
+  return top;
+}
+function isRegionList(region) {
+  return region.className.includes(CLASS.list);
+}
+function renderListRows(region, renderedList) {
+  if (!isRegionList(region)) return false;
+  if (!isRegionList(renderedList)) return false;
+  region.className = renderedList.className;
+  region.setAttribute(STYLE_ATTRIBUTE, renderedList.getAttribute(STYLE_ATTRIBUTE) ?? "");
+  region.replaceChildren(...Array.from(renderedList.children));
+  return true;
+}
+function writeTopOfList(region, top) {
+  if (!Number.isFinite(top)) return;
+  if (top < 0) return;
+  if (!isRegionList(region)) return;
+  region.scrollTop = top;
+}
+
+// src/runtime/margometer-runtime.ts
+var LOOK_EVERY_MILLISECONDS = 250;
+var LOOKS_MAXIMUM = 240;
+function initRuntime(ports, options) {
+  assert(options.addOnVersion.length > 0, "a runtime names the build it runs");
+  const statusBitsCount = options.tables.tooltip.statusBits.length;
+  assert(statusBitsCount + ROWS_BESIDE_THE_STATUSES <= ROWS_WRITTEN_MAXIMUM, "every row a fighter can be given fits the block the tooltip writer takes");
+  const defects = initDefectLedger({
+    console: ports.console
+  });
+  const storageChoice = recoverSetting(defects, readStorageChoice(ports.settings), STORAGE_DEFAULT);
+  const keeper = initShelfKeeper({
+    settings: ports.settings,
+    initShelfStore: ports.initShelfStore,
+    choice: storageChoice,
+    tables: options.tables.decoder,
+    sessionOptions: options.sessionOptions,
+    defects
+  });
+  const screen = createScreenState(readFoldSetting(ports, defects, PANEL_WINDOW.meter), readFoldSetting(ports, defects, PANEL_WINDOW.helper), recoverSetting(defects, readTypeStep(ports.settings), TYPE_STEP_DEFAULT), {
+    meter: readSizeSetting(ports, defects, PANEL_WINDOW.meter),
+    helper: readSizeSetting(ports, defects, PANEL_WINDOW.helper)
+  });
+  const translateLabel = (id, category) => {
+    assert(id.length > 0, "a label is asked for by an id the panel named");
+    const label = ports.dictionary.readLabel(id, category);
+    if (label instanceof Error) return null;
+    assert(label.length > 0, "a label the client answered says something");
+    return label;
+  };
+  let state;
+  {
+    const { live: liveFight, listener } = initLiveFight({
+      battle: ports.battle,
+      clock: ports.clock,
+      place: ports.place,
+      hero: ports.hero,
+      build: ports.build,
+      tables: options.tables.decoder,
+      sessionOptions: options.sessionOptions,
+      defects,
+      keeper,
+      // ⚠️ **A row left open would find somebody in the next fight**: a party keeps its ids
+      // from one fight to the next, ten of them shared between
+      // `captures/2026-08-15-tempest-grupa-vs-hildur-1` and `-2`, read 2026-08-31.
+      onFightOpened: () => {
+        if (screen.chosenFightOpenedAt !== null) return;
+        resetScreenOpened(screen);
+      },
+      onFightKept: () => resetScreenFightDropped(screen, keeper.getFights()),
+      markStale: () => markStale(state)
+    });
+    let builtState = null;
+    const view = initPanelView(ports.document, {
+      addOnVersion: options.addOnVersion,
+      typeStep: screen.typeStep,
+      onIntent: (intent) => onRuntimeIntent(state, intent),
+      // Count the failure the view met. One met outside a frame — a gesture dropped, a card
+      // that would not draw under a pointer — asks for the frame that says it, or a reader
+      // who only hovers never sees the line.
+      onFailure: (failure) => {
+        if (failure instanceof RegionUndrawn) {
+          defects.add({
+            kind: DEFECT_KIND.region,
+            region: failure.region,
+            failure
+          });
+        } else if (failure instanceof GestureDropped) {
+          defects.add({
+            kind: DEFECT_KIND.gesture,
+            region: null,
+            failure
+          });
+        } else {
+          defects.add({
+            kind: DEFECT_KIND.mount,
+            region: null,
+            failure
+          });
+        }
+        if (builtState === null) return;
+        markStale(builtState);
+      },
+      meterPlacement: readPlacementSetting(ports, defects, PANEL_WINDOW.meter, screen),
+      helperPlacement: readPlacementSetting(ports, defects, PANEL_WINDOW.helper, screen),
+      translate: translateLabel
+    });
+    assert(keeper.getFights().length <= KEPT_MAXIMUM, "the shelf opened stays inside its bound");
+    state = {
+      ports,
+      options,
+      defects,
+      keeper,
+      screen,
+      translate: translateLabel,
+      live: liveFight,
+      view,
+      search: null,
+      wrap: null,
+      wrapFailuresMarked: 0,
+      frame: null,
+      isStale: false,
+      hasFrameRefused: false,
+      isMounted: false,
+      isStoodDown: false
+    };
+    builtState = state;
+    state.search = initMargonemEngineSearch({
+      battle: ports.battle,
+      interval: ports.interval,
+      listener,
+      report: {
+        onAttached: (wrap) => {
+          state.wrap = wrap;
+          markPanelDue(state);
+        },
+        onStoodDown: (failure) => {
+          state.isStoodDown = true;
+          ports.console.writeBrandedLine(failure.name, failure);
+        },
+        onRefused: (failure) => onMargonemEngineSearchFailed(state, failure),
+        onAbandoned: (failure) => onMargonemEngineSearchFailed(state, failure),
+        onLookFailed: (failure) => ports.console.writeBrandedLine(failure.name, failure)
+      },
+      console: ports.console
+    });
+  }
+  return {
+    onIntent: (intent) => onRuntimeIntent(state, intent),
+    deinit: () => {
+      state.search?.stop();
+      const cancelled = state.frame?.cancel();
+      state.frame = null;
+      if (cancelled instanceof Error) {
+        ports.console.writeBrandedLine(cancelled.name, cancelled);
+      }
+      state.isStoodDown = true;
+      if (state.search !== null) {
+        assert(state.search.isDone(), "a stopped add-on looks no further");
+      }
+      const wrap = state.wrap;
+      state.wrap = null;
+      if (wrap === null) return void 0;
+      return wrap.detach();
+    }
+  };
+}
+function resetScreenOpened(screen) {
+  screen.openedCombatantId = null;
+  screen.openUnnamedEnd = null;
+  screen.pairCombatantId = null;
+  screen.openPart = null;
+}
+function resetScreenFightDropped(screen, fights) {
+  assert(fights.length <= KEPT_MAXIMUM, "a shelf looked through is inside its bound");
+  const chosenFightOpenedAt = screen.chosenFightOpenedAt;
+  if (chosenFightOpenedAt === null) return;
+  if (fights.some((keptFight) => keptFight.openedAt === chosenFightOpenedAt)) return;
+  screen.chosenFightOpenedAt = null;
+  resetScreenOpened(screen);
+}
+function recoverSetting(defects, storedSetting, fallback) {
+  if (!(storedSetting instanceof Error)) return storedSetting;
+  defects.add({
+    kind: DEFECT_KIND.kept,
+    region: null,
+    failure: storedSetting
+  });
+  return fallback;
+}
+function readFoldSetting(ports, defects, panelWindow) {
+  return recoverSetting(defects, readWindowCollapsed(ports.settings, panelWindow), false);
+}
+function readSizeSetting(ports, defects, panelWindow) {
+  const size = recoverSetting(defects, readWindowSize(ports.settings, panelWindow), null);
+  if (size !== null) {
+    assert(size.width > 0, "a window is put back at a width it can stand at");
+    assert(size.height > 0, "and a height");
+  }
+  return size;
+}
+function markStale(state) {
+  if (state.isStoodDown) return;
+  if (state.isStale) return;
+  state.isStale = true;
+  const requested = state.ports.frames.requestFrame(() => onFrame(state), (failure) => state.defects.add({
+    kind: DEFECT_KIND.region,
+    region: null,
+    failure
+  }));
+  if (!(requested instanceof Error)) {
+    state.frame = requested;
+    return;
+  }
+  if (!state.hasFrameRefused) {
+    state.hasFrameRefused = true;
+    state.defects.add({
+      kind: DEFECT_KIND.region,
+      region: null,
+      failure: requested
+    });
+  }
+  assert(state.frame === null, "a draw without a frame holds none it asked for");
+  onFrame(state);
+}
+function onFrame(state) {
+  assert(state.isStale, "a frame falls only where one was asked for");
+  state.isStale = false;
+  state.frame = null;
+  if (state.isStoodDown) return;
+  if (state.wrap !== null) {
+    const escaped = state.wrap.getFailureCount();
+    assert(escaped >= state.wrapFailuresMarked, "a wrap's count of failures never runs backwards");
+    if (escaped > state.wrapFailuresMarked) {
+      const failure = state.wrap.getFirstFailure();
+      assert(failure !== null, "a wrap that counted a failure kept the first of them");
+      state.defects.add({
+        kind: DEFECT_KIND.reading,
+        region: null,
+        failure
+      });
+      state.wrapFailuresMarked = escaped;
+    }
+  }
+  renderFrame({
+    screen: state.screen,
+    keeper: state.keeper,
+    live: state.live,
+    defects: state.defects,
+    view: state.view,
+    clock: state.ports.clock,
+    tooltip: state.ports.tooltip,
+    tables: state.options.tables.tooltip,
+    translate: state.translate,
+    world: state.ports.surroundings.readWorld()
+  });
+  assert(!state.isStale, "a frame asks for no second frame of its own");
+  if (state.isMounted) return;
+  const mounted = state.ports.mountPanel(state.view.element);
+  if (mounted instanceof Error) {
+    state.defects.add({
+      kind: DEFECT_KIND.mount,
+      region: null,
+      failure: mounted
+    });
+  } else state.isMounted = true;
+}
+function onRuntimeIntent(state, intent) {
+  if (state.isStoodDown) return;
+  let shouldDraw;
+  switch (intent.kind) {
+    case PANEL_INTENT.saveFile: {
+      let isTallied = false;
+      const saved = attempt(() => {
+        const { screen, keeper, live: liveFight, defects } = state;
+        const shownFight = lookupShownFight(composeFightView(liveFight.session), screen.chosenFightOpenedAt, keeper.getFights(), keeper.getKeptFightStates());
+        isTallied = true;
+        if (shownFight !== null) {
+          const applied = shownFight.fightState.view.payloadsApplied;
+          assert(applied > 0, "a fight handed over was read from something");
+        }
+        const ports = {
+          ...state.ports,
+          addOnVersion: state.options.addOnVersion
+        };
+        const written = writeShownFightFile(shownFight, liveFight, ports, (failure) => {
+          addFileDefect(defects, failure);
+        });
+        if (written instanceof Error) addFileDefect(defects, written);
+      });
+      if (saved instanceof Error) {
+        addFileDefect(state.defects, saved);
+        if (!isTallied) writeLiveCallsFallback(state);
+      }
+      shouldDraw = executeScreenIntent(state.screen, intent);
+      break;
+    }
+    // A store that made room can drop the fight on screen, on a pin as on a move.
+    case PANEL_INTENT.pin:
+      state.keeper.pin(intent.openedAt);
+      resetScreenFightDropped(state.screen, state.keeper.getFights());
+      shouldDraw = true;
+      break;
+    // A row released after a fight ending pushed it off the shelf moves nothing, as a pin on
+    // it does: the frame that fight asked for already shows the shelf as it is.
+    case PANEL_INTENT.showKept: {
+      const openedAt = intent.openedAt;
+      if (!state.keeper.getFights().some((keptFight) => keptFight.openedAt === openedAt)) {
+        shouldDraw = false;
+        break;
+      }
+      shouldDraw = executeScreenIntent(state.screen, intent);
+      break;
+    }
+    case PANEL_INTENT.storage:
+      state.keeper.moveShelf(intent.choice);
+      resetScreenFightDropped(state.screen, state.keeper.getFights());
+      shouldDraw = true;
+      break;
+    // Once per drag rather than once per frame, and no frame: the panel already stands
+    // there. A refusal is an answer: the reader's choice stands, and only the next visit
+    // is the poorer for it, as `develop` has it.
+    case PANEL_INTENT.move:
+      void writeWindowPosition(state.ports.settings, intent.window, intent.position);
+      shouldDraw = false;
+      break;
+    // Once per release, as a move is, and for the same reason no frame, but where the
+    // options stand open: they say which window is sized, and would otherwise say it wrong.
+    case PANEL_INTENT.resize: {
+      const hasMoved = executeScreenIntent(state.screen, intent);
+      void writeWindowSize(state.ports.settings, intent.window, intent.size);
+      assert(state.screen.windowSizes[intent.window] === intent.size, "a window sized is the size the frames to come draw it");
+      shouldDraw = hasMoved;
+      break;
+    }
+    case PANEL_INTENT.resetSize: {
+      const hasMoved = executeScreenIntent(state.screen, intent);
+      if (hasMoved) void deleteWindowSize(state.ports.settings, intent.window);
+      shouldDraw = hasMoved;
+      break;
+    }
+    case PANEL_INTENT.typeStep: {
+      const hasMoved = executeScreenIntent(state.screen, intent);
+      if (hasMoved) void writeTypeStep(state.ports.settings, state.screen.typeStep);
+      shouldDraw = hasMoved;
+      break;
+    }
+    case PANEL_INTENT.fold: {
+      const hasMoved = executeScreenIntent(state.screen, intent);
+      const isCollapsed = intent.window === PANEL_WINDOW.meter ? state.screen.isMeterCollapsed : state.screen.isHelperCollapsed;
+      void writeWindowCollapsed(state.ports.settings, intent.window, isCollapsed);
+      assert(hasMoved, "a fold always moves the window it names");
+      shouldDraw = hasMoved;
+      break;
+    }
+    default:
+      shouldDraw = executeScreenIntent(state.screen, intent);
+      break;
+  }
+  if (shouldDraw) markStale(state);
+}
+function writeLiveCallsFallback(state) {
+  const { screen, live: liveFight, defects } = state;
+  if (screen.chosenFightOpenedAt !== null) return;
+  if (liveFight.capture.calls.length === 0) return;
+  const ports = {
+    ...state.ports,
+    addOnVersion: state.options.addOnVersion
+  };
+  const written = attempt(() => writeLiveCallsFile(liveFight, ports, (failure) => {
+    addFileDefect(defects, failure);
+  }));
+  if (written instanceof Error) addFileDefect(defects, written);
+}
+function addFileDefect(defects, failure) {
+  defects.add({
+    kind: DEFECT_KIND.file,
+    region: null,
+    failure
+  });
+}
+function readPlacementSetting(ports, defects, panelWindow, screen) {
+  const position = recoverSetting(defects, readWindowPosition(ports.settings, panelWindow), null);
+  if (position !== null) {
+    assert(Number.isSafeInteger(position.left), "a window is put back at a whole column");
+    assert(Number.isSafeInteger(position.top), "and a whole row");
+  }
+  return {
+    position,
+    size: screen.windowSizes[panelWindow],
+    readViewport: ports.readViewport
+  };
+}
+function markPanelDue(state) {
+  assert(!state.isStoodDown, "a copy that stood down puts no panel up");
+  markStale(state);
+}
+function onMargonemEngineSearchFailed(state, failure) {
+  assert(!(failure instanceof MargonemEngineAlreadyWrapped), "a copy that stands down shows nothing");
+  assert(state.wrap === null, "and one holding the game is not looking for it");
+  state.defects.add({
+    kind: DEFECT_KIND.engine,
+    region: null,
+    failure
+  });
+  markPanelDue(state);
+}
+function initMargonemEngineSearch(options) {
+  const { battle: battlePort, interval, listener, report } = options;
+  const search = {
+    looks: 0,
+    isDone: false,
+    hasFailed: false,
+    hasReportFailed: false,
+    handle: null,
+    console: options.console
+  };
+  const onLookFailure = (failure) => {
+    executeLookFailed(search, report, failure);
+  };
+  const firstLook = attempt(() => executeSearchLook(search, battlePort, listener, report));
+  if (firstLook instanceof Error) onLookFailure(firstLook);
+  if (!search.isDone) {
+    const started = interval.every(() => executeSearchLook(search, battlePort, listener, report), LOOK_EVERY_MILLISECONDS, onLookFailure);
+    if (started instanceof Error) {
+      deinitSearchTimer(search);
+      const abandoned = new SearchAbandoned(search.looks, LOOKS_MAXIMUM, started);
+      executeSearchReport(search, () => report.onAbandoned(abandoned));
+    } else search.handle = started;
+  }
+  return {
+    stop: () => deinitSearchTimer(search),
+    isDone: () => search.isDone
+  };
+}
+function executeLookFailed(search, report, failure) {
+  if (!search.hasFailed) {
+    search.hasFailed = true;
+    executeSearchReport(search, () => report.onLookFailed(failure));
+  }
+  executeSearchBound(search, report);
+}
+function executeSearchReport(search, reportCall) {
+  const reported = attempt(reportCall);
+  if (!(reported instanceof Error)) return;
+  if (search.hasReportFailed) return;
+  search.hasReportFailed = true;
+  search.console.writeBrandedLine(reported.name, reported);
+}
+function executeSearchBound(search, report) {
+  if (search.looks < LOOKS_MAXIMUM) return;
+  if (search.isDone) return;
+  deinitSearchTimer(search);
+  const abandoned = new SearchAbandoned(search.looks, LOOKS_MAXIMUM, null);
+  executeSearchReport(search, () => report.onAbandoned(abandoned));
+}
+function deinitSearchTimer(search) {
+  search.isDone = true;
+  const handle = search.handle;
+  search.handle = null;
+  if (handle === null) return;
+  const cancelled = handle.cancel();
+  if (cancelled instanceof Error) search.console.writeBrandedLine(cancelled.name, cancelled);
+}
+function executeSearchLook(search, battlePort, listener, report) {
+  if (search.isDone) return;
+  search.looks += 1;
+  assert(search.looks <= LOOKS_MAXIMUM, "the search stays inside its stated bound");
+  const battle = battlePort.readBattle();
+  if (battle instanceof Error) {
+    if (battle instanceof Caught) executeLookFailed(search, report, battle);
+    else executeSearchBound(search, report);
+    return;
+  }
+  const wrapped = battle.wrap(listener);
+  if (!(wrapped instanceof Error)) {
+    deinitSearchTimer(search);
+    executeSearchReport(search, () => report.onAttached(wrapped));
+    return;
+  }
+  if (wrapped instanceof MargonemEngineAlreadyWrapped) {
+    deinitSearchTimer(search);
+    executeSearchReport(search, () => report.onStoodDown(wrapped));
+    return;
+  }
+  if (search.looks < LOOKS_MAXIMUM) return;
+  deinitSearchTimer(search);
+  executeSearchReport(search, () => report.onRefused(wrapped));
+}
+function executeScreenIntent(screen, intent) {
+  let hasMoved;
+  {
+    switch (intent.kind) {
+      case PANEL_INTENT.metric:
+        {
+          const metric = intent.metric;
+          screen.metric = metric;
+          screen.isOnShelf = false;
+          screen.isOnOptions = false;
+          screen.pairCombatantId = null;
+          screen.openPart = null;
+          screen.openUnnamedEnd = null;
+          hasMoved = true;
+        }
+        break;
+      case PANEL_INTENT.side:
+        {
+          const side = intent.side;
+          screen.side = side;
+          screen.isOnShelf = false;
+          screen.isOnOptions = false;
+          resetScreenOpened(screen);
+          hasMoved = true;
+        }
+        break;
+      case PANEL_INTENT.openRow:
+        {
+          const combatantId = intent.combatantId;
+          assert(Number.isSafeInteger(combatantId), "a row is opened by the game's own id");
+          if (screen.openedCombatantId !== null) {
+            assert(screen.openUnnamedEnd === null, "a person's end left out is not a pair with somebody");
+            screen.pairCombatantId = combatantId;
+          } else if (screen.openUnnamedEnd !== null) {
+            screen.pairCombatantId = combatantId;
+          } else screen.openedCombatantId = combatantId;
+          hasMoved = true;
+        }
+        break;
+      case PANEL_INTENT.openUnnamed:
+        {
+          const end = intent.end;
+          assert(screen.pairCombatantId === null, "an end left out is pressed from the level over it");
+          assert(screen.openPart === null, "and never from a part's level");
+          screen.openUnnamedEnd = end;
+          hasMoved = true;
+        }
+        break;
+      case PANEL_INTENT.openPart:
+        screen.openPart = intent.part;
+        hasMoved = true;
+        break;
+      // One rung at a time. False where there was none to leave: the gesture is the whole
+      // panel's, so a press on the ranking would otherwise redraw it for nothing.
+      case PANEL_INTENT.close:
+        if (screen.isOnOptions) {
+          screen.isOnOptions = false;
+          hasMoved = true;
+          break;
+        }
+        if (screen.isOnShelf) {
+          screen.isOnShelf = false;
+          hasMoved = true;
+          break;
+        }
+        if (screen.openPart !== null) {
+          screen.openPart = null;
+          hasMoved = true;
+          break;
+        }
+        if (screen.pairCombatantId !== null) {
+          screen.pairCombatantId = null;
+          hasMoved = true;
+          break;
+        }
+        if (screen.openedCombatantId !== null) {
+          if (screen.openUnnamedEnd !== null) screen.openUnnamedEnd = null;
+          else screen.openedCombatantId = null;
+          hasMoved = true;
+          break;
+        }
+        if (screen.openUnnamedEnd === null) {
+          hasMoved = false;
+          break;
+        }
+        screen.openUnnamedEnd = null;
+        hasMoved = true;
+        break;
+      case PANEL_INTENT.fold:
+        if (intent.window === PANEL_WINDOW.meter) {
+          screen.isMeterCollapsed = !screen.isMeterCollapsed;
+        } else screen.isHelperCollapsed = !screen.isHelperCollapsed;
+        hasMoved = true;
+        break;
+      case PANEL_INTENT.shelf:
+        screen.isOnShelf = !screen.isOnShelf;
+        screen.isOnOptions = false;
+        hasMoved = true;
+        break;
+      case PANEL_INTENT.options:
+        screen.isOnOptions = !screen.isOnOptions;
+        screen.isOnShelf = false;
+        hasMoved = true;
+        break;
+      case PANEL_INTENT.showKept:
+        setScreenFight(screen, intent.openedAt);
+        hasMoved = true;
+        break;
+      case PANEL_INTENT.showLive:
+        setScreenFight(screen, null);
+        hasMoved = true;
+        break;
+      // A save moves nothing, and asks for a frame all the same: the defect it can leave is
+      // said on the panel, and the shelf between fights has no payload coming to draw it.
+      case PANEL_INTENT.saveFile:
+        hasMoved = true;
+        break;
+      // The same size asked for again moves nothing, and a frame for it would redraw nothing.
+      case PANEL_INTENT.typeStep:
+        if (screen.typeStep === intent.step) {
+          hasMoved = false;
+          break;
+        }
+        screen.typeStep = intent.step;
+        hasMoved = true;
+        break;
+      // Kept for the frames to come, and no frame now unless the options stand open: the
+      // window already stands that size, and the options are the one place that says which is
+      // sized.
+      case PANEL_INTENT.resize:
+        screen.windowSizes = {
+          ...screen.windowSizes,
+          [intent.window]: intent.size
+        };
+        hasMoved = screen.isOnOptions;
+        break;
+      case PANEL_INTENT.resetSize:
+        if (screen.windowSizes[intent.window] === null) {
+          hasMoved = false;
+          break;
+        }
+        screen.windowSizes = {
+          ...screen.windowSizes,
+          [intent.window]: null
+        };
+        hasMoved = true;
+        break;
+      case PANEL_INTENT.move:
+      case PANEL_INTENT.storage:
+      case PANEL_INTENT.pin:
+        hasMoved = false;
+        break;
+    }
+  }
+  verifyScreenState(screen);
+  return hasMoved;
+}
+function verifyScreenState(screen) {
+  if (screen.isOnOptions) assert(!screen.isOnShelf, "the options and the shelf are one cover");
+  if (screen.openedCombatantId === null) return;
+  if (screen.openUnnamedEnd === null) return;
+  assert(screen.pairCombatantId === null, "a person's end left out is not a pair with somebody");
+  assert(screen.openPart === null, "and no part of their figure is open under it");
+}
+function setScreenFight(screen, openedAt) {
+  if (openedAt !== null) assert(Number.isSafeInteger(openedAt), "a fight is chosen by a moment");
+  screen.chosenFightOpenedAt = openedAt;
+  screen.isOnShelf = false;
+  screen.isOnOptions = false;
+  resetScreenOpened(screen);
+}
+
+// src/build-version.ts
+var BUILD_VERSION = "0.24.0";
+
+// src/userscript-entry.ts
+var BROWSER_WINDOW_PART = {
+  window: "window",
+  document: "document",
+  console: "console",
+  timers: "timers",
+  frames: "frames",
+  clock: "clock",
+  downloads: "downloads"
+};
+var BrowserWindowUnusable = class extends Error {
+  name = "BrowserWindowUnusable";
+  missing;
+  constructor(missing) {
+    super();
+    this.missing = missing;
+  }
+};
+var WINDOW_FUNCTIONS = [
+  [
+    "setInterval",
+    BROWSER_WINDOW_PART.timers
+  ],
+  [
+    "clearInterval",
+    BROWSER_WINDOW_PART.timers
+  ],
+  [
+    "setTimeout",
+    BROWSER_WINDOW_PART.timers
+  ],
+  [
+    "requestAnimationFrame",
+    BROWSER_WINDOW_PART.frames
+  ],
+  [
+    "cancelAnimationFrame",
+    BROWSER_WINDOW_PART.frames
+  ],
+  [
+    "Date",
+    BROWSER_WINDOW_PART.clock
+  ],
+  [
+    "Blob",
+    BROWSER_WINDOW_PART.downloads
+  ],
+  [
+    "URL",
+    BROWSER_WINDOW_PART.downloads
+  ]
+];
+var SCRIPT_WITH_SOURCE = "script[src]";
+var ANCHOR_TAG = "a";
+function startMargoMeter(browserWindow) {
+  const started = attempt(() => {
+    const ports = attempt(() => readRuntimePorts(browserWindow));
+    if (ports instanceof Error) {
+      writeStoodDownLine(browserWindow, ports);
+      return null;
+    }
+    return initRuntime(ports, {
+      addOnVersion: BUILD_VERSION,
+      tables: composeRuntimeTables(),
+      sessionOptions: SESSION_OPTIONS
+    });
+  });
+  if (!(started instanceof Error)) return started;
+  writeStoodDownLine(browserWindow, started);
+  return null;
+}
+function writeStoodDownLine(browserWindow, failure) {
+  const errorConsole = attempt(() => {
+    if (!isRecord(browserWindow)) return null;
+    const browserConsole = browserWindow.console;
+    if (!isRecord(browserConsole)) return null;
+    const error = browserConsole.error;
+    if (typeof error !== "function") return null;
+    return {
+      error: (...values) => void error.apply(browserConsole, values)
+    };
+  });
+  if (errorConsole instanceof Error) return;
+  if (errorConsole === null) return;
+  initBrowserConsole(errorConsole).writeBrandedLine(failure.name, failure);
+}
+function readRuntimePorts(browserWindow) {
+  if (!isRecord(browserWindow)) return new BrowserWindowUnusable(BROWSER_WINDOW_PART.window);
+  if (!isUserscriptWindow(browserWindow)) {
+    return new BrowserWindowUnusable(lookupWindowPartMissing(browserWindow) ?? BROWSER_WINDOW_PART.window);
+  }
+  return {
+    clock: initBrowserClock(browserWindow.Date),
+    frames: initBrowserFrames(browserWindow),
+    interval: initBrowserInterval(browserWindow),
+    battle: initMargonemEngineBattle(browserWindow),
+    place: initMargonemEnginePlace(browserWindow),
+    hero: initMargonemEngineHero(browserWindow),
+    dictionary: initMargonemClientDictionary(browserWindow),
+    // Read every script's source the page states, up to the bound the build's reader walks.
+    build: initMargonemClientBuild(() => {
+      const scripts = browserWindow.document.querySelectorAll(SCRIPT_WITH_SOURCE);
+      const walked = Math.min(scripts.length, SCRIPTS_MAXIMUM);
+      const sources = [];
+      for (let scriptIndex = 0; scriptIndex < walked; scriptIndex += 1) {
+        sources.push(scripts[scriptIndex]?.src);
+      }
+      return sources;
+    }),
+    surroundings: initBrowserSurroundings(browserWindow),
+    tooltip: initMargonemEngineTooltip(browserWindow),
+    settings: initBrowserStore(readBrowserStorage(browserWindow, STORAGE_CHOICE.local)),
+    // The store the reader asked for, the one that forgets, or the answer that the browser
+    // lends none under that name, which the keeper turns into a defect.
+    initShelfStore: (storageChoice) => {
+      if (storageChoice === STORAGE_CHOICE.memory) return initMemoryStore();
+      const storage = readBrowserStorage(browserWindow, storageChoice);
+      if (storage === null) return new StoreUnavailable();
+      return initBrowserStore(storage);
+    },
+    file: initBrowserFile({
+      createObjectURL: (blob) => browserWindow.URL.createObjectURL(blob),
+      revokeObjectURL: (url) => browserWindow.URL.revokeObjectURL(url),
+      createBlob: (text, type) => new browserWindow.Blob([
+        text
+      ], {
+        type
+      }),
+      createAnchor: () => browserWindow.document.createElement(ANCHOR_TAG),
+      appendAnchor: (anchor) => browserWindow.document.body.append(anchor),
+      setTimeout: (step, afterMilliseconds) => void browserWindow.setTimeout(step, afterMilliseconds)
+    }),
+    console: initBrowserConsole(browserWindow.console),
+    document: browserWindow.document,
+    mountPanel: (panel) => attempt(() => browserWindow.document.body.append(panel)),
+    // Read the viewport: a page stating one size and not the other states none, as does one
+    // stating nonsense.
+    readViewport: () => {
+      const width = browserWindow.innerWidth;
+      const height = browserWindow.innerHeight;
+      if (typeof width !== "number") return null;
+      if (typeof height !== "number") return null;
+      if (!Number.isFinite(width)) return null;
+      if (!Number.isFinite(height)) return null;
+      if (width < 0) return null;
+      if (height < 0) return null;
+      return {
+        width,
+        height
+      };
+    }
+  };
+}
+function isUserscriptWindow(browserWindow) {
+  return lookupWindowPartMissing(browserWindow) === null;
+}
+function lookupWindowPartMissing(browserWindow) {
+  if (!isUserscriptDocument(browserWindow.document)) return BROWSER_WINDOW_PART.document;
+  if (!isCallableOn(browserWindow.console, "error")) return BROWSER_WINDOW_PART.console;
+  for (const [member, windowPart] of WINDOW_FUNCTIONS) {
+    if (typeof browserWindow[member] !== "function") return windowPart;
+  }
+  return null;
+}
+function isUserscriptDocument(documentCandidate) {
+  if (!isRecord(documentCandidate)) return false;
+  if (typeof documentCandidate.createElement !== "function") return false;
+  if (typeof documentCandidate.querySelectorAll !== "function") return false;
+  return isCallableOn(documentCandidate.body, "append");
+}
+function isCallableOn(owner, name) {
+  if (!isRecord(owner)) return false;
+  return typeof owner[name] === "function";
+}
+function readBrowserStorage(browserWindow, storageChoice) {
+  const storage = attempt(() => {
+    if (storageChoice === STORAGE_CHOICE.session) return browserWindow.sessionStorage;
+    return browserWindow.localStorage;
+  });
+  if (storage instanceof Error) return null;
+  return storage ?? null;
+}
+function composeRuntimeTables() {
+  return {
+    decoder: {
+      blowsGrantedBySkillId: indexBlowsGrantedBySkillId(FROZEN_BLOWS_GRANTED.skills)
+    },
+    tooltip: {
+      statedSkills: {
+        auraTurnsBySkillId: indexAuraTurnsBySkillId(FROZEN_AURA_TURNS.skills),
+        shoutsBySkillId: indexShoutsBySkillId(FROZEN_AURA_TURNS.shouts)
+      },
+      keyByStatusBit: indexKeyByStatusBit(FROZEN_STATUS_BITS.bits),
+      statusBits: FROZEN_STATUS_BITS.bits
+    }
+  };
+}
+
+// src/userscript-boot.ts
+  const METER_ENABLE_KEY = 'mkMargoMeterEnabled'
+  let bundledMargoMeter = null
+  const meterEnabled = () => { try { return localStorage.getItem(METER_ENABLE_KEY) !== '0' } catch (error) { return true } }
+  function startBundledMargoMeter() {
+    if (bundledMargoMeter) return true
+    bundledMargoMeter = startMargoMeter(window)
+    return !!bundledMargoMeter
+  }
+  function stopBundledMargoMeter() {
+    if (bundledMargoMeter) { try { bundledMargoMeter.deinit() } catch (error) { console.warn('[Licznik Walk] Nie udało się zatrzymać modułu:', error) }; bundledMargoMeter = null }
+    document.getElementById(HOST_NAME)?.remove()
+  }
+  function setBundledMargoMeterEnabled(enabled) {
+    try { localStorage.setItem(METER_ENABLE_KEY, enabled ? '1' : '0') } catch (error) {}
+    if (enabled) startBundledMargoMeter(); else stopBundledMargoMeter()
+    window.__mkPersistAddonSettings?.()
+    return enabled
+  }
+  window.__mkBattleMeterSetEnabled = setBundledMargoMeterEnabled
+  window.__mkBattleMeterIsRunning = () => !!bundledMargoMeter
+  window.__mkBattleMeterShow = () => {
+    if (!meterEnabled()) return false
+    if (!bundledMargoMeter) startBundledMargoMeter()
+    const host = document.getElementById(HOST_NAME)
+    if (!host) return false
+    host.style.setProperty('display', 'block', 'important')
+    host.style.setProperty('z-index', '2147483000', 'important')
+    host.scrollIntoView({ block: 'nearest', inline: 'nearest' })
+    return true
+  }
+  window.addEventListener('mk-battle-meter-toggle', event => setBundledMargoMeterEnabled(event.detail?.enabled !== false))
+  if (meterEnabled()) startBundledMargoMeter()
+
 })();
-
-
-
-
 
 
 
