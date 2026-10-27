@@ -564,7 +564,7 @@
     const status = document.createElement('p'); status.className = 'hint'
     const refreshStatus = () => {
       const host = document.getElementById('mk-battle-meter')
-      status.textContent = !isOn(addon) ? 'Dodatek wyłączony.' : host ? 'Licznik Walk śledzi obrażenia z komunikatów walki.' : 'Czekam na uruchomienie klienta gry.'
+      status.textContent = !isOn(addon) ? 'Dodatek wyłączony.' : host ? 'Licznik Walk śledzi obrażenia z komunikatów walki.' : 'Panel gotowy; szukam silnika walki w oknach gry.'
     }
     box.appendChild(status)
     if (isOn(addon)) {
@@ -4505,7 +4505,7 @@
 ;(function () {
   'use strict'
   const ENABLED = 'mkMargoMeterEnabled', DATA = 'mkBattleMeterDataV1', POS = 'mkBattleMeterPositionV1', ID = 'mk-battle-meter'
-  let timer = null, battle = null, original = null, wrapped = null, panel = null, folded = false
+  let timer = null, battle = null, original = null, wrapped = null, ownsHook = false, panel = null, folded = false
   let fight = { damage: Object.create(null), hits: 0, startedAt: Date.now() }
   const on = () => { try { return localStorage.getItem(ENABLED) !== '0' } catch (e) { return true } }
   try { folded = localStorage.getItem('mkBattleMeterFolded') === '1'; const saved = JSON.parse(localStorage.getItem(DATA) || 'null'); if (saved?.damage) fight = saved } catch (e) {}
@@ -4525,14 +4525,25 @@
     if(payload.endBattle||payload.end||payload.end_battle)save()
     draw()
   }
+  function findBattle(){
+    const queue=[window], seen=new Set()
+    while(queue.length&&seen.size<24){
+      const candidate=queue.shift();if(!candidate||seen.has(candidate))continue;seen.add(candidate)
+      try{const engine=candidate.Engine||candidate.getEngine?.();const found=engine?.battle;if(found&&typeof found.updateData==='function')return found}catch(e){}
+      try{for(let i=0;i<candidate.frames.length&&queue.length+seen.size<24;i++)queue.push(candidate.frames[i])}catch(e){}
+    }
+    return null
+  }
   function hook(){
     if(!on()||battle)return !!battle
-    let b=null;try{b=window.Engine?.battle||window.getEngine?.()?.battle}catch(e){}
-    if(!b||typeof b.updateData!=='function')return false
-    const fn=b.updateData, wrap=function(payload,...args){const result=Reflect.apply(fn,this,[payload,...args]);try{consume(payload)}catch(e){console.warn('[Licznik Walk]',e)}return result}
-    try{b.updateData=wrap}catch(e){return false}if(b.updateData!==wrap)return false;battle=b;original=fn;wrapped=wrap;return true
+    const b=findBattle();if(!b)return false
+    const current=b.updateData
+    if(current.__mkBattleMeterHook){battle=b;wrapped=current;original=current.__mkBattleMeterOriginal||current;ownsHook=false;return true}
+    const wrap=function(payload,...args){const result=Reflect.apply(current,this,[payload,...args]);try{consume(payload)}catch(e){console.warn('[Licznik Walk]',e)}return result}
+    try{Object.defineProperties(wrap,{__mkBattleMeterHook:{value:true},__mkBattleMeterOriginal:{value:current}});b.updateData=wrap}catch(e){return false}
+    if(b.updateData!==wrap)return false;battle=b;original=current;wrapped=wrap;ownsHook=true;return true
   }
-  function unhook(){if(battle?.updateData===wrapped){try{battle.updateData=original}catch(e){}}battle=original=wrapped=null}
+  function unhook(){if(ownsHook&&battle?.updateData===wrapped){try{battle.updateData=original}catch(e){}}battle=original=wrapped=null;ownsHook=false}
   function toggle(enabled){try{localStorage.setItem(ENABLED,enabled?'1':'0')}catch(e){}if(enabled){if(!timer)timer=setInterval(hook,700);hook();mount()}else{clearInterval(timer);timer=null;unhook();panel?.remove();panel=null}window.__mkPersistAddonSettings?.();return enabled}
   function mount(){if(!document.body||panel?.isConnected)return;let css=document.getElementById('mk-battle-meter-style');if(!css){css=document.createElement('style');css.id='mk-battle-meter-style';css.textContent='#mk-battle-meter{position:fixed;right:18px;top:110px;z-index:2147483000;width:min(330px,calc(100vw - 20px));max-height:70vh;overflow:auto;border:1px solid color-mix(in srgb,var(--mkhd-addon-theme,#6366f1) 48%,#30334a);border-radius:12px;background:linear-gradient(160deg,#20223e,#0b1020);box-shadow:0 14px 36px #0009;color:#f3f3ff;font:13px/1.4 Inter,Segoe UI,Arial,sans-serif}#mk-battle-meter *{box-sizing:border-box}#mk-battle-meter .head{display:flex;align-items:center;gap:7px;padding:8px;border-bottom:1px solid #ffffff18;cursor:grab;user-select:none}#mk-battle-meter .title{flex:1;text-align:center;font-weight:700;color:color-mix(in srgb,var(--mkhd-addon-theme,#6366f1) 55%,#fff)}#mk-battle-meter button{border:1px solid #ffffff24;border-radius:6px;background:#ffffff0c;color:#fff;cursor:pointer;padding:4px 7px}#mk-battle-meter .body{padding:10px}#mk-battle-meter .summary{color:#b4adda;font-size:11px;margin-bottom:7px}#mk-battle-meter .entry{display:grid;grid-template-columns:22px 1fr auto;gap:6px;padding:5px 4px;border-bottom:1px solid #ffffff0b}#mk-battle-meter .dmg{font-variant-numeric:tabular-nums;font-weight:700}#mk-battle-meter.folded .body{display:none}';document.head.append(css)}
     panel=document.createElement('section');panel.id=ID;panel.innerHTML='<div class="head"><span class="title">LICZNIK WALK</span><button class="fold" type="button">−</button><button class="reset" type="button">Wyczyść</button></div><div class="body"></div>';document.body.append(panel)
@@ -4546,6 +4557,8 @@
   window.addEventListener('mk-battle-meter-toggle',e=>toggle(e.detail?.enabled!==false))
   if(on()){mount();timer=setInterval(hook,700);hook();new MutationObserver(()=>on()&&mount()).observe(document.documentElement,{childList:true,subtree:true})}
 })();
+
+
 
 
 
