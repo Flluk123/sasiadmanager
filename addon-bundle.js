@@ -1,8 +1,8 @@
 // ==UserScript==
-// @name         Heroes on Discord + Notyfikator Legend + Przedziały Online + Łupy Tytanów + Podział Grup
+// @name         Heroes on Discord + Statystyki Walk + Moduły
 // @namespace    http://tampermonkey.net/
-// @version      4.62.2
-// @description  Heroes and titans alerts, online player level ranges, and legendary titan loot calls
+// @version      4.63.0
+// @description  Zestaw dodatków Margonem z lokalnym licznikiem i historią walk
 // @author       Kris Aphalon
 // @match        https://margonem.com/*
 // @match        https://*.margonem.com/*
@@ -15,7 +15,7 @@
 // Kopia ustawień dodatków przywracana przed inicjalizacją modułów.
 ;(function () {
   const backupKey = 'mkAddonSettingsBackup_v1'
-  const isAddonKey = key => /^(?:mk(?:BalancedParty|Colossus|Hub|Online|TitanLoot|Addon|_clan_|_ranges_)|chciamkColossus|heroes-discord|moj_notyfikator_fx)/.test(key) && key !== backupKey
+  const isAddonKey = key => /^(?:mwsAddon|mk(?:BalancedParty|Colossus|Hub|Online|TitanLoot|Addon|_clan_|_ranges_)|chciamkColossus|heroes-discord|moj_notyfikator_fx)/.test(key) && key !== backupKey
   try {
     const snapshot = JSON.parse(localStorage.getItem(backupKey) || '{}')
     if (snapshot && typeof snapshot === 'object' && !Array.isArray(snapshot)) {
@@ -73,7 +73,9 @@
       icon: icon('<circle cx="5.5" cy="6" r="2"/><circle cx="11" cy="6.5" r="1.6"/><path d="M2 13c.4-2 1.8-3 3.5-3s3.1 1 3.5 3M10 10.2c1.8-.3 3.5.5 4 2.8"/>') },
     { id: 'party', name: 'PODZIAŁ GRUP', view: 'party', key: 'mkBalancedPartyEnabled',
       desc: 'Otwiera osobne okno z podziałem graczy według profesji i poziomu oraz zaproszeniem grupy 1.',
-      icon: icon('<circle cx="5" cy="5" r="2"/><circle cx="11" cy="5" r="2"/><path d="M1.5 13c.3-2 1.5-3 3.5-3s3.2 1 3.5 3M7.5 13c.3-2 1.5-3 3.5-3s3.2 1 3.5 3"/>') },
+      icon: icon('<circle cx="5" cy="5" r="2"/><circle cx="11" cy="5" r="2"/><path d="M1.5 13c.3-2 1.5-3 3.5-3s3.2 1 3.5 3M7.5 13c.3-2 1.5-3 3.5-3s3.2 1 3.5 3"/>') },    { id: 'fightstats', name: 'STATYSTYKI WALK', view: 'fightstats', key: 'mwsAddonEnabled', event: 'mws-fightstats-toggle',
+      desc: 'Licznik obrażeń i leczenia oraz historia ostatnich 10 walk z rankingiem MVP.',
+      icon: icon('<path d="M2 13V8M6 13V4M10 13V7M14 13V2"/>') },
   ]
   const byId = id => ADDONS.find(addon => addon.id === id)
   const isOn = addon => lsGet(addon.key) !== '0'
@@ -643,8 +645,8 @@
   function buildInfo() {
     const box = document.createElement('div')
     box.className = 'info'
-    box.innerHTML = '<h3>Heroes on Discord + Notyfikator Legend + Przedziały Online + Łupy Tytanów + Podział Grup</h3>' +
-      '<p>Wersja 4.62.2. Wszystkie dodatki masz w jednym miejscu: przełącznik włącza lub wyłącza dodatek, a zębatka otwiera jego ustawienia w tym oknie.</p>' +
+    box.innerHTML = '<h3>Heroes on Discord + Notyfikator Legend + Przedziały Online + Łupy Tytanów + Podział Grup + Statystyki Walk</h3>' +
+      '<p>Wersja 4.63.0. Wszystkie dodatki masz w jednym miejscu: przełącznik włącza lub wyłącza dodatek, a zębatka otwiera jego widok w tym oknie. Statystyki Walk pokazują bieżącą walkę i lokalną historię 10 ostatnich starć.</p>' +
       '<p>Webhooki, role i pingi ustawiasz w zakładkach Webhooki i Role i pingi. Przedziały Online działają na mapie, a ich konfigurację znajdziesz w tym nowym oknie po kliknięciu zębatki.</p>'
     content.appendChild(box)
   }
@@ -685,6 +687,7 @@
     else if (view === 'discord') buildDiscord()
     else if (view === 'look') buildLook()
     else if (view === 'info') buildInfo()
+    else if (view === 'fightstats') { if (typeof window.__mkBuildFightStatsView === 'function') window.__mkBuildFightStatsView(content); else content.appendChild(hint('Statystyki walk jeszcze się ładują. Otwórz widok ponownie za chwilę.')) }
     if (['ranges', 'party', 'loot', 'colossus', 'notifier', 'discord', 'look'].includes(view)) {
       const saveRow = document.createElement('div')
       saveRow.className = 'mk-settings-save-row'
@@ -760,6 +763,7 @@
     }, 500)
   }  window.__mkHubToggle = toggle
   window.__mkHubShow = show
+  window.__mkHubRefreshFightStats = () => { if (root && root.classList.contains('open') && view === 'fightstats') render() }
   window.__mkHubInstalled = true
   window.addEventListener('mk-hub-toggle', toggle)
 })();
@@ -4475,3 +4479,195 @@
   uiObserver.observe(document.documentElement,{childList:true,subtree:true});
   tick();applyBackground(backgroundPreset,false);setInterval(tick,3000);
 })();
+
+/* ===================== STATYSTYKI WALK ===================== */
+;(function () {
+  'use strict'
+  if (window.__mkFightStatsBundleInstalled) return
+  window.__mkFightStatsBundleInstalled = true
+
+  const STORE_KEY = 'mojeStatystykiWalk.history.v1'
+  const ENABLED_KEY = 'mwsAddonEnabled'
+  const MAX_HISTORY = 10
+  const state = { current: null, history: loadHistory(), seen: new Set(), calls: 0, status: 'Szukam silnika walki…' }
+  const enabled = () => { try { return localStorage.getItem(ENABLED_KEY) !== '0' } catch (error) { return true } }
+  const esc = value => String(value ?? '').replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char])
+  const num = value => { const parsed = Number(String(value || '').replace(/[^0-9.-]/g, '')); return Number.isFinite(parsed) ? Math.abs(parsed) : 0 }
+  function loadHistory() {
+    try { const saved = JSON.parse(localStorage.getItem(STORE_KEY) || '[]'); return Array.isArray(saved) ? saved.slice(0, MAX_HISTORY) : [] } catch (error) { return [] }
+  }
+  function persist() { try { localStorage.setItem(STORE_KEY, JSON.stringify(state.history.slice(0, MAX_HISTORY))) } catch (error) {} }
+  function freshFight() { return { id: String(Date.now()), startedAt: Date.now(), endedAt: null, rows: {}, namesById: {}, pendingTurnActor: null, turns: 0, events: 0 } }
+  function row(name) {
+    name = String(name || 'Nieznany').trim()
+    return state.current.rows[name] ||= { name, dealt: 0, received: 0, healed: 0, selfHealed: 0, turns: 0, hits: 0, misses: 0, blocks: 0, crits: 0, bonuses: 0 }
+  }
+  function rowFor(id) { const key = String(id || ''); return row(state.current.namesById[key] || `Nieznany (${key || '?'})`) }
+  function parseMessage(message) {
+    if (!state.current || typeof message !== 'string') return
+    const parts = message.split(';')
+    if (parts.length < 3) return
+    const actorId = (parts[0].split('=')[0] || '0').trim()
+    const targetId = (parts[1].split('=')[0] || '0').trim()
+    const attrs = []
+    for (const part of parts.slice(2)) {
+      const at = part.indexOf('=')
+      if (at > 0) attrs.push([part.slice(0, at).trim(), part.slice(at + 1).trim()])
+      else if (part.trim()) attrs.push([part.trim(), ''])
+    }
+    if (!attrs.length) return
+    const actor = actorId !== '0' ? rowFor(actorId) : null
+    const target = targetId !== '0' ? rowFor(targetId) : null
+    const damage = attrs.filter(([key]) => /^-dmg[a-z0-9_]*$/i.test(key)).reduce((sum, [, value]) => sum + num(value), 0)
+    if (damage > 0) {
+      if (actor) { actor.dealt += damage; actor.hits++ }
+      if (target) target.received += damage
+    }
+    if (attrs.some(([key]) => key === '+crit' || key === '+of_crit') && actor) actor.crits++
+    if (attrs.some(([key]) => /blok|block/i.test(key)) && target) target.blocks++
+    if (damage === 0 && attrs.some(([key]) => /miss|evad|avoid|unik/i.test(key)) && actor) actor.misses++
+    const skillTurn = attrs.some(([key]) => key === 'tspell')
+    if (skillTurn && actor) { actor.turns++; state.current.turns++; state.current.pendingTurnActor = actorId }
+    else if (damage > 0 && actor && state.current.pendingTurnActor !== actorId) { actor.turns++; state.current.turns++; state.current.pendingTurnActor = null }
+    else if (damage > 0 && state.current.pendingTurnActor !== actorId) state.current.pendingTurnActor = null
+    const healKeys = new Set(['heal', 'heal_target', 'npc_heal', 'bandage', 'legbon_holytouch_heal'])
+    for (const [key, value] of attrs) {
+      if (!healKeys.has(key)) continue
+      const amount = num(value)
+      if (!amount || !actor) continue
+      if (key === 'heal_target' && (actor !== target || targetId === '0')) actor.healed += amount
+      else actor.selfHealed += amount
+    }
+    if (actor && attrs.some(([key]) => /legbon_|pierce|thirdatt|facade/i.test(key))) actor.bonuses++
+    state.current.events++
+  }
+  function closeFight() {
+    if (!state.current) return
+    if (state.current.events > 0) {
+      state.current.endedAt = Date.now()
+      state.history.unshift({ ...state.current, rows: Object.values(state.current.rows) })
+      state.history = state.history.slice(0, MAX_HISTORY)
+      persist()
+    }
+    state.current = null
+    state.seen.clear()
+    refresh()
+  }
+  function parsePayload(payload) {
+    if (!enabled() || !payload || typeof payload !== 'object') return
+    if (String(payload.init) === '1') {
+      if (state.current?.events) closeFight()
+      state.current = freshFight()
+      state.seen.clear()
+    }
+    if (!state.current) return
+    if (payload.w && typeof payload.w === 'object') {
+      for (const [id, fighter] of Object.entries(payload.w)) {
+        if (!fighter || typeof fighter !== 'object') continue
+        const name = fighter.name || state.current.namesById[String(fighter.id ?? id)]
+        if (name) { state.current.namesById[String(fighter.id ?? id)] = name; row(name) }
+      }
+    }
+    if (Array.isArray(payload.m) && Array.isArray(payload.mi)) {
+      for (const rawIndex of payload.mi) {
+        const index = Number(rawIndex), message = payload.m[index]
+        if (typeof message !== 'string') continue
+        const signature = `${index}:${message}`
+        if (state.seen.has(signature)) continue
+        state.seen.add(signature)
+        parseMessage(message)
+      }
+    }
+    const ended = String(payload.endBattle || '') === '1' || (Array.isArray(payload.m) && payload.m.some(line => /;winner=/.test(line)))
+    if (ended) closeFight()
+    else refresh()
+  }
+  function table(rows) {
+    if (!rows?.length) return '<div class="mws-empty">Brak zarejestrowanych zdarzeń tej walki.</div>'
+    const sorted = [...rows].sort((a, b) => b.dealt - a.dealt)
+    return '<div class="mws-scroll"><table><thead><tr><th>Postać / mob</th><th>Obrażenia</th><th>Otrzymane</th><th>Leczenie</th><th>Regeneracja</th><th>Tury</th><th>Trafienia</th><th>Skuteczność</th><th>Uniki</th><th>Bloki</th><th>Krytyki</th><th>Bonusy</th></tr></thead><tbody>' + sorted.map((fighter, index) => {
+      const badge = fighter.dealt > 0 && index < 3 ? `<span class="mws-rank mws-rank-${index + 1}">${index === 0 ? 'MVP' : index === 1 ? '2nd' : '3rd'}</span>` : ''
+      const accuracy = fighter.hits + fighter.misses ? `${(100 * fighter.hits / (fighter.hits + fighter.misses)).toFixed(1)}%` : '—'
+      return `<tr><td>${esc(fighter.name)}${badge}</td><td>${Number(fighter.dealt || 0).toLocaleString('pl-PL')}</td><td>${Number(fighter.received || 0).toLocaleString('pl-PL')}</td><td>${Number(fighter.healed || 0).toLocaleString('pl-PL')}</td><td>${Number(fighter.selfHealed || 0).toLocaleString('pl-PL')}</td><td>${Number(fighter.turns || 0)}</td><td>${Number(fighter.hits || 0)}</td><td>${accuracy}</td><td>${Number(fighter.misses || 0)}</td><td>${Number(fighter.blocks || 0)}</td><td>${Number(fighter.crits || 0)}</td><td>${Number(fighter.bonuses || 0)}</td></tr>`
+    }).join('') + '</tbody></table></div>'
+  }
+  function buildView(host) {
+    host.innerHTML = `<style>
+      #mk-hub .mws-wrap{color:#e7e3ff;font:12px/1.45 Inter,"Segoe UI",Arial,sans-serif}
+      #mk-hub .mws-toolbar{display:flex;gap:7px;align-items:center;flex-wrap:wrap;margin-bottom:10px}
+      #mk-hub .mws-toolbar button{border:1px solid color-mix(in srgb,var(--mkhd-addon-theme) 45%,#cbd5e1);border-radius:7px;background:color-mix(in srgb,var(--mkhd-addon-theme) 45%,#111827);color:#fff;padding:6px 9px;cursor:pointer}
+      #mk-hub .mws-status{margin-left:auto;color:#b4adda;font-size:11px}
+      #mk-hub .mws-scroll{overflow:auto;max-width:100%;margin:7px 0 14px}
+      #mk-hub .mws-table-title{margin:12px 0 5px;color:#f3f3ff;font-weight:700}
+      #mk-hub .mws-wrap table{border-collapse:collapse;white-space:nowrap;min-width:100%;font-size:11px}
+      #mk-hub .mws-wrap th,#mk-hub .mws-wrap td{padding:6px 7px;border-bottom:1px solid rgba(255,255,255,.09);text-align:right}
+      #mk-hub .mws-wrap th{color:#b4adda;font-weight:600}#mk-hub .mws-wrap th:first-child,#mk-hub .mws-wrap td:first-child{text-align:left}
+      #mk-hub .mws-rank{display:inline-block;margin-left:6px;padding:1px 5px;border-radius:4px;font-size:9px;font-weight:800;vertical-align:1px}
+      #mk-hub .mws-rank-1{color:#2a1c00;background:linear-gradient(135deg,#ffe58a,#e5a91a)}#mk-hub .mws-rank-2{color:#15202b;background:linear-gradient(135deg,#f1f4f7,#9ba8b5)}#mk-hub .mws-rank-3{color:#2d1608;background:linear-gradient(135deg,#e6a16d,#a95f2f)}
+      #mk-hub .mws-empty,#mk-hub .mws-note{color:#b4adda;padding:8px 2px}
+      #mk-hub .mws-fight{margin:8px 0 14px;padding:9px;border:1px solid rgba(144,123,255,.2);border-radius:9px;background:rgba(255,255,255,.025)}
+      #mk-hub .mws-date{margin-bottom:5px;color:#b4adda;font-size:10px}
+    </style><div class="mws-wrap"></div>`
+    const wrap = host.querySelector('.mws-wrap')
+    const toolbar = document.createElement('div'); toolbar.className = 'mws-toolbar'
+    const enabledBox = document.createElement('span'); enabledBox.textContent = enabled() ? 'Licznik włączony' : 'Licznik wyłączony'
+    const importButton = document.createElement('button'); importButton.type = 'button'; importButton.textContent = 'Wczytaj próbkę'
+    const file = document.createElement('input'); file.type = 'file'; file.accept = 'application/json,.json'; file.hidden = true
+    const clearButton = document.createElement('button'); clearButton.type = 'button'; clearButton.textContent = 'Wyczyść historię'
+    const status = document.createElement('span'); status.className = 'mws-status'; status.textContent = `${state.status} · aktualizacje: ${state.calls}`
+    toolbar.append(enabledBox, importButton, file, clearButton, status); wrap.appendChild(toolbar)
+    importButton.addEventListener('click', () => file.click())
+    file.addEventListener('change', async () => {
+      const chosen = file.files?.[0]; if (!chosen) return
+      try { const data = JSON.parse(await chosen.text()); for (const sample of (Array.isArray(data.samples) ? data.samples : [])) parsePayload(sample.payload) }
+      catch (error) { status.textContent = 'Nie udało się odczytać pliku' }
+      file.value = ''; refresh()
+    })
+    clearButton.addEventListener('click', () => { state.history = []; persist(); refresh() })
+    if (!enabled()) { const note = document.createElement('div'); note.className = 'mws-note'; note.textContent = 'Włącz Statystyki Walk przełącznikiem na liście dodatków, aby liczyć nowe walki.'; wrap.appendChild(note) }
+    if (state.current?.events) {
+      const title = document.createElement('div'); title.className = 'mws-table-title'; title.textContent = 'Bieżąca walka'; wrap.appendChild(title)
+      const live = document.createElement('div'); live.innerHTML = table(Object.values(state.current.rows)); wrap.appendChild(live)
+    }
+    if (state.history.length) {
+      const title = document.createElement('div'); title.className = 'mws-table-title'; title.textContent = `Historia walk (${state.history.length}/${MAX_HISTORY})`; wrap.appendChild(title)
+      for (const [index, fight] of state.history.entries()) {
+        const section = document.createElement('section'); section.className = 'mws-fight'
+        const date = document.createElement('div'); date.className = 'mws-date'; date.textContent = `${index + 1}. ${new Date(fight.endedAt || fight.startedAt).toLocaleString('pl-PL')} · ${fight.rows.length} uczestników`
+        const data = document.createElement('div'); data.innerHTML = table(fight.rows)
+        section.append(date, data); wrap.appendChild(section)
+      }
+    } else if (!state.current?.events) {
+      const empty = document.createElement('div'); empty.className = 'mws-empty'; empty.textContent = 'Brak zapisanych walk. Statystyki pojawią się tutaj po pierwszym starciu.'; wrap.appendChild(empty)
+    }
+  }
+  window.__mkBuildFightStatsView = buildView
+  function refresh() { try { window.__mkHubRefreshFightStats?.() } catch (error) {} }
+  window.addEventListener('mws-fightstats-toggle', refresh)
+  function attach() {
+    const engines = []
+    try { if (window.Engine) engines.push(window.Engine) } catch (error) {}
+    try { if (typeof window.getEngine === 'function') engines.push(window.getEngine()) } catch (error) {}
+    const engine = engines.find(value => value?.battle && typeof value.battle.updateData === 'function')
+    if (!engine) return false
+    const battle = engine.battle, original = battle.updateData
+    if (original.__mkAddonFightStats) { state.status = 'Silnik podłączony'; refresh(); return true }
+    const wrapped = function (...args) {
+      const result = original.apply(this, args)
+      state.calls++
+      state.status = 'Silnik podłączony'
+      try { parsePayload(args[0]) } catch (error) { state.status = 'Błąd odczytu danych walki' }
+      return result
+    }
+    wrapped.__mkAddonFightStats = true
+    battle.updateData = wrapped
+    state.status = 'Silnik podłączony'
+    refresh()
+    return true
+  }
+  let attempts = 0
+  const attachTimer = setInterval(() => {
+    attempts++
+    if (attach() || attempts >= 240) { clearInterval(attachTimer); if (attempts >= 240 && state.calls === 0) { state.status = 'Nie znaleziono silnika walki'; refresh() } }
+  }, 250)
+})()
